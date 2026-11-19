@@ -43,9 +43,9 @@ extern "C" {
 #endif
 
 #if defined(EVO_USB_REMOTE) && defined(EVO_APP_MODULE)
-/* Call once per frame from main()'s loop. Cheap: a stat() on the cmd file and,
- * at most once a second, a status write. */
-void evo_usb_remote_poll(void);
+/* Call once per frame. Dispatches a command from the worker, if any.
+ * Returns 1 if a command was handled. */
+int evo_usb_remote_poll(void);
 
 /* Call once, as the soft close parks the frame loop: one last status line with
  * parked=1. The loop never polls again, so this is what tells the host the
@@ -106,7 +106,7 @@ void evo_remote_focus(const char *row);
 void evo_remote_open_image(const char *path);
 void evo_remote_open_text(const char *path);
 #else
-#define evo_usb_remote_poll() ((void)0)
+#define evo_usb_remote_poll() (0)
 #define evo_usb_remote_mark_parked() ((void)0)
 #define evo_usb_remote_take_buttons() (0u)
 #endif

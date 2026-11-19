@@ -87,6 +87,11 @@ public:
     void setRefreshRateMode(RefreshRateMode mode) override { m_refreshRateMode = mode; }
     const char* getRefreshRateModeName(RefreshRateMode mode) const override;
 
+    int getOledScreenSaverMinutes() const override { return m_oledScreenSaverMinutes; }
+    void setOledScreenSaverMinutes(int minutes) override {
+        m_oledScreenSaverMinutes = (minutes >= 1 && minutes <= 5) ? minutes : 0;
+    }
+
     HdrOutputMode getHdrOutputMode() const override { return m_hdrOutputMode; }
     void setHdrOutputMode(HdrOutputMode mode) override { m_hdrOutputMode = mode; }
     const char* getHdrOutputModeName(HdrOutputMode mode) const override;
@@ -170,6 +175,7 @@ private:
     MotionSmoothing m_motionSmoothing = MotionSmoothing::Off;
     DeepBlacks m_deepBlacks = DeepBlacks::Off;
     RefreshRateMode m_refreshRateMode = RefreshRateMode::Off;
+    int m_oledScreenSaverMinutes = 0;
     HdrOutputMode m_hdrOutputMode = HdrOutputMode::Auto;
     AudioOutputChannels m_audioOutputChannels = AudioOutputChannels::Auto;
     VolumeBoost m_volumeBoost = VolumeBoost::Off;

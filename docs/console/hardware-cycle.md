@@ -1,5 +1,22 @@
 # The hardware cycle
 
+## Local build handoff
+
+For this workspace, use the workflow in [AGENTS.md](../../AGENTS.md) when
+sending a change for the owner to test. Sync changed sources into the existing
+`evoplayer_fork_workspace` Docker volume and reuse the fork SDK, FFmpeg, and
+compiler cache volumes. Run `./scripts/package-app.sh --ffpfsc` in that
+workspace. The resulting image is `output/app/PPSA99273.ffpfsc`.
+
+From macOS, use `/usr/bin/python3` with the FTP transfer sequence in
+`scripts/deploy-app.sh`. Upload directly to `192.168.1.23:2121` under a temporary
+name, read the upload back to verify its SHA-256, and rename it to
+`/data/homebrew/PPSA99273.ffpfsc`. The verified rename completes the handoff.
+The owner handles closing, launching, and testing the app. Commit only after
+the owner has tested and explicitly asks for a commit.
+
+## Full console test cycle
+
 How to put a build on the console, run it, and close it again without panicking
 the machine. Every step that touches the console goes through `tools/evo-remote.sh`
 or `scripts/deploy-app.sh`, which carry the safety rules below. The rules that

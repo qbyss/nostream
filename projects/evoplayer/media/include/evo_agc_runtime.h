@@ -139,6 +139,8 @@ int  evo_agc_runtime_is_active(void);
 void evo_agc_runtime_frame_begin(void);
 void evo_agc_runtime_frame_end(void);
 void evo_agc_runtime_present(void);
+/* Begin an opaque black frame in the current output format. */
+void evo_agc_runtime_frame_begin_black(void);
 void evo_agc_runtime_set_player_mode(int is_player);
 /* Mark the current backbuffer as carrying composited UI, so the next frame that
  * reuses it clears first instead of stacking OSD/subtitle pixels. */

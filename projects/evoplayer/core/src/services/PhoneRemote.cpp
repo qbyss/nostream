@@ -128,7 +128,7 @@ extern "C" int evo_phone_remote_post(const char *cmd)
     return 0;
 }
 
-extern "C" void evo_phone_remote_poll(void)
+extern "C" int evo_phone_remote_poll(void)
 {
     std::string todo[kQueue];
     int n = 0;
@@ -156,6 +156,7 @@ extern "C" void evo_phone_remote_poll(void)
     }
     std::lock_guard<std::mutex> lock(g_mx);
     g_snap = std::move(s);
+    return n;
 }
 
 extern "C" unsigned int evo_phone_remote_take_buttons(void)

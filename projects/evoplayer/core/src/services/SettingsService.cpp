@@ -321,7 +321,7 @@ bool SettingsService::saveSettings() {
     }
 
     std::fprintf(file,
-        "%d\n%d\n%d\n%d\n%d\n%d\n%s\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n",
+        "%d\n%d\n%d\n%d\n%d\n%d\n%s\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n",
         0, // legacy dummy profile
         m_resumePlaybackEnabled ? 1 : 0,
         static_cast<int>(m_defaultViewMode),
@@ -368,7 +368,8 @@ bool SettingsService::saveSettings() {
         m_castPort,                          // line 44 (DIAL port)
         m_castNativePlayerEnabled ? 1 : 0,   // line 45 (play cast in EVO player instead of WebKit)
         m_secondarySubtitleSize,             // line 46 (secondary subtitle size: 0 small .. 3 extra large)
-        m_secondarySubtitleBackground        // line 47 (secondary subtitle background: 0 box .. 3 none)
+        m_secondarySubtitleBackground,       // line 47 (secondary subtitle background: 0 box .. 3 none)
+        m_oledScreenSaverMinutes             // line 48 (OLED screen saver: 0 disabled, 1..5 minutes)
     );
 
     if (std::fclose(file) != 0)
@@ -431,9 +432,10 @@ bool SettingsService::loadSettings() {
     int rawCastNativePlayer = 1;
     int rawSecondarySize = 1;
     int rawSecondaryBackground = 0;
+    int rawOledScreenSaverMinutes = 0;
 
     int readCount = std::fscanf(file,
-        "%d\n%d\n%d\n%d\n%d\n%d\n%127[^\n]\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d",
+        "%d\n%d\n%d\n%d\n%d\n%d\n%127[^\n]\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d",
         &rawProfile,
         &rawResume,
         &rawViewMode,
@@ -480,7 +482,8 @@ bool SettingsService::loadSettings() {
         &rawCastPort,
         &rawCastNativePlayer,
         &rawSecondarySize,
-        &rawSecondaryBackground
+        &rawSecondaryBackground,
+        &rawOledScreenSaverMinutes
     );
 
     std::fclose(file);
@@ -562,7 +565,7 @@ bool SettingsService::loadSettings() {
     }
     /* An older file has no port line: the default stands, and the server may bind it. */
     evo_log_server_set_port(readCount >= 29 ? rawLogPort : evo_log_server_saved_port());   /* ignores out-of-range */
-    EVO_LOGI("settings", "loaded %d of 40 fields from %s", readCount, filePath);
+    EVO_LOGI("settings", "loaded %d of 48 fields from %s", readCount, filePath);
     if (readCount >= 31 && rawHdrPeak >= 0 && rawHdrPeak <= 5) {
         m_hdrPeak = static_cast<HdrPeak>(rawHdrPeak);
     }
@@ -590,6 +593,7 @@ bool SettingsService::loadSettings() {
     if (readCount >= 45) m_castNativePlayerEnabled = (rawCastNativePlayer != 0);
     if (readCount >= 46 && rawSecondarySize >= 0 && rawSecondarySize <= 3) setSecondarySubtitleSize(rawSecondarySize);
     if (readCount >= 47 && rawSecondaryBackground >= 0 && rawSecondaryBackground <= 3) setSecondarySubtitleBackground(rawSecondaryBackground);
+    setOledScreenSaverMinutes(rawOledScreenSaverMinutes);
 
     /* #233: Deep Blacks, Motion Smoothing and Match Video Rate moved to
      * Experimental, where everything starts off. A file from before that

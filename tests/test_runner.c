@@ -710,6 +710,7 @@ static void test_language_preference(void)
 /* Settings service save/load and backward compatibility host tests */
 extern void test_settings_save_load_roundtrip(void);
 extern void test_settings_legacy_compat(void);
+extern void test_settings_oled_screen_saver(void);
 
 /* SMB client and network storage host tests */
 extern int test_media_remote(void);
@@ -746,6 +747,7 @@ int main(void)
     test_audio_volume_boost();
     test_settings_save_load_roundtrip();
     test_settings_legacy_compat();
+    test_settings_oled_screen_saver();
     test_smb_split_path();
     test_smb_storage_service();
     test_smb_url_sanitizer();

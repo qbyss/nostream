@@ -23,8 +23,8 @@ extern "C" {
 int evo_phone_remote_post(const char *cmd);
 
 /* Main thread, once a frame: runs the queued commands and snapshots the
- * now-playing state for evo_phone_remote_state_json. */
-void evo_phone_remote_poll(void);
+ * now-playing state for evo_phone_remote_state_json. Returns commands handled. */
+int evo_phone_remote_poll(void);
 
 /* Main thread: the synthetic button presses the page asked for (same mask as
  * the pad), OR'd into the pad state before input is read. */

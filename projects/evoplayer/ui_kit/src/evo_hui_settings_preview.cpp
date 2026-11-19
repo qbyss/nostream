@@ -2768,6 +2768,45 @@ static void draw_quit(DrawList &list, const Context &ctx, const Rect &box, const
     benefit_fit(list, ctx, a, cap_y + 36.0f, pv.benefit);
 }
 
+static void draw_oled_screen_saver(DrawList &list, const Context &ctx, const Rect &box,
+                                   const SettingsPreview &pv)
+{
+    const Area a = begin_card(list, ctx, box, pv);
+    const bool enabled = pv.index >= 1 && pv.index <= 5;
+    const float width = (a.w - 48.0f) * 0.5f;
+    const float height = width * 9.0f / 16.0f;
+    const Rect idle{a.x, a.top + 16.0f, width, height};
+    const Rect result{idle.x + width + 48.0f, idle.y, width, height};
+
+    auto draw_menu = [&](const Rect &screen) {
+        list.rounded_rect(screen, 12.0f, ctx.palette.bg_top);
+        const float tile_w = (screen.w - 72.0f) / 3.0f;
+        list.rounded_rect({screen.x + 17.0f, screen.y + 18.0f, screen.w - 34.0f, screen.h * 0.45f},
+                          6.0f, ctx.palette.accent.with_alpha(0.24f));
+        for (int i = 0; i < 3; ++i)
+            list.rounded_rect({screen.x + 17.0f + i * (tile_w + 12.0f),
+                               screen.y + screen.h * 0.68f, tile_w, screen.h * 0.18f},
+                              4.0f, kWhite.with_alpha(0.14f));
+    };
+
+    draw_menu(idle);
+    frame_border(list, ctx, idle, false);
+    flow_arrow(list, ctx, idle.x + idle.w + 8.0f, result.x - 8.0f, idle.cy(), enabled);
+    if (enabled)
+        list.rounded_rect(result, 12.0f, Color::rgb(0x000000));
+    else
+        draw_menu(result);
+    frame_border(list, ctx, result, enabled);
+
+    const float label_y = idle.y + height + 26.0f;
+    ui::text(list, ctx.fonts.semibold, "Idle screen", idle.cx(), label_y, 17,
+             ctx.palette.text_muted, Align::center);
+    const std::string next = enabled ? "Black after " + std::to_string(pv.index) + " min" : "Screen stays on";
+    ui::text(list, ctx.fonts.semibold, next, result.cx(), label_y, 17,
+             enabled ? ctx.palette.accent : ctx.palette.text_muted, Align::center);
+    benefit_fit(list, ctx, a, label_y + 36.0f, pv.benefit);
+}
+
 /* ---- WEB BROWSER: browser window mock inside a frame ---- */
 static void draw_web(DrawList &list, const Context &ctx, const Rect &box, const SettingsPreview &pv)
 {
@@ -2920,6 +2959,9 @@ void draw_settings_preview(DrawList &list, const Context &ctx, const Rect &box, 
         break;
     case EVO_RMLUI_PREVIEW_HDR_PEAK:
         draw_hdr_peak(list, ctx, box, pv);
+        break;
+    case EVO_RMLUI_PREVIEW_OLED_SCREEN_SAVER:
+        draw_oled_screen_saver(list, ctx, box, pv);
         break;
     case EVO_RMLUI_PREVIEW_AUDIO_LANGUAGE:
         draw_audio_language(list, ctx, box, pv);

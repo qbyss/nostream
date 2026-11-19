@@ -50,6 +50,7 @@ enum class SettingKey : int {
     RefreshRate,
     HdrOutput,
     HdrPeak,
+    OledScreenSaver,
     /* AUDIO */
     VolumeBoost,
     AudioDelay,
@@ -146,6 +147,8 @@ const PreviewSpec kPreviews[] = {
      "Highlights like the sun and lamps get brighter without clipping. Needs an HDR10 TV."},
     {SettingKey::HdrPeak, EVO_RMLUI_PREVIEW_HDR_PEAK,
      "Fits bright HDR films to your TV's real peak, shot by shot for Dolby Vision, instead of leaving it to the TV. Set your TV's peak (about 1500 nits for an LG G5) and turn its dynamic tone mapping off."},
+    {SettingKey::OledScreenSaver, EVO_RMLUI_PREVIEW_OLED_SCREEN_SAVER,
+     "Protects your OLED from static menus and paused frames. Use the controller or remote to wake the screen."},
     {SettingKey::AudioLanguage, EVO_RMLUI_PREVIEW_AUDIO_LANGUAGE,
      "The audio track a film starts with when it has several languages. Auto takes the first one."},
     {SettingKey::SubtitleLanguage, EVO_RMLUI_PREVIEW_SUB_LANGUAGE,
@@ -217,7 +220,7 @@ const PreviewSpec kPreviews[] = {
 const SettingKey kVideoKeys[] = {
     SettingKey::DefaultAspect, SettingKey::ResumePlayback, SettingKey::SkipSegments, SettingKey::VideoDecoder,
     SettingKey::Upscaling, SettingKey::AiNetwork, SettingKey::RefreshRate,
-    SettingKey::HdrOutput, SettingKey::HdrPeak, SettingKey::NetworkBuffer,
+    SettingKey::HdrOutput, SettingKey::HdrPeak, SettingKey::OledScreenSaver, SettingKey::NetworkBuffer,
 };
 const SettingKey kAudioKeys[] = {
     SettingKey::VolumeBoost, SettingKey::AudioDelay,
@@ -410,6 +413,15 @@ SettingDef makeDef(SettingKey key, ISettingsService* settings) {
                       "24P / 50 HZ OUTPUT DURING PLAYBACK - FALLS BACK TO 120 HZ OR 60 HZ",
                       "../icons/icon_refresh_cw.png", settings->isMatchVideoRateEnabled());
         break;
+
+    case SettingKey::OledScreenSaver: {
+        constexpr const char* choices[] = {"DISABLED", "1 MINUTE", "2 MINUTES", "3 MINUTES", "4 MINUTES", "5 MINUTES"};
+        constexpr int choiceCount = sizeof(choices) / sizeof(choices[0]);
+        d = valueDef(key, "OLED SCREEN SAVER", "BLACK SCREEN WHEN IDLE. PRESS ANY BUTTON TO WAKE.",
+                     "../icons/icon_moon.png", choiceCount, settings->getOledScreenSaverMinutes());
+        std::copy_n(choices, choiceCount, d.opt_label);
+        break;
+    }
 
     case SettingKey::WebBrowser:
         d = toggleDef(key, "WEB BROWSER", "BUILT-IN PROSPERO BROWSER ON THE NAVIGATION RAIL",
@@ -1015,6 +1027,7 @@ void applyOption(SettingKey key, int opt) {
     case SettingKey::MotionSmoothing: st->setMotionSmoothing(static_cast<MotionSmoothing>(opt)); break;
     case SettingKey::HdrOutput:      st->setHdrOutputMode(static_cast<HdrOutputMode>(opt)); break;
     case SettingKey::HdrPeak:        st->setHdrPeak(static_cast<HdrPeak>(opt)); break;
+    case SettingKey::OledScreenSaver: st->setOledScreenSaverMinutes(opt); break;
     case SettingKey::AudioLanguage:  st->setAudioLanguage(static_cast<PreferredLanguage>(opt)); break;
     case SettingKey::SubtitleLanguage: st->setSubtitleLanguage(static_cast<PreferredLanguage>(opt)); break;
     case SettingKey::NetworkBuffer:  st->setNetworkBuffer(static_cast<NetworkBuffer>(opt)); break;

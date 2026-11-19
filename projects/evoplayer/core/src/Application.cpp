@@ -114,12 +114,14 @@ typedef struct PS5_PadData {
     float acceleration[3];
     float angularVelocity[3];
     PS5_PadTouchData touchData;
-    uint8_t rest[72];
+    int32_t connected;
+    uint8_t rest[68];
 } PS5_PadData;
 
 static_assert(offsetof(PS5_PadData, touchData) == 52, "touchData offset mismatch");
 static_assert(offsetof(PS5_PadData, touchData.touch[0].x) == 60, "touch[0].x offset mismatch");
 static_assert(offsetof(PS5_PadData, touchData.touch[1].x) == 68, "touch[1].x offset mismatch");
+static_assert(offsetof(PS5_PadData, connected) == 76, "pad connection offset mismatch");
 
 int scePadReadState(int, PS5_PadData *);
 
@@ -928,6 +930,10 @@ PaceTrace g_pace;
 int Application::run() {
     PS5_PadData padData;
     uint32_t lastButtons = 0;
+    long long oledLastActivityMs = evo_log_mono_ms();
+    long long oledNoticeUntilMs = 0;
+    bool oledBlank = false;
+    bool oledWakeInputHeld = false;
 
     m_appFsm.postEvent(ApplicationEvent::StartLoop);
     evo_bt("Application: entering frame loop");
@@ -1046,7 +1052,7 @@ int Application::run() {
              * answers (Options = update, Triangle = later; see the input code).
              * It shows only on calm screens, so it never covers playback, and comes back when the user returns to one. */
             if (evo_updater_take_new_flag()) g_upd_card_wanted = true;
-            if (g_upd_card_wanted && m_screenManager && !m_softClose) {
+            if (g_upd_card_wanted && m_screenManager && !m_softClose && !oledBlank) {
                 bool calm = false;
                 switch (m_screenManager->getCurrentScreenId()) {
                 case ScreenId::MainMenu:
@@ -1078,8 +1084,9 @@ int Application::run() {
                 }
             }
         }
-        evo_usb_remote_poll();
-        evo_phone_remote_poll();   /* #238: commands from the phone remote page */
+        const bool usbRemoteActivity = evo_usb_remote_poll() != 0;
+        const bool phoneRemoteActivity = evo_phone_remote_poll() != 0;
+        bool userActivity = usbRemoteActivity || phoneRemoteActivity;
         evo_webui_pump();
 
         /* Non-blocking: wakes the log writer thread. This was a blocking
@@ -1153,7 +1160,7 @@ int Application::run() {
         uint32_t held = 0;
         bool hasInput = false;
 
-        if (m_padHandle < 0 || scePadReadState(m_padHandle, &padData) != 0) {
+        if (m_padHandle < 0 || scePadReadState(m_padHandle, &padData) != 0 || !padData.connected) {
             padData = {};
             padData.leftStick = {128, 128};
             padData.rightStick = {128, 128};
@@ -1296,6 +1303,21 @@ int Application::run() {
             }
 
             hasInput = (pressed != 0 || released != 0 || evo_input_any(&evo_pad_state));
+            constexpr uint32_t kPadInputIntercepted = 0x80000000u;
+            const bool inputHeld = (held & ~kPadInputIntercepted) || m_mediaRemote.buttons || m_touchActive ||
+                m_leftStickX != 0.0f || m_leftStickY != 0.0f ||
+                m_rightStickX != 0.0f || m_rightStickY != 0.0f;
+            const bool padActivity = hasInput || inputHeld;
+            userActivity = userActivity || padActivity;
+            if ((oledBlank && padActivity) || oledWakeInputHeld) {
+                /* Acknowledge the wake press and its release before routing input again. */
+                oledWakeInputHeld = inputHeld;
+                pressed = held = released = 0;
+                hasInput = false;
+                m_padButtons = 0;
+                m_touchActive = false;
+                m_leftStickX = m_leftStickY = m_rightStickX = m_rightStickY = 0.0f;
+            }
             if (hasInput) {
                 evo::animation::AnimationManager::getInstance().triggerTransition(350.0);
             }
@@ -1529,9 +1551,44 @@ int Application::run() {
             }
         }
 
+        const int oledMinutes = m_settingsService ? m_settingsService->getOledScreenSaverMinutes() : 0;
+        const bool videoPlaying = m_playbackController && m_playbackController->isActive() &&
+            !m_playbackController->isPaused() && !m_playbackController->isMusicMode();
+        const bool displayInUse = videoPlaying || (m_surroundTestService && m_surroundTestService->isActive()) ||
+            evo_webui_active() || evo_keyboard_is_native_active() || m_softClose;
+        const long long oledNow = evo_log_mono_ms();
+        if (oledMinutes == 0 || displayInUse || userActivity) {
+            oledLastActivityMs = oledNow;
+            oledNoticeUntilMs = 0;
+        }
+
+        const bool wasOledBlank = oledBlank;
+        oledBlank = oledMinutes > 0 && oledNow - oledLastActivityMs >= oledMinutes * 60000LL;
+        if (oledBlank) {
+            if (!wasOledBlank) {
+                toast("Screen saving mode enabled", "Press any button to wake.");
+                oledNoticeUntilMs = oledNow + 2600;  // includes the toast's fade-out
+                g_pace.stop();
+            }
+            if (oledNoticeUntilMs != 0 || evo_agc_runtime_mode_switch_pending()) {
+                const bool showNotice = oledNow < oledNoticeUntilMs;
+                evo_rmlui_set_active(showNotice);
+                evo_agc_runtime_frame_begin_black();
+                if (showNotice && evo_toast_visible())
+                    draw_prospero_toast(m_uiScratch);
+                evo_agc_runtime_present();
+                evo_rmlui_end_frame();
+                if (!showNotice)
+                    oledNoticeUntilMs = 0;  // the clean black frame is now latched
+            }
+            /* Keep polling input and remotes with the normal UI hidden. */
+            usleep(8000);
+            continue;
+        }
+
         bool hasAnim = evo::animation::AnimationManager::getInstance().hasActiveAnimations();
         int uiActive = (frame < 10) || isPlayer || isSurround || hasInput || hasAnim ||
-                       evo_rmlui_needs_frame() || (jb_repaint > 0);
+                       wasOledBlank || evo_rmlui_needs_frame() || (jb_repaint > 0);
         if (jb_repaint > 0) jb_repaint--;
         evo_rmlui_set_active(uiActive);
 
@@ -1627,7 +1684,8 @@ int Application::run() {
 
             bool smoothing_active = evo_agc_motion_smoothing_is_active() && !is_paused && !is_scrubbing && !g_pp_pb.seek_discarding;
 
-            bool should_render = (have && new_frame) || buffer_stale || overlay_active || is_paused || is_scrubbing || toast_visible || g_pp_pb.seek_discarding || (have && smoothing_active);
+            bool should_render = wasOledBlank || (have && new_frame) || buffer_stale || overlay_active ||
+                is_paused || is_scrubbing || toast_visible || g_pp_pb.seek_discarding || (have && smoothing_active);
 
             /* #103 `upcompare`: capture what the previous iteration presented,
              * then move to the next mode. */

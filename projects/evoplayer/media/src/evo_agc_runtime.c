@@ -578,12 +578,15 @@ static size_t scanout_tiled_bytes(void)
     return bytes;
 }
 
-static uint32_t scanout_clear_pixel(void)
+static uint32_t scanout_black_pixel(void)
 {
     /* Opaque RGB zero in both the HDR and SDR scanout formats. */
-    if (g_agc_dev.is_hdr)
-        return 0xc0000000u;
-    return g_agc_dev.is_player_mode ? 0xff000000u : 0xff100d0du;
+    return g_agc_dev.is_hdr ? 0xc0000000u : 0xff000000u;
+}
+
+static uint32_t scanout_clear_pixel(void)
+{
+    return (g_agc_dev.is_hdr || g_agc_dev.is_player_mode) ? scanout_black_pixel() : 0xff100d0du;
 }
 
 /*
@@ -1743,7 +1746,7 @@ int evo_agc_runtime_is_active(void)
     return g_agc_dev.initialized;
 }
 
-void evo_agc_runtime_frame_begin(void)
+static void agc_frame_begin(int clear_black)
 {
     if (!g_agc_dev.initialized || g_agc_dev.frame_active)
         return;
@@ -1804,7 +1807,7 @@ void evo_agc_runtime_frame_begin(void)
      * every frame (software decode). So the clear is skipped only for a buffer
      * that carried nothing but video.
      */
-    if (!g_agc_dev.is_player_mode ||
+    if (clear_black || !g_agc_dev.is_player_mode ||
         g_agc_dev.ui_dirty[g_agc_dev.active_backbuffer]) {
         g_agc_dev.ui_dirty[g_agc_dev.active_backbuffer] = 0;
         g_agc_dev.video_pts[g_agc_dev.active_backbuffer] = INT64_MIN;
@@ -1813,7 +1816,7 @@ void evo_agc_runtime_frame_begin(void)
             /* Streamed, not stored-then-flushed: this is the single biggest
              * CPU cost in the menus - 8.3 MB a frame at 1080p, 33 MB at 4K.
              * See evo_agc_runtime_stream_fill. */
-            evo_agc_runtime_stream_fill(backbuffer, scanout_clear_pixel(),
+            evo_agc_runtime_stream_fill(backbuffer, clear_black ? scanout_black_pixel() : scanout_clear_pixel(),
                                         scanout_tiled_bytes());
         }
     }
@@ -1894,8 +1897,13 @@ void evo_agc_runtime_frame_begin(void)
     evo_agc_writer_set_blend(&g_agc_dev.current_cb, alloc_transient_cx(2), EVO_AGC_BLEND_PREMULTIPLIED);
 
     g_agc_dev.bound_pipeline = -1;
-    g_agc_dev.frame_has_draws = 0;
+    g_agc_dev.frame_has_draws = clear_black; /* A black clear is intentional content. */
     g_agc_dev.frame_active = 1;
+}
+
+void evo_agc_runtime_frame_begin(void)
+{
+    agc_frame_begin(0);
 }
 
 /* HDR10 output: drawing to the scanout swaps the SDR pipelines for their PQ
@@ -2425,6 +2433,16 @@ void evo_agc_runtime_frame_end(void)
 void evo_agc_runtime_present(void)
 {
     evo_agc_runtime_frame_end();
+}
+
+void evo_agc_runtime_frame_begin_black(void)
+{
+    if (g_agc_dev.frame_active) {
+        /* Discard any unsubmitted commands before taking over the scanout. */
+        g_agc_dev.frame_has_draws = 0;
+        evo_agc_runtime_frame_end();
+    }
+    agc_frame_begin(1);
 }
 
 /*

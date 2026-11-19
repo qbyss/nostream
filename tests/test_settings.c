@@ -460,6 +460,22 @@ extern "C" void test_settings_legacy_compat(void)
     TEST_ASSERT(svc45.isCastNativePlayerEnabled() == false, "45-line legacy castNativePlayer mismatch");
     TEST_ASSERT(svc45.getSecondarySubtitleSize() == 1, "Missing 46th line must keep default MEDIUM (1)");
     TEST_ASSERT(svc45.getSecondarySubtitleBackground() == 0, "Missing 47th line must keep default BOX (0)");
+    TEST_ASSERT(svc45.getOledScreenSaverMinutes() == 0, "Legacy settings must leave the OLED screen saver disabled");
 
+    TEST_PASS();
+}
+
+extern "C" void test_settings_oled_screen_saver(void) {
+    TEST_START("Settings: OLED screen saver timeout persistence");
+    evo::SettingsService settings;
+    TEST_ASSERT(settings.getOledScreenSaverMinutes() == 0, "OLED screen saver should default to disabled");
+
+    for (int minutes = 0; minutes <= 5; ++minutes) {
+        settings.setOledScreenSaverMinutes(minutes);
+        TEST_ASSERT(settings.saveSettings(), "OLED timeout save failed");
+        evo::SettingsService reloaded;
+        TEST_ASSERT(reloaded.loadSettings(), "OLED timeout load failed");
+        TEST_ASSERT(reloaded.getOledScreenSaverMinutes() == minutes, "OLED timeout did not round-trip");
+    }
     TEST_PASS();
 }

@@ -441,7 +441,7 @@ static void write_ui_state(long long now)
     pthread_mutex_unlock(&g_remote_mx);
 }
 
-void evo_usb_remote_poll(void)
+int evo_usb_remote_poll(void)
 {
     if (!g_remote_up) {
         g_remote_up = 1;
@@ -468,6 +468,7 @@ void evo_usb_remote_poll(void)
     /* Sample UI in memory for background worker */
     long long now = now_ms_local();
     write_ui_state(now);
+    return have_cmd;
 }
 
 void evo_usb_remote_mark_parked(void)
