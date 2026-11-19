@@ -496,10 +496,6 @@ void HomeScreen::set(const evo_rmlui_launch_params_t &p)
     library_.clear();
     for (int i = 0; i < p.library_visible && i < EVO_RMLUI_TILES; ++i)
         library_.push_back(tile(p.library[i]));
-    tips_.clear();
-    for (int i = 0; i < p.tip_count && i < EVO_RMLUI_HOME_TIPS; ++i)
-        if (p.tips[i] && p.tips[i][0])
-            tips_.push_back(p.tips[i]);
 }
 
 void HomeScreen::enter()
@@ -791,28 +787,6 @@ void HomeScreen::draw(DrawList &list, const Context &ctx) const
         list.pop_opacity();
     }
 
-    /* Show one tip at a time on the left of the hint line, 8 s each,
-     * fading between them. Starts after the page's own entrance. */
-    if (!tips_.empty())
-    {
-        constexpr float kPeriod = 8.0f, kFade = 0.6f;
-        const float t = std::max(0.0f, age_ - 1.0f);
-        const int idx = static_cast<int>(t / kPeriod) % static_cast<int>(tips_.size());
-        const float in = std::fmod(t, kPeriod);
-        const float a = std::min({1.0f, in / kFade, (kPeriod - in) / kFade}) * tween::stagger(age_, 7, 0.08f, 0.5f);
-        list.push_opacity(std::max(0.0f, a));
-        const float y = page::kHintsY;
-        float x = kLeft;
-        if (uint32_t bulb = ctx.textures.icon("../icons/icon_lightbulb.png"))
-        {
-            list.image(bulb, {x, y - 14.0f, 28, 28}, ::hui::gfx::kFullUv, p.accent);
-            x += 40.0f;
-        }
-        /* Stop well short of the button hints on the right. */
-        const float w = 1500.0f - x;
-        ui::text(list, fonts.regular, fonts.regular.font->fit(tips_[idx], 21, w), x, y + 7.0f, 21, kWhite.with_alpha(0.85f));
-        list.pop_opacity();
-    }
 }
 
 /* -------------------------------------------------------------------- list */

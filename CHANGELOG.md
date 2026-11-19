@@ -36,7 +36,6 @@ Questions, bugs or ideas? Join the **[EVO Player Discord](https://discord.gg/47N
 - ![](https://img.shields.io/badge/IMPROVED-ff8c00?style=flat-square) **A long section says there is more:** "N MORE" below (or above, once you scroll), a scrollbar beside the rows and a fade at the hidden edge.
 - ![](https://img.shields.io/badge/NEW-007acc?style=flat-square) **Picture previews** for the settings that only had text, from Upmix 4.0 and the cast settings to Volume boost, Audio delay and Network buffer.
 - ![](https://img.shields.io/badge/IMPROVED-ff8c00?style=flat-square) **One icon per setting**, instead of the same few repeated; the Cast to EVO Player row had none.
-- ![](https://img.shields.io/badge/NEW-007acc?style=flat-square) **Rotating tips on Home**: one tip at a time about what EVO can do, with this console's address in the phone tips.
 - ![](https://img.shields.io/badge/NEW-007acc?style=flat-square) **Library filters (#220):** Years, Rating and Watched-only in the Jellyfin/Emby Sort & filter panel. Thanks @Andrea17982.
 - ![](https://img.shields.io/badge/NEW-007acc?style=flat-square) **Subtitle style (#231):** size, colour, position and background for the main subtitle line in Settings → Subtitles. Thanks @Andrea17982.
 - ![](https://img.shields.io/badge/IMPROVED-ff8c00?style=flat-square) **In-provider options,** an L1 jump to the library, R2 for sort, and a dual-subtitle preview with real dialogue.

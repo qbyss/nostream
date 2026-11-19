@@ -267,10 +267,6 @@ int main(int argc, char **argv)
                             {"SETTINGS", "Video & audio", "../icons/icon_settings.png"},
                             {"ABOUT", "Credits & info", "../icons/icon_about_support.png"}};
     launch.library_visible = sizeof lib / sizeof lib[0];
-    /* Rotating Home tips; the first tip shows at render time. */
-    launch.tips[0] = "Your phone can be the remote: open 192.168.0.12:9780/remote";
-    launch.tips[1] = "Stereo can fill four speakers: Settings > Audio > Upmix stereo to 4.0";
-    launch.tip_count = 2;
     for (int i = 0; i < launch.library_visible; ++i)
     {
         launch.library[i].title = lib[i][0];
