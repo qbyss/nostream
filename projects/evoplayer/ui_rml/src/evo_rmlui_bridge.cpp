@@ -567,8 +567,10 @@ void evo_rmlui_update_dialog(const evo_rmlui_dialog_params_t* p) {
 
 void evo_rmlui_render_dialog(uint32_t* framebuffer, int width, int height) {
 #if defined(EVO_AGC_DEVICE)
-    if (EvoRmlApp::Instance().GlActive() && evo_hui_render_dialog(width, height)) {
-        EvoRmlApp::Instance().NoteExternalDialog();
+    auto& app = EvoRmlApp::Instance();
+    if (!app.GlActive() && !app.GlBlitMode()) return;
+    if (app.GlActive() && evo_hui_render_dialog(width, height)) {
+        app.NoteExternalDialog();
         return;
     }
 #endif

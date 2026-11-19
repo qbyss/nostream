@@ -356,13 +356,21 @@ void ScreenManager::update(double deltaMs) {
 
 void ScreenManager::render(uint32_t* framebuffer, int width, int height) {
     syncNavRail();
+    if (m_currentScreenId == ScreenId::ResumePrompt) {
+        // The resume prompt is an overlay. Repaint the browser on every frame
+        // so either scanout buffer has the same background.
+        if (auto* browser = getScreen(ScreenId::UsbBrowser))
+            browser->render(framebuffer, width, height);
+    }
     if (auto current = getCurrentScreen()) {
         current->render(framebuffer, width, height);
     }
 }
 
 void ScreenManager::syncNavRail() {
-    int section = getSectionForScreen(m_currentScreenId);
+    const ScreenId background = m_currentScreenId == ScreenId::ResumePrompt
+        ? ScreenId::UsbBrowser : m_currentScreenId;
+    int section = getSectionForScreen(background);
     bool visible = (section >= 0);
     if (!visible) section = 0;
 
