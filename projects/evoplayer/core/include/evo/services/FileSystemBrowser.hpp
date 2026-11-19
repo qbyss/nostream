@@ -71,6 +71,7 @@ private:
     std::vector<BrowserEntry> m_entries;
     bool m_sortFoldersFirst = true;
     mutable std::vector<std::string> m_usbMounts;   /* usbMounts() cache */
+    mutable unsigned m_usbMountsGeneration = 0;
     mutable uint64_t m_usbMountsAtMs = 0;           /* when it was scanned; 0 = not yet */
 };
 

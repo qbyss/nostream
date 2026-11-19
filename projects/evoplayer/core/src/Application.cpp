@@ -58,6 +58,7 @@ extern "C" int perf_render_fps;
 #include "evo_toast.h"
 #include "evo_recent.h"
 #include "evo_favorites.h"
+#include "evo_ntfs.h"
 #include "evo_theme.h"
 #include "evo_keyboard.h"
 #include "evo_feedback.h"
@@ -1137,13 +1138,14 @@ int Application::run() {
             evo_boot_log_flush();
         }
 
-        /*
-         * USB drive detection is strictly on-demand (e.g. BrowserScreen /
-         * SubtitleFileScreen) rather than polled here. Periodic background
-         * polling of usbMounts() from the main frame loop enumerated /mnt/usb*
-         * and opened /dev devices every 3 s, causing ~850 ms main-thread I/O
-         * stalls and severe frame drops while streaming media from USB.
-         */
+#ifdef EVO_APP_MODULE
+        // Warm the volume labels once, off the UI thread, before Storage is opened.
+        static bool storageWarmupStarted = false;
+        if (!storageWarmupStarted && evo_jailbreak_is_open()) {
+            evo_ntfs_refresh_async();
+            storageWarmupStarted = true;
+        }
+#endif
 
         g_pace.mark(0);   /* pumps: net, bundles, usb remote, web UI, jailbreak */
         // 1. Controller input & auto-repeat

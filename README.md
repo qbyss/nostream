@@ -199,6 +199,7 @@ Manage your storage directly on the PS5 with native file operations, integrated 
 - **Automatic PS5 Internal FTP Detection:** EVO Player automatically detects and connects to the console's resident jailbreak FTP payload on loopback (`127.0.0.1:2121`). Pre-configured as **PS5 Local FTP** in the browser sidebar, giving you immediate access to explore and manage the entire console filesystem (`/`) without typing IP addresses or credentials.
 - **High-Speed Loopback Delegation:** Large internal file transfers (>64 MB) automatically stream through the loopback FTP daemon to bypass per-process application write throttling, sustaining full drive speeds (~80+ MB/s).
 - **Remote FTP / NAS Mounting:** Add remote FTP servers from your home network in the sidebar to stream media directly or transfer files between your PC/NAS and console without leaving the sofa.
+- **USB labels and Favorites:** Mounted USB drives appear individually in the storage sidebar, using their volume labels when available. On a USB folder, open Options and choose Add to Favorites. New USB favorites use the filesystem’s volume serial, so they follow the drive when its mount number changes. Re-add older USB favorites to give them a volume identity.
 - **NTFS USB drives:** an NTFS drive is not mounted by the PS5, so EVO reads the raw disk itself, read-only: browse, play, view pictures and load subtitles from it ([docs/hardware/ntfs.md](docs/hardware/ntfs.md)).
 - **Cover art:** FTP and SMB folders show posters from `poster.jpg`, `folder.jpg` and `<name>.jpg` files beside the video.
 

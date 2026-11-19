@@ -53,6 +53,7 @@ struct BrowserItem {
     std::string statusText;
     std::string artPath;         // network sidecar image on the server, empty = none (#230)
     std::string artKey;
+    int favoriteIndex = -1;
 };
 
 class BrowserScreen : public StatefulScreen {
@@ -92,6 +93,8 @@ private:
     void jumpLetter(int direction);
     void activateSelection();
     void activateSidebar(bool focusGrid = true);
+    void refreshStorageSources();
+    int activeSidebarIndex() const;
     void applyFolderFilter();
     void applyFilterChange();
     std::string filterScopeKey() const;
@@ -106,7 +109,10 @@ private:
 
     BrowserFocusPane m_focusPane = BrowserFocusPane::Grid;
     int m_sidebarIndex = 0;
-    int m_activeSource = 0; // 0: USB Drive, 1: Internal, 2: Favorites, 3: Recent Media
+    int m_activeSource = 0; // USB, Internal, Network, Favorites, Recent
+    std::vector<std::string> m_storageMounts;
+    std::vector<std::string> m_storageLabels;
+    std::string m_activeMount;
     /*
      * Folder filter. m_folderCats holds the categories that actually have
      * files in the folder in view, so a chip can never produce an empty grid,
@@ -128,6 +134,9 @@ private:
     std::string m_returnFocusPath;
     int m_scrollOffset = 0;
     double m_settleMs = 0.0;
+    unsigned m_usbVolumeGeneration = 0;
+    int m_pendingFolderFavorite = -1;
+    double m_pendingFavoriteMs = 0;
     MediaMetadataInfo m_cachedMetadata;
     char m_formattedPath[256];
     char m_rowDurations[16][32];
@@ -166,6 +175,11 @@ private:
     // File operations & Action menu
     bool m_actionMenuOpen = false;
     int m_actionMenuFocused = 0;
+    bool m_actionCanFavorite = false;
+    bool m_actionFileOps = true;
+    int m_actionFavoriteIndex = -1;
+    int actionMenuCount() const;
+    int actionForRow(int row) const;
     bool m_showDeleteConfirm = false;
     int m_deleteConfirmButton = 0;
     bool m_showTransferDialog = false;

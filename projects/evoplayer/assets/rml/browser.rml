@@ -46,25 +46,45 @@
         <!-- 2. Left Sidebar: Places / Sources / Filters -->
         <div id="browser-sidebar">
             <div class="sb-section-title">SOURCES</div>
-            <div id="sb-item-0" class="sb-item sb-item-active">
+            <div id="sb-item-0" class="sb-item">
                 <img id="sb-icon-0" class="sb-icon" src="../icons/icon_browse_usb.png"/>
-                <span id="sb-label-0" class="sb-label">USB Drive</span>
+                <span id="sb-label-0" class="sb-label"></span>
             </div>
             <div id="sb-item-1" class="sb-item">
-                <img id="sb-icon-1" class="sb-icon" src="../icons/icon_folder.png"/>
-                <span id="sb-label-1" class="sb-label">Internal Storage</span>
+                <img id="sb-icon-1" class="sb-icon" src="../icons/icon_browse_usb.png"/>
+                <span id="sb-label-1" class="sb-label"></span>
             </div>
             <div id="sb-item-2" class="sb-item">
                 <img id="sb-icon-2" class="sb-icon" src="../icons/icon_browse_usb.png"/>
-                <span id="sb-label-2" class="sb-label">Network Storage</span>
+                <span id="sb-label-2" class="sb-label"></span>
             </div>
             <div id="sb-item-3" class="sb-item">
-                <img id="sb-icon-3" class="sb-icon" src="../icons/icon_favorites.png"/>
-                <span id="sb-label-3" class="sb-label">Favorites</span>
+                <img id="sb-icon-3" class="sb-icon" src="../icons/icon_browse_usb.png"/>
+                <span id="sb-label-3" class="sb-label"></span>
             </div>
             <div id="sb-item-4" class="sb-item">
-                <img id="sb-icon-4" class="sb-icon" src="../icons/icon_recent_files.png"/>
-                <span id="sb-label-4" class="sb-label">Recent Media</span>
+                <img id="sb-icon-4" class="sb-icon" src="../icons/icon_browse_usb.png"/>
+                <span id="sb-label-4" class="sb-label"></span>
+            </div>
+            <div id="sb-item-5" class="sb-item">
+                <img id="sb-icon-5" class="sb-icon" src="../icons/icon_browse_usb.png"/>
+                <span id="sb-label-5" class="sb-label"></span>
+            </div>
+            <div id="sb-item-6" class="sb-item">
+                <img id="sb-icon-6" class="sb-icon" src="../icons/icon_browse_usb.png"/>
+                <span id="sb-label-6" class="sb-label"></span>
+            </div>
+            <div id="sb-item-7" class="sb-item">
+                <img id="sb-icon-7" class="sb-icon" src="../icons/icon_browse_usb.png"/>
+                <span id="sb-label-7" class="sb-label"></span>
+            </div>
+            <div id="sb-item-8" class="sb-item">
+                <img id="sb-icon-8" class="sb-icon" src="../icons/icon_browse_usb.png"/>
+                <span id="sb-label-8" class="sb-label"></span>
+            </div>
+            <div id="sb-item-9" class="sb-item">
+                <img id="sb-icon-9" class="sb-icon" src="../icons/icon_browse_usb.png"/>
+                <span id="sb-label-9" class="sb-label"></span>
             </div>
         </div>
 
@@ -262,7 +282,7 @@
                     <div class="glyph-badge"><img src="../icons/btn_square.png" class="glyph-badge-img"/></div>
                     <span class="footer-text">SEARCH</span>
                 </div>
-                <div class="footer-hint">
+                <div class="footer-hint" id="bhint-triangle">
                     <div class="glyph-badge"><img src="../icons/btn_triangle.png" class="glyph-badge-img"/></div>
                     <span id="footer-triangle-label" class="footer-text">FAVORITE</span>
                 </div>
@@ -364,6 +384,14 @@
                     <div class="act-text-col">
                         <span id="act-label-6" class="act-label">Close</span>
                         <span id="act-desc-6" class="act-desc">Dismiss menu and return to browser</span>
+                    </div>
+                    <div class="act-glyph-badge"><img src="../icons/btn_cross.png" class="act-glyph-img"/></div>
+                </div>
+                <div id="act-row-7" class="action-row">
+                    <div id="act-iconbox-7" class="act-icon-box"><img id="act-icon-7" src="../icons/btn_circle.png" class="act-icon-img"/></div>
+                    <div class="act-text-col">
+                        <span id="act-label-7" class="act-label">Close</span>
+                        <span id="act-desc-7" class="act-desc">Dismiss menu and return to browser</span>
                     </div>
                     <div class="act-glyph-badge"><img src="../icons/btn_circle.png" class="act-glyph-img"/></div>
                 </div>

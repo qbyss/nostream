@@ -54,6 +54,21 @@ int         evo_ntfs_volume_count(void);
 const char *evo_ntfs_volume_url(int i);
 const char *evo_ntfs_volume_label(int i);
 
+/* USB metadata uses filesystem serials, independent of PS5 mount numbering.
+ * Lookups copy into caller buffers. Resolution fails for a missing or
+ * ambiguous identity. A mount is either /mnt/usbN or ntfs://<volume>. */
+#define EVO_USB_VOLUME_ID_CAP 48
+#define EVO_USB_VOLUME_ROOT_CAP 40
+typedef struct {
+    char id[EVO_USB_VOLUME_ID_CAP];
+    char label[96];
+} evo_usb_volume_info;
+int evo_usb_volume_root(const char *path, char root[EVO_USB_VOLUME_ROOT_CAP]);
+int evo_usb_volume_get(const char *root, evo_usb_volume_info *info);
+int evo_usb_volume_resolve(const char *id, char root[EVO_USB_VOLUME_ROOT_CAP]);
+unsigned evo_usb_volume_generation(void);
+
+
 /* 1 for a URL with the ntfs:// scheme. */
 int evo_ntfs_is_url(const char *path);
 

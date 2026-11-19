@@ -45,35 +45,6 @@ constexpr float kStripY = 760.0f;
 constexpr float kMenuW = 660.0f;
 constexpr float kActionH = 58.0f;
 
-struct Source
-{
-    const char *label;
-    const char *icon;
-};
-const Source kSources[5] = {
-    {"USB Drive", "../icons/icon_browse_usb.png"},
-    {"Internal Storage", "../icons/icon_folder.png"},
-    {"Network Storage", "../icons/icon_browse_usb.png"},
-    {"Favorites", "../icons/icon_favorites.png"},
-    {"Recent Media", "../icons/icon_recent_files.png"},
-};
-
-struct Action
-{
-    const char *label;
-    const char *desc;
-    const char *icon;
-};
-const Action kActions[7] = {
-    {"Copy", "Copy item to clipboard", "../icons/icon_recent_files.png"},
-    {"Cut (Move)", "Move item to clipboard for relocation", "../icons/icon_recent_files.png"},
-    {"Paste", "Paste clipboard item into this folder", "../icons/icon_folder.png"},
-    {"Rename", "Change file or folder name", "../icons/icon_type.png"},
-    {"Delete", "Permanently remove this item", "../icons/icon_trash.png"},
-    {"New Folder", "Create directory in current location", "../icons/icon_folder.png"},
-    {"Close", "Dismiss menu and return to browser", "../icons/btn_circle.png"},
-};
-
 std::string fit(const ui::FontRef &font, const std::string &text, float size, float width)
 {
     return font.font->fit(text, size, width);
@@ -95,6 +66,9 @@ void BrowserScreen::set(const evo_rmlui_browser_params_t &p)
     raw_ = p;
     path_ = str(p.path);
     title_ = str(p.title);
+    sources_.clear();
+    for (int i = 0; i < p.source_count; ++i)
+        sources_.emplace_back(str(p.source_labels[i]), str(p.source_icons[i]));
     chips_.clear();
     for (int i = 0; i < p.filter_count && i < 4; ++i)
         chips_.push_back(str(p.filter_labels[i]));
@@ -194,7 +168,7 @@ Rect BrowserScreen::chip_rect(int i, const Context *) const
 
 Rect BrowserScreen::action_rect(int i) const
 {
-    const float h = 170.0f + 7.0f * (kActionH + 4.0f) + 24.0f;
+    const float h = 170.0f + raw_.action_menu_count * (kActionH + 4.0f) + 24.0f;
     const float top = 540.0f - h * 0.5f;
     return {960.0f - kMenuW * 0.5f + 24.0f, top + 170.0f + static_cast<float>(i) * (kActionH + 4.0f),
             kMenuW - 48.0f, kActionH};
@@ -209,7 +183,7 @@ void BrowserScreen::update(float dt)
     bool any = false;
     if (raw_.sidebar_focused)
     {
-        target = source_rect(std::clamp(raw_.sidebar_index, 0, 4));
+        target = source_rect(raw_.sidebar_index);
         any = true;
     }
     else if (raw_.filter_focused && !chips_.empty())
@@ -240,14 +214,14 @@ void BrowserScreen::update(float dt)
     ring_alpha_.target = (any && !raw_.rail_focused) ? 1.0f : 0.0f;
     ring_alpha_.update(dt, 14.0f);
 
-    source_ring_.target(source_rect(std::clamp(raw_.active_source, 0, 4)));
+    source_ring_.target(source_rect(raw_.active_source));
     source_ring_.update(dt, 18.0f);
 
     menu_.target = raw_.action_menu_open ? 1.0f : 0.0f;
     menu_.update(dt, 18.0f);
-    if (raw_.action_menu_open)
+    if (raw_.action_menu_open && raw_.action_menu_count > 0)
     {
-        const Rect t = action_rect(std::clamp(raw_.action_menu_focused, 0, 6));
+        const Rect t = action_rect(raw_.action_menu_focused);
         if (!action_snapped_)
         {
             action_ring_.snap(t);
@@ -297,8 +271,8 @@ void BrowserScreen::draw(DrawList &list, const Context &ctx) const
 
     /* ---- sources ---- */
     {
-        list.rounded_rect(source_ring_.value(), page::kRadiusTile, kWhite.with_alpha(raw_.sidebar_focused ? 0.0f : 0.10f));
-        for (int i = 0; i < 5; ++i)
+        list.rounded_rect(source_ring_.value(), page::kRadiusTile, kWhite.with_alpha(raw_.sidebar_focused || raw_.active_source < 0 ? 0.0f : 0.10f));
+        for (int i = 0; i < static_cast<int>(sources_.size()); ++i)
         {
             const float in = tween::stagger(age_, i + 1, 0.04f, 0.4f);
             list.push_opacity(in);
@@ -313,11 +287,11 @@ void BrowserScreen::draw(DrawList &list, const Context &ctx) const
             if (active && !focused)
                 list.rounded_rect({r.x + 4, r.y + 16, 4, r.h - 32}, 2, p.accent);
             const Color ink = focused ? kInk : (active ? kWhite : kWhite.with_alpha(0.6f));
-            const std::uint32_t icon = ctx.textures.icon(kSources[i].icon);
+            const std::uint32_t icon = ctx.textures.icon(sources_[i].second.c_str());
             if (icon)
                 list.image(icon, {r.x + 20, r.cy() - 13, 26, 26}, ::hui::gfx::kFullUv, focused ? kInk : (active ? p.accent : ink));
-            ui::text(list, focused || active ? fonts.semibold : fonts.regular, kSources[i].label, r.x + 62,
-                     r.cy() + 8, 21, ink);
+            const auto& font = focused || active ? fonts.semibold : fonts.regular;
+            ui::text(list, font, fit(font, sources_[i].first, 21, r.w - 72), r.x + 62, r.cy() + 8, 21, ink);
             list.pop_opacity();
         }
     }
@@ -532,19 +506,19 @@ void BrowserScreen::draw(DrawList &list, const Context &ctx) const
 
     /* ---- file operations menu ---- */
     const float m = menu_.value;
-    if (m > 0.01f)
+    if (m > 0.01f && raw_.action_menu_count > 0)
     {
         list.rounded_rect({0, 0, 1920, 1080}, 0, Color::rgb(0x000000, 0.45f * m));
         list.push_transform(0.96f + 0.04f * m, 960, 540, 0, 0);
         list.push_opacity(m);
-        const int nActions = (raw_.action_menu_count > 0) ? raw_.action_menu_count : 7;
+        const int nActions = raw_.action_menu_count;
         const Rect first = action_rect(0);
         const float h = 170.0f + nActions * (kActionH + 4.0f) + 24.0f;
         const Rect card{960.0f - kMenuW * 0.5f, first.y - 170.0f, kMenuW, h};
         list.shadow({card.x, card.y + 24, card.w, card.h}, page::kRadiusCard, 48, Color::rgb(0x000000, 0.6f));
         list.rounded_rect(card, page::kRadiusCard, p.bg_top.with_alpha(0.97f));
         list.bordered_rect(card, page::kRadiusCard, kClear, 1.5f, kWhite.with_alpha(0.14f));
-        ui::text(list, fonts.semibold, (raw_.action_menu_count > 0 && raw_.action_menu_eyebrow) ? raw_.action_menu_eyebrow : "FILE OPERATIONS", card.x + 32, card.y + 54, 15, p.accent, Align::left, 3.0f);
+        ui::text(list, fonts.semibold, raw_.action_menu_eyebrow ? raw_.action_menu_eyebrow : "FILE OPERATIONS", card.x + 32, card.y + 54, 15, p.accent, Align::left, 3.0f);
         ui::text(list, fonts.display, fit(fonts.display, act_target_, 30, card.w - 64), card.x + 32, card.y + 94,
                  30, kWhite);
         ui::text(list, fonts.regular, fit(fonts.regular, act_sub_, 18, card.w - 64), card.x + 32, card.y + 124,
@@ -557,17 +531,18 @@ void BrowserScreen::draw(DrawList &list, const Context &ctx) const
         {
             const Rect r = action_rect(i);
             const bool focused = i == raw_.action_menu_focused;
-            const bool disabled = (raw_.action_menu_count == 0 && i == 2 && !raw_.action_paste_enabled);
-            const bool danger = (raw_.action_menu_count > 0) ? (raw_.action_menu_items[i].danger != 0) : (i == 4);
+            const auto& item = raw_.action_menu_items[i];
+            const bool disabled = item.disabled != 0;
+            const bool danger = item.danger != 0;
             const Color ink = focused ? kInk : (danger ? kDanger : kWhite);
             list.push_opacity(disabled ? 0.35f : 1.0f);
-            const char* iconName = (raw_.action_menu_count > 0) ? raw_.action_menu_items[i].icon_path : kActions[i].icon;
-            const char* labelText = (raw_.action_menu_count > 0) ? raw_.action_menu_items[i].label : kActions[i].label;
-            const char* descText = (raw_.action_menu_count > 0) ? raw_.action_menu_items[i].desc : kActions[i].desc;
+            const char* iconName = item.icon_path;
+            const char* labelText = item.label;
+            const char* descText = item.desc;
             const std::uint32_t icon = ctx.textures.icon(iconName ? iconName : "");
             if (icon)
                 list.image(icon, {r.x + 18, r.cy() - 13, 26, 26}, ::hui::gfx::kFullUv, ink);
-            const int sw = (raw_.action_menu_count > 0) ? raw_.action_menu_items[i].toggle : 0;
+            const int sw = item.toggle;
             if (sw)
             {
                 /* Drawn here, not with the kit toggle: its accent track vanishes on the white focused row. */
@@ -618,15 +593,15 @@ void BrowserScreen::draw(DrawList &list, const Context &ctx) const
 bool BrowserScreen::focus(FocusInfo *out) const
 {
     out->focusable.clear();
-    if (raw_.action_menu_open)
+    if (raw_.action_menu_open && raw_.action_menu_count > 0)
     {
-        const int nActions = (raw_.action_menu_count > 0) ? raw_.action_menu_count : 7;
+        const int nActions = raw_.action_menu_count;
         for (int i = 0; i < nActions; ++i) {
-            const char* lbl = (raw_.action_menu_count > 0) ? raw_.action_menu_items[i].label : kActions[i].label;
+            const char* lbl = raw_.action_menu_items[i].label;
             out->focusable.emplace_back("action-" + std::to_string(i), lbl ? lbl : "");
         }
         const int at = std::clamp(raw_.action_menu_focused, 0, nActions - 1);
-        const char* atLbl = (raw_.action_menu_count > 0) ? raw_.action_menu_items[at].label : kActions[at].label;
+        const char* atLbl = raw_.action_menu_items[at].label;
         out->id = "action-" + std::to_string(at);
         out->text = atLbl ? atLbl : "";
         out->index = at + 1;
@@ -634,15 +609,15 @@ bool BrowserScreen::focus(FocusInfo *out) const
         out->rect = action_rect(at);
         return true;
     }
-    if (raw_.sidebar_focused)
+    if (raw_.sidebar_focused && !sources_.empty())
     {
-        for (int i = 0; i < 5; ++i)
-            out->focusable.emplace_back("source-" + std::to_string(i), kSources[i].label);
-        const int at = std::clamp(raw_.sidebar_index, 0, 4);
+        for (int i = 0; i < static_cast<int>(sources_.size()); ++i)
+            out->focusable.emplace_back("source-" + std::to_string(i), sources_[i].first);
+        const int at = raw_.sidebar_index;
         out->id = "source-" + std::to_string(at);
-        out->text = kSources[at].label;
+        out->text = sources_[at].first;
         out->index = at + 1;
-        out->total = 5;
+        out->total = static_cast<int>(sources_.size());
         out->rect = source_rect(at);
         return true;
     }

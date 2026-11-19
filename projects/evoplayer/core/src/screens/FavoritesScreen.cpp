@@ -73,7 +73,9 @@ bool FavoritesScreen::handleInput(uint32_t pressed, uint32_t held, uint32_t rele
             const auto& f = favorite_files[m_selectedIndex];
             evo_feedback(EVO_FB_CONFIRM);
             if (auto pb = Application::getInstance().getPlaybackController()) {
-                if (!pb->startPlayback(f.path, 0.0)) return true;   // toast already shown
+                char path[sizeof f.path];
+                if (f.is_folder || !favorites_resolve(&f, path, sizeof path)) return true;
+                if (!pb->startPlayback(path, 0.0)) return true;
             }
             if (auto sm = Application::getInstance().getScreenManager()) {
                 sm->navigateTo(ScreenId::Player);
@@ -84,7 +86,7 @@ bool FavoritesScreen::handleInput(uint32_t pressed, uint32_t held, uint32_t rele
 
     if (pressed & (PadButtons::Square | PadButtons::Triangle)) {
         if (m_selectedIndex >= 0 && m_selectedIndex < favorite_count) {
-            favorites_remove(favorite_files[m_selectedIndex].path);
+            favorites_remove_at(m_selectedIndex);
             favorites_save();
             toast("FAVORITES", "Removed");
             evo_feedback(EVO_FB_CANCEL);

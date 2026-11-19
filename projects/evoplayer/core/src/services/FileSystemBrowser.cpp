@@ -45,7 +45,7 @@ static bool CaseInsensitiveContains(const std::string& haystack, const std::stri
  * They all exist as directories whether or not anything is plugged in, so a
  * mount counts only when it has an entry. */
 static const char* const kUsbMounts[] = {
-    "/mnt/usb0", "/mnt/usb1", "/mnt/usb2", "/mnt/usb3",
+    "/mnt/usb1", "/mnt/usb2", "/mnt/usb3",
     "/mnt/usb4", "/mnt/usb5", "/mnt/usb6", "/mnt/usb7",
     "/mnt/ext0", "/mnt/ext1",
 };
@@ -79,11 +79,15 @@ static const uint64_t kUsbMountsTtlMs = 3000;
 
 std::vector<std::string> FileSystemBrowser::usbMounts() const {
     const uint64_t now = nowMs();
-    if (m_usbMountsAtMs != 0 && now - m_usbMountsAtMs < kUsbMountsTtlMs) return m_usbMounts;
+    const unsigned generation = evo_usb_volume_generation();
+    if (m_usbMountsAtMs != 0 && now - m_usbMountsAtMs < kUsbMountsTtlMs &&
+        generation == m_usbMountsGeneration)
+        return m_usbMounts;
     evo_jailbreak_ensure();
     std::vector<std::string> out;
     for (const char* m : kUsbMounts) {
-        if (hasEntries(m)) out.push_back(m);
+        evo_usb_volume_info info;
+        if (evo_usb_volume_get(m, &info) || hasEntries(m)) out.push_back(m);
     }
     /* #217: NTFS drives the console leaves unmounted, read by evo_ntfs.
      * Listed even when empty: a volume that mounted is a drive. Probed in the
@@ -93,6 +97,7 @@ std::vector<std::string> FileSystemBrowser::usbMounts() const {
         if (const char* url = evo_ntfs_volume_url(i)) out.push_back(url);
     }
     m_usbMounts = out;
+    m_usbMountsGeneration = generation;
     m_usbMountsAtMs = now;
     return out;
 }
@@ -101,7 +106,7 @@ std::string FileSystemBrowser::usbHome() const {
     const std::vector<std::string> mounts = usbMounts();
     if (mounts.size() > 1) return kUsbRoot;
     if (mounts.size() == 1) return mounts[0];
-    return "/mnt/usb0";
+    return kUsbRoot;
 }
 
 std::string FileSystemBrowser::usbMountOf(const std::string& path) const {
@@ -121,23 +126,18 @@ bool FileSystemBrowser::isUsbPath(const std::string& path) const {
 }
 
 std::string FileSystemBrowser::usbMountLabel(const std::string& mount) const {
-    if (evo_ntfs_is_url(mount.c_str())) {   /* #217: "NTFS DRIVE (Movies)" from the volume label */
-        for (int i = 0; i < evo_ntfs_volume_count(); ++i) {
-            const char* url = evo_ntfs_volume_url(i);
-            if (url && mount == url) {
-                const char* label = evo_ntfs_volume_label(i);
-                return std::string("NTFS DRIVE (") + (label ? label : mount.c_str() + 7) + ")";
-            }
-        }
+    evo_usb_volume_info info;
+    if (evo_usb_volume_get(mount.c_str(), &info) && info.label[0])
+        return info.label;
+    if (evo_ntfs_is_url(mount.c_str()))
         return "NTFS DRIVE (" + mount.substr(sizeof(EVO_NTFS_SCHEME) - 1) + ")";
-    }
     const std::string name = mount.substr(mount.find_last_of('/') + 1);   /* usb1, ext0 */
     return (name.rfind("ext", 0) == 0 ? "M.2 STORAGE (" : "USB DRIVE (") + name + ")";
 }
 
 FileSystemBrowser::FileSystemBrowser() {
     m_sources = {
-        { "USB DRIVE",        "USB",      "/mnt/usb0" },
+        { "USB DRIVE",        "USB",      kUsbRoot },
         { "INTERNAL STORAGE", "INTERNAL", "/data"     }
     };
     m_currentPath = ""; // Root picker
@@ -162,7 +162,7 @@ bool FileSystemBrowser::isSafePath(const std::string& path) const {
 
 bool FileSystemBrowser::navigateToSource(size_t sourceIndex) {
     if (sourceIndex < m_sources.size()) {
-        m_currentPath = m_sources[sourceIndex].rootPath;
+        m_currentPath = sourceIndex == 0 ? usbHome() : m_sources[sourceIndex].rootPath;
         clearSearch();
         return refresh();
     }
@@ -186,7 +186,7 @@ bool FileSystemBrowser::navigateInto(const std::string& folderName) {
         // Picker mode: navigate into chosen source
         for (const auto& src : m_sources) {
             if (src.label == folderName) {
-                m_currentPath = src.rootPath;
+                m_currentPath = src.rootPath == kUsbRoot ? usbHome() : src.rootPath;
                 clearSearch();
                 return refresh();
             }
@@ -258,10 +258,10 @@ bool FileSystemBrowser::refresh() {
     if (m_currentPath.empty()) {
         if (!m_searchQuery.empty()) {
             for (const auto& src : m_sources) {
-                scanRecursive(src.rootPath, "", m_searchQuery, 0, src.label);
+                if (src.rootPath != kUsbRoot) scanRecursive(src.rootPath, "", m_searchQuery, 0, src.label);
             }
-            for (const auto& mount : usbMounts()) {   /* the other drives; usb0 is a source */
-                if (mount != "/mnt/usb0") scanRecursive(mount, "", m_searchQuery, 0, usbMountLabel(mount));
+            for (const auto& mount : usbMounts()) {
+                scanRecursive(mount, "", m_searchQuery, 0, usbMountLabel(mount));
             }
         } else {
             for (const auto& src : m_sources) {
@@ -325,13 +325,12 @@ void FileSystemBrowser::scanDirectory(const std::string& dirPath) {
         dir = evo_opendir(dirPath.c_str());
     }
     if (!dir) {
-        // Fallback to source root if subfolder was deleted
-        for (const auto& src : m_sources) {
-            if (dirPath.rfind(src.rootPath, 0) == 0 && dirPath != src.rootPath) {
-                m_currentPath = src.rootPath;
-                dir = evo_opendir(m_currentPath.c_str());
-                break;
-            }
+        // A deleted subfolder returns to the root of the same drive.
+        std::string root = usbMountOf(dirPath);
+        if (root.empty() && dirPath.rfind("/data/", 0) == 0) root = "/data";
+        if (!root.empty() && root != dirPath) {
+            dir = evo_opendir(root.c_str());
+            if (dir) m_currentPath = std::move(root);
         }
     }
 
@@ -346,7 +345,7 @@ void FileSystemBrowser::scanDirectory(const std::string& dirPath) {
         if (std::strcmp(entry->d_name, "$RECYCLE.BIN") == 0) continue;
         if (std::strcmp(entry->d_name, "System Volume Information") == 0) continue;
 
-        std::string fullPath = dirPath + "/" + entry->d_name;
+        std::string fullPath = m_currentPath + "/" + entry->d_name;
         uint8_t dType = entry->d_type;
         if (dType == 0 || dType == 10 /* DT_LNK */) {
             struct stat st;

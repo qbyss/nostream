@@ -467,6 +467,8 @@ typedef struct {
  * twelve is work nobody sees.
  */
 #define EVO_RMLUI_BROWSER_ROWS 12
+#define EVO_RMLUI_BROWSER_SOURCES 10
+#define EVO_RMLUI_BROWSER_ACTIONS 8
 #define EVO_RMLUI_BROWSER_PROPS 9
 
 typedef struct {
@@ -493,8 +495,11 @@ typedef struct {
 
     /* Places / Sources sidebar */
     int         sidebar_focused;
-    int         sidebar_index;   /* 0..3 */
-    int         active_source;   /* 0..3 */
+    int         sidebar_index;
+    int         active_source;
+    int         source_count;
+    const char* source_labels[EVO_RMLUI_BROWSER_SOURCES];
+    const char* source_icons[EVO_RMLUI_BROWSER_SOURCES];
 
     /* Folder filter chips. Only the chips this folder earned are sent:
      * "All" plus one per category actually present, so an empty list means
@@ -545,15 +550,16 @@ typedef struct {
     int         action_paste_enabled;
     const char* action_target_sub;
     const char* action_clipboard_info;
-    int         action_menu_count; /* 0 = default 7 file ops, > 0 = custom menu */
+    int         action_menu_count;
     const char* action_menu_eyebrow;
     struct {
         const char* label;
         const char* desc;
         const char* icon_path;
         int danger;
+        int disabled;
         int toggle; /* 0 = no switch, 1 = switch off, 2 = switch on (kit renderer only) */
-    } action_menu_items[7];
+    } action_menu_items[EVO_RMLUI_BROWSER_ACTIONS];
     const char* footer_triangle_label;
     const char* footer_options_label;
 

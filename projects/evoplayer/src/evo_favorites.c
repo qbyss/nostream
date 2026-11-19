@@ -38,13 +38,32 @@ void favorites_clear(void)
     favorite_selected = 0;
 }
 
+int favorites_resolve(const FavoriteEntry *entry, char *path, size_t capacity)
+{
+    if (!capacity) return 0;
+    path[0] = 0;
+    int written;
+    if (!entry->volume_id[0]) {
+        written = snprintf(path, capacity, "%s", entry->path);
+    } else {
+        char original[EVO_USB_VOLUME_ROOT_CAP], current[EVO_USB_VOLUME_ROOT_CAP];
+        if (!evo_usb_volume_root(entry->path, original) ||
+            !evo_usb_volume_resolve(entry->volume_id, current))
+            return 0;
+        written = snprintf(path, capacity, "%s%s", current, entry->path + strlen(original));
+    }
+    return written > 0 && (size_t)written < capacity;
+}
+
 int favorites_find(const char *path)
 {
     if (!path || !path[0]) return -1;
     char clean_path[512];
     evo_url_sanitize(path, clean_path, sizeof(clean_path));
     for (int i = 0; i < favorite_count; i++) {
-        if (strcmp(favorite_files[i].path, clean_path) == 0) return i;
+        char resolved[512];
+        if (favorites_resolve(&favorite_files[i], resolved, sizeof resolved) &&
+            strcmp(resolved, clean_path) == 0) return i;
     }
     return -1;
 }
@@ -54,13 +73,20 @@ int favorites_is_favorite(const char *path)
     return favorites_find(path) >= 0;
 }
 
-void favorites_add(const char *path, const char *title, double duration)
+static int add_favorite(const char *path, const char *title, double duration, int is_folder)
 {
-    if (!path || !path[0]) return;
+    if (!path || !path[0]) return 0;
     char clean_path[512];
     evo_url_sanitize(path, clean_path, sizeof(clean_path));
-    if (favorites_find(clean_path) >= 0) return;
-    if (favorite_count >= MAX_FAVORITES) return;
+    if (favorites_find(clean_path) >= 0) return 0;
+    if (favorite_count >= MAX_FAVORITES) return 0;
+
+    char root[EVO_USB_VOLUME_ROOT_CAP], resolved[EVO_USB_VOLUME_ROOT_CAP];
+    evo_usb_volume_info info = {0};
+    if (evo_usb_volume_root(clean_path, root) &&
+        (!evo_usb_volume_get(root, &info) || !evo_usb_volume_resolve(info.id, resolved) ||
+         strcmp(root, resolved) != 0))
+        return 0;
 
     FavoriteEntry *e = &favorite_files[favorite_count];
     memset(e, 0, sizeof(*e));
@@ -70,14 +96,32 @@ void favorites_add(const char *path, const char *title, double duration)
     evo_url_sanitize(title && title[0] ? title : clean_path, clean_title, sizeof(clean_title));
     snprintf(e->title, sizeof(e->title), "%s", clean_title);
     e->duration = duration;
+    e->is_folder = is_folder;
+    snprintf(e->volume_id, sizeof e->volume_id, "%s", info.id);
 
     favorite_count++;
+    return 1;
+}
+
+int favorites_add(const char *path, const char *title, double duration)
+{
+    return add_favorite(path, title, duration, 0);
+}
+
+int favorites_add_folder(const char *path, const char *title)
+{
+    char root[EVO_USB_VOLUME_ROOT_CAP];
+    return evo_usb_volume_root(path, root) && add_favorite(path, title, 0.0, 1);
 }
 
 void favorites_remove(const char *path)
 {
-    int idx = favorites_find(path);
-    if (idx < 0) return;
+    favorites_remove_at(favorites_find(path));
+}
+
+void favorites_remove_at(int idx)
+{
+    if (idx < 0 || idx >= favorite_count) return;
 
     for (int i = idx; i < favorite_count - 1; i++)
         favorite_files[i] = favorite_files[i + 1];
@@ -94,10 +138,12 @@ void favorites_save(void)
     if (!fp) return;
 
     for (int i = 0; i < favorite_count; i++) {
-        fprintf(fp, "%s\t%s\t%.3f\n",
+        fprintf(fp, "%s\t%s\t%.3f\t%s\t%d\n",
                 favorite_files[i].path,
                 favorite_files[i].title,
-                favorite_files[i].duration);
+                favorite_files[i].duration,
+                favorite_files[i].volume_id[0] ? favorite_files[i].volume_id : "-",
+                favorite_files[i].is_folder);
     }
 
     fclose(fp);
@@ -119,7 +165,14 @@ void favorites_load(void)
         char *title    = strtok(NULL, "\t");
         char *duration = strtok(NULL, "\t\r\n");
 
+        char *volume_id = strtok(NULL, "\t\r\n");
+        char *kind = strtok(NULL, "\t\r\n");
         if (!path || !title) continue;
+        if (volume_id && strcmp(volume_id, "-") != 0) {
+            if (strlen(volume_id) >= sizeof e->volume_id) continue;
+            snprintf(e->volume_id, sizeof e->volume_id, "%s", volume_id);
+        }
+        e->is_folder = kind && strcmp(kind, "1") == 0;
 
         /* Older builds also stored provider stream URLs or a bare channel
          * title here. Keep only paths handled by the storage browser. */
@@ -150,8 +203,11 @@ void favorites_toggle_current_media(void)
         char title[128], meta[96];
         clean_media_title(current_media_path, title, sizeof(title),
                           meta, sizeof(meta));
-        favorites_add(current_media_path, title, media_duration_sec);
-        favorites_save();
-        toast("FAVORITES", "Added");
+        if (favorites_add(current_media_path, title, media_duration_sec)) {
+            favorites_save();
+            toast("FAVORITES", "Added");
+        } else {
+            toast("FAVORITES", "Could not identify drive or Favorites is full");
+        }
     }
 }

@@ -15,6 +15,7 @@
 #include "evo_boot_log.h"
 #include "evo_elfldr.h"
 #include "evo_readdir.h"
+#include "evo_data_path.h"
 
 #include <errno.h>
 #include <fcntl.h>
@@ -89,7 +90,7 @@ static void runs_sort(runs_t *rs)
  */
 typedef struct { int fd, sock; } rawdev_t;
 
-#define HELPER_PORT 9786          /* helpers/ntfs_helper.c, EVO_NTFS_HELPER_PORT */
+#define HELPER_PORT 9796          /* MOUNTS protocol, separate from the legacy helper on 9786 */
 
 static int sock_all(int s, void *p, size_t n, int out)
 {
@@ -883,6 +884,317 @@ static int raw_sector(rawdev_t *fd, uint64_t off, uint8_t *sec, uint8_t *tmp)
 
 static int is_pow2(uint64_t x) { return x && !(x & (x - 1)); }
 
+/* Mounted FAT/exFAT identities are published together after a worker scan. */
+static evo_usb_volume_info g_usb_info[8];
+static unsigned g_usb_generation;
+
+static int usb_index(const char *root)
+{
+    if (strncmp(root, "/mnt/usb", 8) != 0 || root[8] < '0' || root[8] > '7' || root[9])
+        return -1;
+    return root[8] - '0';
+}
+
+int evo_usb_volume_root(const char *path, char root[EVO_USB_VOLUME_ROOT_CAP])
+{
+    size_t n = 0;
+    if (strncmp(path, "/mnt/usb", 8) == 0 && path[8] >= '0' && path[8] <= '7' &&
+        (!path[9] || path[9] == '/')) {
+        n = 9;
+    } else if (evo_ntfs_is_url(path)) {
+        const char *slash = strchr(path + sizeof(EVO_NTFS_SCHEME) - 1, '/');
+        n = slash ? (size_t)(slash - path) : strlen(path);
+    }
+    if (!n || n >= EVO_USB_VOLUME_ROOT_CAP) return 0;
+    memcpy(root, path, n);
+    root[n] = 0;
+    return 1;
+}
+
+static void ntfs_identity(const ntfs_vol_t *v, char id[EVO_USB_VOLUME_ID_CAP])
+{
+    const uint64_t serial = rd64(v->serial);
+    if (serial) snprintf(id, EVO_USB_VOLUME_ID_CAP, "ntfs:%016llx", (unsigned long long)serial);
+    else id[0] = 0;
+}
+
+int evo_usb_volume_get(const char *root, evo_usb_volume_info *info)
+{
+    memset(info, 0, sizeof *info);
+    const int slot = usb_index(root);
+    pthread_mutex_lock(&g_reg);
+    if (slot >= 0) {
+        *info = g_usb_info[slot];
+    } else {
+        for (int i = 0; i < g_nvols; ++i) {
+            if (strcmp(root, g_vols[i]->url) != 0) continue;
+            ntfs_identity(g_vols[i], info->id);
+            snprintf(info->label, sizeof info->label, "%s", g_vols[i]->label);
+            break;
+        }
+    }
+    pthread_mutex_unlock(&g_reg);
+    return info->id[0] || info->label[0];
+}
+
+int evo_usb_volume_resolve(const char *id, char root[EVO_USB_VOLUME_ROOT_CAP])
+{
+    if (!id[0]) return 0;
+    int matches = 0;
+    pthread_mutex_lock(&g_reg);
+    for (int i = 0; i < 8; ++i) {
+        if (strcmp(id, g_usb_info[i].id) != 0) continue;
+        snprintf(root, EVO_USB_VOLUME_ROOT_CAP, "/mnt/usb%d", i);
+        ++matches;
+    }
+    for (int i = 0; i < g_nvols; ++i) {
+        char candidate[EVO_USB_VOLUME_ID_CAP];
+        ntfs_identity(g_vols[i], candidate);
+        if (strcmp(id, candidate) != 0) continue;
+        snprintf(root, EVO_USB_VOLUME_ROOT_CAP, "%s", g_vols[i]->url);
+        ++matches;
+    }
+    pthread_mutex_unlock(&g_reg);
+    return matches == 1;
+}
+
+unsigned evo_usb_volume_generation(void)
+{
+    pthread_mutex_lock(&g_reg);
+    const unsigned generation = g_usb_generation;
+    pthread_mutex_unlock(&g_reg);
+    return generation;
+}
+
+#ifdef EVO_APP_MODULE
+/* Persistent FAT/exFAT labels, keyed by the serial and size in the boot
+ * sector. Mounted paths are only published after reading the live identity. */
+#define USB_LABEL_CACHE_FILE "usb-labels-v1.bin"
+#define USB_LABEL_CACHE_SIZE 64
+static evo_usb_volume_info g_usb_labels[USB_LABEL_CACHE_SIZE];
+static size_t g_usb_label_next;
+static int g_usb_label_dirty;
+
+static void load_usb_labels(void)
+{
+    static int loaded;
+    if (loaded) return;
+    FILE *file = fopen(evo_data_path(USB_LABEL_CACHE_FILE), "rb");
+    if (!file) return;
+    loaded = 1;
+    if (fread(g_usb_labels, sizeof g_usb_labels, 1, file) != 1)
+        memset(g_usb_labels, 0, sizeof g_usb_labels);
+    fclose(file);
+    for (size_t i = 0; i < USB_LABEL_CACHE_SIZE; ++i) {
+        g_usb_labels[i].id[sizeof g_usb_labels[i].id - 1] = 0;
+        g_usb_labels[i].label[sizeof g_usb_labels[i].label - 1] = 0;
+    }
+}
+
+static void save_usb_labels(void)
+{
+    if (!g_usb_label_dirty) return;
+    char temp[512];
+    snprintf(temp, sizeof temp, "%s", evo_data_path(USB_LABEL_CACHE_FILE ".tmp"));
+    FILE *file = fopen(temp, "wb");
+    if (!file) return;
+    const int wrote = fwrite(g_usb_labels, sizeof g_usb_labels, 1, file) == 1;
+    if (fclose(file) == 0 && wrote && rename(temp, evo_data_path(USB_LABEL_CACHE_FILE)) == 0)
+        g_usb_label_dirty = 0;
+    else
+        unlink(temp);
+}
+
+static evo_usb_volume_info *usb_label_entry(const char *id)
+{
+    if (!id[0]) return NULL;
+    for (size_t i = 0; i < USB_LABEL_CACHE_SIZE; ++i)
+        if (strcmp(g_usb_labels[i].id, id) == 0) return &g_usb_labels[i];
+    return NULL;
+}
+
+static void remember_usb_label(const evo_usb_volume_info *info)
+{
+    if (!info->id[0]) return;
+    evo_usb_volume_info *entry = usb_label_entry(info->id);
+    if (entry && strcmp(entry->label, info->label) == 0) return;
+    if (!entry) {
+        entry = &g_usb_labels[g_usb_label_next];
+        g_usb_label_next = (g_usb_label_next + 1) % USB_LABEL_CACHE_SIZE;
+        for (size_t i = 0; i < USB_LABEL_CACHE_SIZE; ++i) {
+            if (!g_usb_labels[i].id[0]) {
+                entry = &g_usb_labels[i];
+                break;
+            }
+        }
+    }
+    *entry = *info;
+    g_usb_label_dirty = 1;
+}
+
+static void publish_usb_info(const evo_usb_volume_info info[8])
+{
+    pthread_mutex_lock(&g_reg);
+    if (memcmp(g_usb_info, info, sizeof g_usb_info) != 0) {
+        memcpy(g_usb_info, info, sizeof g_usb_info);
+        ++g_usb_generation;
+    }
+    pthread_mutex_unlock(&g_reg);
+}
+
+static char g_checked_usb_id[8][EVO_USB_VOLUME_ID_CAP];
+static time_t g_checked_usb_at[8];
+
+static void fat_label(const uint8_t *src, char label[96])
+{
+    int n = 11;
+    while (n > 0 && src[n-1] == ' ') --n;
+    if (n == 7 && memcmp(src, "NO NAME", 7) == 0) return;
+    for (int i = 0; i < n; ++i)
+        label[i] = src[i] >= 32 && src[i] < 127 ? (char)src[i] : '?';
+    label[n] = 0;
+}
+
+/* Scan the root directory via its FAT chain. The scan is bounded for damaged
+ * volumes and reads aligned blocks through the existing read-only transport. */
+static void read_fat_info(rawdev_t *disk, int slot, evo_usb_volume_info *info, int verify_label)
+{
+    uint8_t block[DEV_ALIGN], boot[512], sector[512];
+    if (raw_sector(disk, 0, boot, block) != 0 || rd16(boot + 510) != 0xaa55) return;
+    const int exfat = memcmp(boot + 3, "EXFAT   ", 8) == 0;
+    uint32_t bytes, spc, cluster, serial;
+    uint64_t fat, heap, total, cluster_count;
+    if (exfat) {
+        if (boot[108] < 9 || boot[108] > 12 || boot[109] > 25 - boot[108]) return;
+        bytes = 1u << boot[108];
+        spc = 1u << boot[109];
+        total = rd64(boot + 72);
+        fat = rd32(boot + 80);
+        if (boot[110] == 2 && (boot[106] & 1)) fat += rd32(boot + 84);
+        heap = rd32(boot + 88);
+        cluster_count = rd32(boot + 92);
+        cluster = rd32(boot + 96);
+        serial = rd32(boot + 100);
+    } else {
+        bytes = rd16(boot + 11);
+        spc = boot[13];
+        if (bytes < 512 || bytes > 4096 || !is_pow2(bytes) ||
+            !is_pow2(spc) || rd16(boot + 17) || rd16(boot + 22) ||
+            !boot[16] || !rd16(boot + 14) || !rd32(boot + 36))
+            return;
+        fat = rd16(boot + 14);
+        const uint32_t fat_size = rd32(boot + 36);
+        heap = fat + (uint64_t)boot[16] * fat_size;
+        if ((boot[40] & 0x80) && (boot[40] & 15) < boot[16])
+            fat += (uint64_t)(boot[40] & 15) * fat_size;
+        total = rd32(boot + 32);
+        if (heap >= total) return;
+        cluster_count = (total - heap) / spc;
+        cluster = rd32(boot + 44);
+        serial = rd32(boot + 67);
+    }
+    if (total > UINT64_MAX / bytes || fat >= heap || heap >= total ||
+        cluster_count > (total - heap) / spc || cluster < 2 || cluster - 2 >= cluster_count)
+        return;
+    if (serial)
+        snprintf(info->id, sizeof info->id, "%s:%08x:%llx",
+                 exfat ? "exfat" : "fat32", serial, (unsigned long long)total);
+
+    const evo_usb_volume_info *cached = usb_label_entry(info->id);
+    if (cached) *info = *cached;
+    if (!verify_label && info->id[0]) return;
+
+    evo_usb_volume_info verified = *info;
+    memset(verified.label, 0, sizeof verified.label);
+    unsigned remaining = 256;  /* 128 KiB of directory entries is enough for normal labels. */
+    while (remaining && cluster >= 2 && cluster - 2 < cluster_count) {
+        const uint64_t base = (heap + (uint64_t)(cluster - 2) * spc) * bytes;
+        const uint64_t end = (uint64_t)spc * bytes;
+        for (uint64_t offset = 0; offset < end && remaining; offset += sizeof sector) {
+            --remaining;
+            if (raw_sector(disk, base + offset, sector, block) != 0) return;
+            for (size_t i = 0; i < sizeof sector; i += 32) {
+                const uint8_t *entry = sector + i;
+                if (entry[0] == 0) goto fallback;
+                if (exfat && entry[0] == 0x83 && entry[1] <= 11) {
+                    utf16_to_utf8(entry + 2, entry[1], verified.label, sizeof verified.label);
+                    goto found;
+                }
+                if (!exfat && entry[0] != 0xe5 && entry[11] == 0x08) {
+                    fat_label(entry, verified.label);
+                    goto found;
+                }
+            }
+        }
+        const uint64_t offset = (uint64_t)cluster * 4;
+        if (offset / bytes >= heap - fat) break;
+        if (raw_sector(disk, fat * bytes + (offset & ~(uint64_t)511), sector, block) != 0)
+            return;
+        cluster = rd32(sector + (offset & 511));
+        if (!exfat) cluster &= 0x0fffffffu;
+    }
+fallback:
+    if (!exfat && boot[66] == 0x29) fat_label(boot + 71, verified.label);
+found:
+    *info = verified;
+    snprintf(g_checked_usb_id[slot], sizeof g_checked_usb_id[slot], "%s", info->id);
+    g_checked_usb_at[slot] = time(NULL);
+    remember_usb_label(info);
+}
+
+static void refresh_mounted_usb(void)
+{
+    static time_t last;
+    const time_t now = time(NULL);
+    if (now >= last && now - last < 3) return;
+    const int sock = loopback_connect(HELPER_PORT);
+    if (sock < 0) return;
+    char line[512];
+    const int ok = sock_all(sock, "MOUNTS\n", 7, 1) == 0 && recv_line(sock, line, sizeof line) == 0;
+    close(sock);
+    if (!ok) return;
+    last = now;
+
+    load_usb_labels();
+    char devices[8][24] = {{0}};
+    evo_usb_volume_info info[8] = {0};
+    char *rest;
+    for (char *token = strtok_r(line, " ", &rest); token; token = strtok_r(NULL, " ", &rest)) {
+        if (token[0] < '0' || token[0] > '7' || token[1] != '=' ||
+            strncmp(token + 2, "da", 2) != 0 || strlen(token + 2) >= sizeof devices[0])
+            continue;
+        const int slot = token[0] - '0';
+        snprintf(devices[slot], sizeof devices[slot], "%s", token + 2);
+        rawdev_t disk;
+        if (rawdev_open(devices[slot], 1, &disk) == 0) {
+            read_fat_info(&disk, slot, &info[slot], 0);
+            rawdev_close(&disk);
+        }
+    }
+    publish_usb_info(info);
+
+    for (int slot = 0; slot < 8; ++slot) {
+        if (!devices[slot][0]) {
+            g_checked_usb_id[slot][0] = 0;
+            g_checked_usb_at[slot] = 0;
+            continue;
+        }
+        if (!info[slot].id[0]) continue;
+        if (strcmp(g_checked_usb_id[slot], info[slot].id) == 0 &&
+            now >= g_checked_usb_at[slot] && now - g_checked_usb_at[slot] < 30)
+            continue;
+        rawdev_t disk;
+        if (rawdev_open(devices[slot], 1, &disk) != 0) continue;
+        evo_usb_volume_info verified = {0};
+        read_fat_info(&disk, slot, &verified, 1);
+        rawdev_close(&disk);
+        if (strcmp(verified.id, info[slot].id) == 0) info[slot] = verified;
+    }
+    publish_usb_info(info);
+    save_usb_labels();
+}
+#endif
+
 /* An NTFS boot sector at `base`: fills the geometry. */
 static int probe_boot(rawdev_t *fd, uint64_t base, uint8_t *tmp, uint32_t *cluster, uint32_t *rec,
                       uint64_t *mft_lcn, uint8_t serial[8])
@@ -975,7 +1287,7 @@ static int add_vol(ntfs_vol_t *v)
 {
     pthread_mutex_lock(&g_reg);
     int ok = g_nvols < MAX_VOLS;
-    if (ok) g_vols[g_nvols++] = v;
+    if (ok) { g_vols[g_nvols++] = v; ++g_usb_generation; }
     pthread_mutex_unlock(&g_reg);
     if (!ok) vol_put(v);
     return ok;
@@ -1064,6 +1376,7 @@ static void drop_disk(int disk)
         if (g_vols[i]->disk == disk) {
             gone[ng++] = g_vols[i];
             g_vols[i] = g_vols[--g_nvols];
+            ++g_usb_generation;
         } else {
             i++;
         }
@@ -1165,21 +1478,29 @@ static void refresh_remote(void)
 {
     static char s_sig[256];
     static int s_first = 1, s_pending, s_tries;
-    static time_t s_started;
+    static time_t s_started, s_last_scan;
     char sig[256], list[512];
     usb_signature(sig, sizeof sig);
     const int changed = strcmp(sig, s_sig) != 0;
-    if (!s_first && !s_pending && !changed) return;
+    const time_t current = time(NULL);
+    if (!s_first && !s_pending && !changed &&
+        (s_tries >= HELPER_TRIES || current - s_last_scan < 10)) return;
     if (changed) s_tries = 0;
+    s_last_scan = current;
 
     if (helper_list(list, sizeof list) != 0) {
         const time_t now = time(NULL);
         if (s_tries < HELPER_TRIES && (!s_pending || now - s_started >= 5)) {
             s_tries++;
             s_started = now;
-            if (helper_start() == 0)
+            if (helper_start() == 0) {
                 EVO_LOGI("ntfs", "disk helper sent to the ELF loader (%zu bytes)", evo_ntfs_helper_elf_len);
-            else
+                const struct timespec delay = {0, 100000000};
+                for (int i = 0; i < 5; ++i) {
+                    nanosleep(&delay, NULL);
+                    if (helper_list(list, sizeof list) == 0) goto helper_ready;
+                }
+            } else
                 EVO_LOGW("ntfs", "no ELF loader on 127.0.0.1:%d - NTFS drives cannot be read", ELF_LOADER_PORT);
         }
         /* Try again on the next refresh; after HELPER_TRIES, only when the
@@ -1188,8 +1509,11 @@ static void refresh_remote(void)
         if (!s_pending) { snprintf(s_sig, sizeof s_sig, "%s", sig); s_first = 0; }
         return;
     }
+helper_ready:
+    refresh_mounted_usb();
     s_pending = 0;
     s_first = 0;
+    s_tries = 0;
     snprintf(s_sig, sizeof s_sig, "%s", sig);
 
     int present[MAX_DISKS] = {0};
@@ -1202,10 +1526,10 @@ static void refresh_remote(void)
         while (*p && *p != ' ') p++;
     }
     for (int n = 0; n < MAX_DISKS; ++n) {
-        if (!present[n]) {
+        if (!present[n] || changed) {
             if (disk_listed(REMOTE_DISK + n)) drop_disk(REMOTE_DISK + n);
             g_remote_empty[n] = 0;
-            continue;
+            if (!present[n]) continue;
         }
         if (disk_listed(REMOTE_DISK + n) || g_remote_empty[n]) continue;
         char name[16];
@@ -1261,6 +1585,10 @@ int evo_ntfs_refresh_async(void)
 static void refresh_locked(void)
 {
     char path[32], name[16];
+#ifdef EVO_APP_MODULE
+    refresh_mounted_usb();
+    refresh_remote();
+#endif
     log_dev_view();
     for (int n = 0; n < MAX_DISKS; ++n) {
         snprintf(path, sizeof path, "/dev/da%d", n);
@@ -1301,9 +1629,6 @@ static void refresh_locked(void)
         g_disk_empty[n] = added <= 0;
         if (added <= 0) EVO_LOGI("ntfs", "%s: no NTFS volume", path);
     }
-#ifdef EVO_APP_MODULE
-    refresh_remote();
-#endif
 #ifdef EVO_USB_REMOTE
     /* Development: an NTFS image stands in for a drive (tools/make_ntfs_image.sh). */
     static int s_img_tried;

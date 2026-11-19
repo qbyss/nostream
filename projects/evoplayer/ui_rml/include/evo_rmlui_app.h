@@ -413,6 +413,7 @@ struct EvoBrowserState {
     bool sidebar_focused = false;
     int sidebar_index = 0;
     int active_source = 0;
+    std::vector<std::pair<std::string, std::string>> sources;
 
     /* Folder filter chips. `filter_labels` holds only the chips this folder
      * earned - "All" plus one per category actually present - so the row is
@@ -459,14 +460,16 @@ struct EvoBrowserState {
         std::string desc;
         std::string icon_path;
         bool danger = false;
+        bool disabled = false;
         bool operator==(const ActionMenuItem& o) const {
-            return label == o.label && desc == o.desc && icon_path == o.icon_path && danger == o.danger;
+            return label == o.label && desc == o.desc && icon_path == o.icon_path && danger == o.danger && disabled == o.disabled;
         }
     };
     int action_menu_count = 0;
     std::string action_menu_eyebrow;
     std::vector<ActionMenuItem> action_menu_items;
     std::string footer_triangle_label;
+    bool show_triangle = true;
     std::string footer_options_label;
 
     bool transfer_modal_open = false;
@@ -482,7 +485,7 @@ struct EvoBrowserState {
 
     bool operator==(const EvoBrowserState& o) const {
         return path == o.path && title == o.title && at_root == o.at_root && rail_focused == o.rail_focused &&
-               sidebar_focused == o.sidebar_focused && sidebar_index == o.sidebar_index && active_source == o.active_source &&
+               sidebar_focused == o.sidebar_focused && sidebar_index == o.sidebar_index && active_source == o.active_source && sources == o.sources &&
                filter_labels == o.filter_labels && filter_selected == o.filter_selected &&
                filter_focused == o.filter_focused &&
                total_count == o.total_count && cursor_index == o.cursor_index &&
@@ -501,7 +504,7 @@ struct EvoBrowserState {
                action_target_sub == o.action_target_sub && action_clipboard_info == o.action_clipboard_info &&
                action_menu_count == o.action_menu_count && action_menu_eyebrow == o.action_menu_eyebrow &&
                action_menu_items == o.action_menu_items &&
-               footer_triangle_label == o.footer_triangle_label && footer_options_label == o.footer_options_label &&
+               show_triangle == o.show_triangle && footer_triangle_label == o.footer_triangle_label && footer_options_label == o.footer_options_label &&
                transfer_modal_open == o.transfer_modal_open && transfer_op_title == o.transfer_op_title &&
                transfer_item_name == o.transfer_item_name && transfer_speed_str == o.transfer_speed_str &&
                transfer_bytes_str == o.transfer_bytes_str && transfer_eta_str == o.transfer_eta_str &&

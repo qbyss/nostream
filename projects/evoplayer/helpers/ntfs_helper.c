@@ -31,11 +31,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
+#include <sys/mount.h>
 #include <time.h>
 #include <unistd.h>
 
 #ifndef EVO_NTFS_HELPER_PORT
-#define EVO_NTFS_HELPER_PORT 9786
+#define EVO_NTFS_HELPER_PORT 9796
 #endif
 #define MAX_READ  ((1u << 20) + 4096u)
 #define IDLE_EXIT_SECS 30
@@ -128,6 +129,29 @@ static void do_list(int s)
     send_all(s, out, n);
 }
 
+/* Resolve the OS mount rather than assuming that usbN and daN have
+ * matching numbers. Only expose the eight media mounts and USB device names. */
+static void do_mounts(int s)
+{
+    char out[512];
+    size_t used = 0;
+    for (int i = 0; i < 8; ++i) {
+        char path[16];
+        struct statfs fs;
+        snprintf(path, sizeof path, "/mnt/usb%d", i);
+        if (statfs(path, &fs) != 0 || strcmp(fs.f_mntonname, path) != 0) continue;
+        const char *dev = fs.f_mntfromname;
+        if (strncmp(dev, "/dev/", 5) == 0) dev += 5;
+        else if (strncmp(dev, "dev/", 4) == 0) dev += 4;
+        if (!disk_name_ok(dev, 0)) continue;
+        const int n = snprintf(out + used, sizeof out - used, "%d=%s ", i, dev);
+        if (n < 0 || (size_t)n >= sizeof out - used - 1) break;
+        used += (size_t)n;
+    }
+    out[used++] = '\n';
+    send_all(s, out, used);
+}
+
 static void do_open(int s, const char *name)
 {
     char path[64], reply[32];
@@ -179,6 +203,7 @@ static void *client(void *arg)
     char line[64];
     if (read_line(s, line, sizeof line) == 0) {
         if (!strcmp(line, "LIST")) do_list(s);
+        else if (!strcmp(line, "MOUNTS")) do_mounts(s);
         else if (!strncmp(line, "OPEN ", 5)) do_open(s, line + 5);
     }
     close(s);

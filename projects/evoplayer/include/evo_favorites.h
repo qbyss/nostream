@@ -19,6 +19,7 @@
  */
 
 #include "evo_data_path.h"
+#include "evo_ntfs.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -31,6 +32,8 @@ typedef struct {
     char   path[512];
     char   title[128];
     double duration;
+    char volume_id[EVO_USB_VOLUME_ID_CAP];
+    int is_folder;
 } FavoriteEntry;
 
 extern FavoriteEntry favorite_files[MAX_FAVORITES];
@@ -40,8 +43,11 @@ extern int           favorite_selected;
 void favorites_clear(void);
 int  favorites_find(const char *path);
 int  favorites_is_favorite(const char *path);
-void favorites_add(const char *path, const char *title, double duration);
+int favorites_add(const char *path, const char *title, double duration);
+int favorites_add_folder(const char *path, const char *title);
+int favorites_resolve(const FavoriteEntry *entry, char *path, size_t capacity);
 void favorites_remove(const char *path);
+void favorites_remove_at(int index);
 void favorites_save(void);
 void favorites_load(void);
 void favorites_toggle_current_media(void);

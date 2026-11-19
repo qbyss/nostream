@@ -584,18 +584,25 @@ void BrowserScreen::openActionMenu() {
     auto browser = Application::getInstance().getFileSystemBrowser();
     std::string currentPath = browser ? browser->getCurrentPath() : "";
 
-    /* #217: EVO reads NTFS drives, it never writes them. */
-    if (evo_ntfs_is_url(currentPath.c_str())) {
-        toast("NTFS DRIVE", "Read-only: play and browse only");
-        evo_feedback(EVO_FB_BOUNDARY);
-        return;
-    }
+    m_actionFavoriteIndex = -1;
+    m_actionCanFavorite = false;
+    m_actionFileOps = !evo_ntfs_is_url(currentPath.c_str());
 
     if (m_focusPane == BrowserFocusPane::Grid && m_selectedIndex >= 0 && m_selectedIndex < static_cast<int>(m_items.size())) {
         const auto& item = m_items[m_selectedIndex];
         m_actionTargetName = item.name;
         m_actionTargetPath = item.fullPath;
         m_actionTargetIsDir = (item.category == FileCategory::Folder);
+        if (m_activeSource == 3 && item.fullPath.empty() && !m_actionTargetIsDir) return;
+        char root[EVO_USB_VOLUME_ROOT_CAP];
+        m_actionCanFavorite = m_actionTargetIsDir &&
+            (item.favoriteIndex >= 0 || evo_usb_volume_root(item.fullPath.c_str(), root));
+        if (m_actionCanFavorite) {
+            m_actionFavoriteIndex = item.favoriteIndex >= 0
+                ? item.favoriteIndex : favorites_find(item.fullPath.c_str());
+            if (m_activeSource == 3 || evo_ntfs_is_url(item.fullPath.c_str()))
+                m_actionFileOps = false;
+        }
     } else {
         if (!currentPath.empty()) {
             size_t slash = currentPath.find_last_of('/');
@@ -616,15 +623,33 @@ void BrowserScreen::openActionMenu() {
         }
     }
 
+    if (!m_actionFileOps && !m_actionCanFavorite) {
+        toast("NTFS DRIVE", "Read-only: play and browse only");
+        evo_feedback(EVO_FB_BOUNDARY);
+        return;
+    }
+
     auto transferService = Application::getInstance().getFileTransferService();
-    if (transferService && transferService->hasClipboardItem() && (m_actionTargetIsDir || m_actionTargetPath.empty())) {
-        m_actionMenuFocused = 2; // Default to Paste if clipboard has content
-    } else {
-        m_actionMenuFocused = 0; // Default to Copy
+    m_actionMenuFocused = 0;
+    if (!m_actionCanFavorite && transferService && transferService->hasClipboardItem() &&
+        (m_actionTargetIsDir || m_actionTargetPath.empty())) {
+        m_actionMenuFocused = 2; // Paste
     }
 
     m_actionMenuOpen = true;
     evo_feedback(EVO_FB_CONFIRM);
+}
+
+int BrowserScreen::actionMenuCount() const {
+    return m_actionFileOps ? 7 + static_cast<int>(m_actionCanFavorite) : 2;
+}
+
+int BrowserScreen::actionForRow(int row) const {
+    constexpr int favoriteAction = 7;
+    constexpr int closeAction = 6;
+    if (!m_actionCanFavorite) return row;
+    if (row == 0) return favoriteAction;
+    return m_actionFileOps ? row - 1 : closeAction;
 }
 
 void BrowserScreen::performAction(int actionIndex) {
@@ -710,6 +735,22 @@ void BrowserScreen::performAction(int actionIndex) {
             }
             m_actionMenuOpen = false;
             evo_keyboard_open("New folder name...", "New Folder", 64, OnNewFolderSubmitted, this);
+            break;
+        }
+        case 7: { // Toggle folder favorite
+            if (m_actionFavoriteIndex >= 0) {
+                favorites_remove_at(m_actionFavoriteIndex);
+            } else if (!favorites_add_folder(m_actionTargetPath.c_str(), m_actionTargetName.c_str())) {
+                toast("FAVORITES", "Could not identify drive or Favorites is full");
+                evo_feedback(EVO_FB_ERROR);
+                return;
+            }
+            favorites_save();
+            m_actionMenuOpen = false;
+            rebuildItems();
+            m_selectedIndex = std::clamp(m_selectedIndex, 0, std::max(0, static_cast<int>(m_items.size()) - 1));
+            toast("FAVORITES", m_actionFavoriteIndex >= 0 ? "Removed" : "Added");
+            evo_feedback(EVO_FB_CONFIRM);
             break;
         }
         case 6: // Cancel
@@ -972,9 +1013,7 @@ void BrowserScreen::rebuildItems() {
             }
 
             if (entry->category == FileCategory::Folder) {
-                item.iconPath = (!m_isSearching && browser->getCurrentPath() == browser->usbHome())
-                    ? "../icons/icon_browse_usb.png"
-                    : "../icons/icon_folder.png";
+                item.iconPath = "../icons/icon_folder.png";
                 item.detail = "Folder";
             } else {
                 if (entry->category == FileCategory::Video) item.iconPath = "../icons/icon_resume.png";
@@ -1107,13 +1146,16 @@ void BrowserScreen::rebuildItems() {
         favorites_load();
         for (int i = 0; i < favorite_count; ++i) {
             const auto& fav = favorite_files[i];
-            if (fav.path[0] == '\0') continue;
+            char path[sizeof fav.path];
+            const bool available = favorites_resolve(&fav, path, sizeof path);
+            const char* displayPath = available ? path : fav.path;
 
-            FileCategory cat = browser ? browser->classifyFile(fav.path, 0) : FileCategory::Video;
+            FileCategory cat = fav.is_folder ? FileCategory::Folder :
+                               (browser ? browser->classifyFile(displayPath, 0) : FileCategory::Video);
 
             std::string displayName = fav.title[0] ? fav.title : "";
             if (displayName.empty()) {
-                std::string p(fav.path);
+                std::string p(displayPath);
                 size_t slash = p.find_last_of('/');
                 displayName = (slash != std::string::npos) ? p.substr(slash + 1) : p;
                 if (p.rfind("smb://", 0) == 0) {
@@ -1121,19 +1163,20 @@ void BrowserScreen::rebuildItems() {
                 }
             }
 
-            if (m_isSearching && !matchesQuery(displayName, m_searchQuery) && !matchesQuery(fav.path, m_searchQuery)) {
+            if (m_isSearching && !matchesQuery(displayName, m_searchQuery) && !matchesQuery(displayPath, m_searchQuery)) {
                 continue;
             }
 
             BrowserItem item;
             item.name = displayName;
-            item.fullPath = fav.path;
+            item.fullPath = available ? path : "";
+            item.favoriteIndex = i;
             item.category = cat;
             item.badge = browser ? browser->getFileCategoryLabel(cat) : "FAVORITE";
             item.isFavorite = true;
             item.duration = fav.duration;
 
-            double pos = recent_lookup(fav.path);
+            double pos = available ? recent_lookup(path) : 0.0;
             item.lastPos = pos;
             if (pos > 0.0 && fav.duration > 0.0) {
                 item.progress = static_cast<int>((pos / fav.duration) * 100.0);
@@ -1143,10 +1186,11 @@ void BrowserScreen::rebuildItems() {
             if (cat == FileCategory::Video) item.iconPath = "../icons/icon_resume.png";
             else if (cat == FileCategory::Audio) item.iconPath = "../icons/icon_subtitles.png";
             else if (cat == FileCategory::Image) item.iconPath = "../icons/icon_palette.png";
+            else if (cat == FileCategory::Folder) item.iconPath = "../icons/icon_folder.png";
             else item.iconPath = "../icons/icon_favorites.png";
 
             struct stat st;
-            if (stat(fav.path, &st) == 0) {
+            if (available && !fav.is_folder && stat(path, &st) == 0) {
                 double sz = static_cast<double>(st.st_size);
                 const char* unit = "B";
                 if (sz >= 1024.0) { sz /= 1024.0; unit = "KB"; }
@@ -1156,7 +1200,7 @@ void BrowserScreen::rebuildItems() {
                 std::snprintf(buf, sizeof(buf), "%.2f %s", sz, unit);
                 item.detail = buf;
             } else {
-                item.detail = "Favorite";
+                item.detail = available ? (fav.is_folder ? "Folder" : "Favorite") : "Drive unavailable";
             }
             m_items.push_back(std::move(item));
         }
@@ -1317,20 +1361,55 @@ void BrowserScreen::resetSelection() {
     m_browserFsm.postEvent(BrowserScreenEvent::CursorMoved);
 }
 
-void BrowserScreen::setSource(int sourceIndex) {
-    /* Sources only now - the category filters moved out of this panel and
-     * into the folder header, where they are chosen per folder. */
-    if (sourceIndex < 0 || sourceIndex > 4) sourceIndex = 0;
+int BrowserScreen::activeSidebarIndex() const {
+    if (m_activeSource == 0) {
+        const auto mount = std::find(m_storageMounts.begin(), m_storageMounts.end(), m_activeMount);
+        return mount == m_storageMounts.end() ? 0 : static_cast<int>(mount - m_storageMounts.begin());
+    }
+    return static_cast<int>(m_storageMounts.size()) + m_activeSource - 1;
+}
+
+void BrowserScreen::refreshStorageSources() {
     auto browser = Application::getInstance().getFileSystemBrowser();
-    if (sourceIndex == 0 && browser && browser->usbMounts().empty()) {
-        if (!NetworkStorageService::getInstance().getShares().empty()) {
-            sourceIndex = 2;
+    if (!browser) return;
+    auto mounts = browser->usbMounts();
+    const unsigned generation = evo_usb_volume_generation();
+    const bool changed = mounts != m_storageMounts;
+    if (!changed && generation == m_usbVolumeGeneration) return;
+    m_usbVolumeGeneration = generation;
+    m_storageMounts = std::move(mounts);
+    m_storageLabels.clear();
+    for (const auto& mount : m_storageMounts)
+        m_storageLabels.push_back(browser->usbMountLabel(mount));
+
+    m_sidebarIndex = activeSidebarIndex();
+    if (m_activeSource == 0 || m_activeSource == 3) {
+        m_actionMenuOpen = false;
+        m_showDeleteConfirm = false;
+        if (m_activeSource == 0 && changed && !m_activeMount.empty() &&
+            std::find(m_storageMounts.begin(), m_storageMounts.end(), m_activeMount) == m_storageMounts.end()) {
+            m_sidebarIndex = static_cast<int>(m_storageMounts.size());
+            activateSidebar(false);
         } else {
-            sourceIndex = 1;
+            if (m_activeSource == 0 && !m_activeMount.empty()) browser->refresh();
+            rebuildItems();
+            m_selectedIndex = std::clamp(m_selectedIndex, 0, std::max(0, static_cast<int>(m_items.size()) - 1));
         }
     }
-    m_sidebarIndex = sourceIndex;
-    const bool focusGrid = evo_jailbreak_is_open() || (sourceIndex == 2 || sourceIndex == 3 || sourceIndex == 4);
+}
+
+void BrowserScreen::setSource(int sourceIndex) {
+    m_pendingFolderFavorite = -1;
+    refreshStorageSources();
+    if (sourceIndex < 0 || sourceIndex > 4) sourceIndex = 0;
+    const int mountCount = static_cast<int>(m_storageMounts.size());
+    if (sourceIndex == 0 && mountCount == 0)
+        sourceIndex = NetworkStorageService::getInstance().getShares().empty() ? 1 : 2;
+    if (sourceIndex == 0)
+        m_sidebarIndex = m_activeSource == 0 ? activeSidebarIndex() : 0;
+    else
+        m_sidebarIndex = mountCount + sourceIndex - 1;
+    const bool focusGrid = evo_jailbreak_is_open() || sourceIndex >= 2;
     activateSidebar(focusGrid);
 }
 
@@ -1370,43 +1449,21 @@ void BrowserScreen::onEnter() {
 
     auto browser = Application::getInstance().getFileSystemBrowser();
     if (browser) {
-        const std::vector<std::string> mounts = browser->usbMounts();
-        if (m_activeSource <= 1) {
-            if (mounts.empty()) {
-                // No USB drive plugged in: fallback to Network Storage if shares exist, else Internal Storage
-                if (!NetworkStorageService::getInstance().getShares().empty()) {
-                    m_activeSource = 2;
-                    m_sidebarIndex = 2;
-                } else {
-                    m_activeSource = 1;
-                    m_sidebarIndex = 1;
-                    browser->navigateToSource(1);
-                }
+        if (m_activeSource == 0 && browser->getCurrentPath().empty())
+            browser->loadLastFolder();
+        m_activeMount = browser->usbMountOf(browser->getCurrentPath());
+        const int previousSource = m_activeSource;
+        refreshStorageSources();
+        if (previousSource == 0) {
+            if (browser->getCurrentPath() == "/data" || browser->getCurrentPath().rfind("/data/", 0) == 0) {
+                m_activeSource = 1;
+            } else if (std::find(m_storageMounts.begin(), m_storageMounts.end(), m_activeMount) != m_storageMounts.end()) {
+                m_activeSource = 0;
             } else {
-                if (browser->getCurrentPath().empty()) {
-                    browser->loadLastFolder();
-                    if (browser->getCurrentPath().empty()) {
-                        browser->setCurrentPath(browser->usbHome());
-                    }
-                }
-                /* Never open on an empty pane: a restored folder that has since been
-                 * deleted or emptied still resolves, so fall back to the USB root
-                 * rather than showing nothing. */
-                if (evo_jailbreak_is_open() && browser->getEntryCount() == 0 && !m_isSearching) {
-                    browser->navigateToSource(0);
-                }
-                const std::string& path = browser->getCurrentPath();
-                if (path.rfind("/data", 0) == 0) {
-                    m_activeSource = 1;
-                    m_sidebarIndex = (m_categoryFilter != -1) ? (m_categoryFilter + 3) : 1;
-                } else {
-                    m_activeSource = 0;
-                    m_sidebarIndex = (m_categoryFilter != -1) ? (m_categoryFilter + 3) : 0;
-                }
+                setSource(0);
             }
-        } else {
-            m_sidebarIndex = (m_categoryFilter != -1) ? (m_categoryFilter + 3) : m_activeSource;
         }
+        m_sidebarIndex = activeSidebarIndex();
     }
     resetSelection();
     if (!m_returnFocusPath.empty()) {
@@ -1438,6 +1495,7 @@ void BrowserScreen::onEnter() {
 }
 
 void BrowserScreen::onExit() {
+    m_pendingFolderFavorite = -1;
     StatefulScreen::onExit();
     m_actionMenuOpen = false;
     m_showDeleteConfirm = false;
@@ -1543,18 +1601,22 @@ void BrowserScreen::jumpLetter(int direction) {
 void BrowserScreen::activateSidebar(bool focusGrid) {
     auto browser = Application::getInstance().getFileSystemBrowser();
 
-    switch (m_sidebarIndex) {
+    const int mountCount = static_cast<int>(m_storageMounts.size());
+    const int source = m_sidebarIndex < mountCount ? 0 : m_sidebarIndex - mountCount + 1;
+    switch (source) {
         case 0: // USB Drive
-            if (m_activeSource != 0 || (browser && !browser->isUsbPath(browser->getCurrentPath()))) {
+            if (m_activeSource != 0 || m_activeMount != m_storageMounts[m_sidebarIndex] ||
+                (browser && browser->usbMountOf(browser->getCurrentPath()) != m_storageMounts[m_sidebarIndex])) {
+                m_activeMount = m_storageMounts[m_sidebarIndex];
                 m_activeSource = 0;
                 m_isSearching = false;
                 m_searchQuery.clear();
                 if (browser) {
                     browser->clearSearch();
-                    browser->setCurrentPath(browser->usbHome());
+                    browser->setCurrentPath(m_activeMount);
                 }
                 resetSelection();
-                if (focusGrid) toast("STORAGE", "USB Drive");
+                if (focusGrid) toast("STORAGE", m_storageLabels[m_sidebarIndex].c_str());
             }
             break;
         case 1: // Internal Storage
@@ -1622,7 +1684,25 @@ void BrowserScreen::activateSelection() {
         return;
     }
 
-    const auto& item = m_items[m_selectedIndex];
+    auto item = m_items[m_selectedIndex];
+    if (item.favoriteIndex >= 0) {
+        char path[sizeof(FavoriteEntry::path)];
+        if (item.favoriteIndex >= favorite_count) return;
+        const auto& favorite = favorite_files[item.favoriteIndex];
+        if (!favorites_resolve(&favorite, path, sizeof path)) {
+            if (favorite.is_folder && favorite.volume_id[0]) {
+                m_pendingFolderFavorite = item.favoriteIndex;
+                m_pendingFavoriteMs = 8000;
+                evo_ntfs_refresh_async();
+                toast("FAVORITES", "Looking for the drive…");
+            } else {
+                toast("FAVORITES", "Drive unavailable");
+            }
+            return;
+        }
+        item.fullPath = path;
+        item.lastPos = recent_lookup(path);
+    }
     if (item.category == FileCategory::Video || item.category == FileCategory::Audio)
         m_returnFocusPath = item.fullPath;
     auto browser = Application::getInstance().getFileSystemBrowser();
@@ -1631,6 +1711,25 @@ void BrowserScreen::activateSelection() {
     if (!playback || !screenMgr) return;
 
     if (item.category == FileCategory::Folder) {
+        if (m_activeSource == 3 && browser) {
+            const std::string path = item.fullPath;
+            const auto mount = browser->usbMountOf(path);
+            refreshStorageSources();
+            if (std::find(m_storageMounts.begin(), m_storageMounts.end(), mount) == m_storageMounts.end()) {
+                toast("FAVORITES", "Drive unavailable");
+                return;
+            }
+            m_activeSource = 0;
+            m_activeMount = mount;
+            m_sidebarIndex = activeSidebarIndex();
+            m_categoryFilter = -1;
+            m_isSearching = false;
+            m_searchQuery.clear();
+            browser->clearSearch();
+            browser->setCurrentPath(path);
+            resetSelection();
+            return;
+        }
         if (m_activeSource == 2) {
             if (m_networkShareId.empty()) {
                 if (item.fullPath == "netshare://add_server" ||
@@ -1696,6 +1795,7 @@ void BrowserScreen::activateSelection() {
 }
 
 bool BrowserScreen::handleInput(uint32_t pressed, uint32_t held, uint32_t released) {
+    if (pressed) m_pendingFolderFavorite = -1;
     (void)held;
     (void)released;
 
@@ -1947,12 +2047,12 @@ bool BrowserScreen::handleInput(uint32_t pressed, uint32_t held, uint32_t releas
     if (m_actionMenuOpen) {
         if (pressed & PadButtons::Up) {
             if (m_actionMenuFocused > 0) m_actionMenuFocused--;
-            else m_actionMenuFocused = 6;
+            else m_actionMenuFocused = actionMenuCount() - 1;
             evo_feedback(EVO_FB_MOVE);
             return true;
         }
         if (pressed & PadButtons::Down) {
-            if (m_actionMenuFocused < 6) m_actionMenuFocused++;
+            if (m_actionMenuFocused + 1 < actionMenuCount()) m_actionMenuFocused++;
             else m_actionMenuFocused = 0;
             evo_feedback(EVO_FB_MOVE);
             return true;
@@ -1963,7 +2063,7 @@ bool BrowserScreen::handleInput(uint32_t pressed, uint32_t held, uint32_t releas
             return true;
         }
         if (pressed & PadButtons::Cross) {
-            performAction(m_actionMenuFocused);
+            performAction(actionForRow(m_actionMenuFocused));
             return true;
         }
         return true;
@@ -1987,7 +2087,7 @@ bool BrowserScreen::handleInput(uint32_t pressed, uint32_t held, uint32_t releas
             return true;
         }
         if (pressed & PadButtons::Down) {
-            if (m_sidebarIndex < 4) {
+            if (m_sidebarIndex < static_cast<int>(m_storageMounts.size()) + 3) {
                 m_sidebarIndex++;
                 activateSidebar(false);
             } else {
@@ -2053,7 +2153,7 @@ bool BrowserScreen::handleInput(uint32_t pressed, uint32_t held, uint32_t releas
     if (pressed & PadButtons::Left) {
         if (m_items.empty() || m_selectedIndex % 4 == 0) {
             m_focusPane = BrowserFocusPane::Sidebar;
-            m_sidebarIndex = m_activeSource;
+            m_sidebarIndex = activeSidebarIndex();
             evo_feedback(EVO_FB_MOVE);
             return true;
         }
@@ -2180,7 +2280,7 @@ bool BrowserScreen::handleInput(uint32_t pressed, uint32_t held, uint32_t releas
         if (m_activeSource == 0 || m_activeSource == 1) {
             auto browser = Application::getInstance().getFileSystemBrowser();
             if (browser && !browser->getCurrentPath().empty() &&
-                browser->getCurrentPath() != browser->usbHome() &&
+                browser->getCurrentPath() != m_activeMount &&
                 browser->getCurrentPath() != "/data") {
                 evo_feedback(EVO_FB_CANCEL);
                 browser->navigateUp();
@@ -2214,23 +2314,33 @@ bool BrowserScreen::handleInput(uint32_t pressed, uint32_t held, uint32_t releas
                     return true;
                 }
             }
-            if (item.category != FileCategory::Folder) {
-                if (favorites_is_favorite(item.fullPath.c_str())) {
-                    favorites_remove(item.fullPath.c_str());
-                    favorites_save();
-                    item.isFavorite = false;
-                    toast("FAVORITES", "Removed");
-                } else {
-                    favorites_add(item.fullPath.c_str(), item.name.c_str(), item.duration);
-                    favorites_save();
-                    item.isFavorite = true;
-                    toast("FAVORITES", "Added");
+            if (item.category == FileCategory::Folder) return true;
+            if (item.favoriteIndex >= 0) {
+                favorites_remove_at(item.favoriteIndex);
+                favorites_save();
+                rebuildItems();
+                m_selectedIndex = std::clamp(m_selectedIndex, 0, std::max(0, static_cast<int>(m_items.size()) - 1));
+                toast("FAVORITES", "Removed");
+                return true;
+            }
+            if (favorites_is_favorite(item.fullPath.c_str())) {
+                favorites_remove(item.fullPath.c_str());
+                favorites_save();
+                item.isFavorite = false;
+                toast("FAVORITES", "Removed");
+            } else {
+                if (!favorites_add(item.fullPath.c_str(), item.name.c_str(), item.duration)) {
+                    toast("FAVORITES", "Could not identify drive or Favorites is full");
+                    return true;
                 }
-                if (m_activeSource == 2) {
-                    rebuildItems();
-                    if (m_selectedIndex >= static_cast<int>(m_items.size()) && m_selectedIndex > 0) {
-                        m_selectedIndex = static_cast<int>(m_items.size()) - 1;
-                    }
+                favorites_save();
+                item.isFavorite = true;
+                toast("FAVORITES", "Added");
+            }
+            if (m_activeSource == 2 || m_activeSource == 3) {
+                rebuildItems();
+                if (m_selectedIndex >= static_cast<int>(m_items.size()) && m_selectedIndex > 0) {
+                    m_selectedIndex = static_cast<int>(m_items.size()) - 1;
                 }
             }
         }
@@ -2243,6 +2353,27 @@ bool BrowserScreen::handleInput(uint32_t pressed, uint32_t held, uint32_t releas
 void BrowserScreen::update(double deltaMs) {
     StatefulScreen::update(deltaMs);
     m_browserFsm.update(deltaMs);
+
+    refreshStorageSources();
+
+    if (m_pendingFolderFavorite >= 0) {
+        const int index = m_pendingFolderFavorite;
+        if (m_activeSource != 3 || m_focusPane != BrowserFocusPane::Grid || index >= favorite_count ||
+            m_selectedIndex < 0 || m_selectedIndex >= static_cast<int>(m_items.size()) ||
+            m_items[m_selectedIndex].favoriteIndex != index) {
+            m_pendingFolderFavorite = -1;
+        } else {
+            char path[sizeof(FavoriteEntry::path)];
+            m_pendingFavoriteMs -= deltaMs;
+            if (favorites_resolve(&favorite_files[index], path, sizeof path)) {
+                m_pendingFolderFavorite = -1;
+                activateSelection();
+            } else if (m_pendingFavoriteMs <= 0) {
+                m_pendingFolderFavorite = -1;
+                toast("FAVORITES", "Drive unavailable");
+            }
+        }
+    }
 
     if (m_activeSource == 2) {
         pollNetList(deltaMs);
@@ -2432,12 +2563,8 @@ void BrowserScreen::render(uint32_t* framebuffer, int width, int height) {
     if (m_activeSource == 0) {
         if (browser && !browser->getCurrentPath().empty()) {
             const std::string usbMount = browser->usbMountOf(browser->getCurrentPath());
-            if (browser->getCurrentPath() == browser->usbHome()) {
-                std::snprintf(m_formattedPath, sizeof(m_formattedPath), "USB Drive");
-            } else if (!usbMount.empty()) {
-                /* A drive among several is named by its mount; the path after it is the same length (9) for all. */
-                const std::string root = (browser->usbHome() == usbMount) ? std::string("USB Drive")
-                                                                         : browser->usbMountLabel(usbMount);
+            if (!usbMount.empty()) {
+                const std::string root = browser->usbMountLabel(usbMount);
                 std::string bc = formatPathBreadcrumbs(root.c_str(), browser->getCurrentPath(), usbMount.size());
                 std::snprintf(m_formattedPath, sizeof(m_formattedPath), "%s", bc.c_str());
             } else {
@@ -2482,7 +2609,7 @@ void BrowserScreen::render(uint32_t* framebuffer, int width, int height) {
 
     // At root check
     if (m_activeSource == 0) {
-        params.at_root = (!browser || browser->getCurrentPath().empty() || browser->getCurrentPath() == browser->usbHome()) ? 1 : 0;
+        params.at_root = (!browser || browser->getCurrentPath().empty() || browser->getCurrentPath() == m_activeMount) ? 1 : 0;
     } else if (m_activeSource == 1) {
         params.at_root = (!browser || browser->getCurrentPath().empty() || browser->getCurrentPath() == "/data") ? 1 : 0;
     } else if (m_activeSource == 2) {
@@ -2514,7 +2641,7 @@ void BrowserScreen::render(uint32_t* framebuffer, int width, int height) {
         params.empty_hint = m_networkEmptyHint.empty() ? "Press Cross on [+ Add Server] to configure" : m_networkEmptyHint.c_str();
     } else if (m_activeSource == 3) {
         params.empty_title = "NO FAVORITES YET";
-        params.empty_hint = "Press [Triangle] on any file to add to Favorites";
+        params.empty_hint = "Use Options on a USB folder or Triangle on a file";
     } else if (m_activeSource == 4) {
         params.empty_title = "NO RECENT MEDIA";
         params.empty_hint = "Media you play will appear here";
@@ -2541,8 +2668,23 @@ void BrowserScreen::render(uint32_t* framebuffer, int width, int height) {
     }
     params.rail_focused = railFocused ? 1 : 0;
     params.sidebar_focused = (m_focusPane == BrowserFocusPane::Sidebar && !railFocused) ? 1 : 0;
-    params.sidebar_index = m_sidebarIndex;
-    params.active_source = m_activeSource;
+    static constexpr const char* labels[] = {"Internal Storage", "Network Storage", "Favorites", "Recent Media"};
+    static constexpr const char* icons[] = {"../icons/icon_folder.png", "../icons/icon_browse_usb.png",
+                                            "../icons/icon_favorites.png", "../icons/icon_recent_files.png"};
+    const int driveCount = static_cast<int>(m_storageMounts.size());
+    const int sourceCount = driveCount + 4;
+    const int firstSource = std::clamp(m_sidebarIndex - EVO_RMLUI_BROWSER_SOURCES + 1, 0,
+                                      std::max(0, sourceCount - EVO_RMLUI_BROWSER_SOURCES));
+    params.source_count = std::min(sourceCount, EVO_RMLUI_BROWSER_SOURCES);
+    for (int row = 0; row < params.source_count; ++row) {
+        const int source = firstSource + row;
+        params.source_labels[row] = source < driveCount ? m_storageLabels[source].c_str()
+                                                         : labels[source - driveCount];
+        params.source_icons[row] = source < driveCount ? "../icons/icon_browse_usb.png"
+                                                        : icons[source - driveCount];
+    }
+    params.sidebar_index = m_sidebarIndex - firstSource;
+    params.active_source = activeSidebarIndex() - firstSource;
 
     /* Chips: "All", then one per category the folder actually holds. Sending
      * none is how the row is hidden. */
@@ -2773,6 +2915,10 @@ void BrowserScreen::render(uint32_t* framebuffer, int width, int height) {
         }
     }
 
+    if (m_focusPane == BrowserFocusPane::Grid && m_selectedIndex >= 0 && m_selectedIndex < totalCount &&
+        m_items[m_selectedIndex].category == FileCategory::Folder && !params.footer_triangle_label)
+        params.footer_triangle_label = "";
+
     auto transferService = Application::getInstance().getFileTransferService();
     if (s_addTesting) {
         params.action_menu_open = 1;
@@ -2918,12 +3064,42 @@ void BrowserScreen::render(uint32_t* framebuffer, int width, int height) {
         params.action_paste_enabled = 0;
         params.action_clipboard_info = nullptr;
     } else {
-        params.action_menu_count = 0;
-        params.action_menu_eyebrow = nullptr;
+        params.action_menu_count = actionMenuCount();
+        params.action_menu_eyebrow = m_actionFileOps ? "FILE OPERATIONS" : "FAVORITES";
         params.action_menu_open = m_actionMenuOpen ? 1 : 0;
         params.action_menu_focused = m_actionMenuFocused;
         params.action_menu_target = m_actionTargetName.c_str();
         params.action_paste_enabled = (transferService && transferService->hasClipboardItem()) ? 1 : 0;
+
+        static constexpr const char* labels[] = {
+            "Copy", "Cut (Move)", "Paste", "Rename", "Delete", "New Folder", "Close"
+        };
+        static constexpr const char* descriptions[] = {
+            "Copy item to clipboard", "Move item to clipboard for relocation",
+            "Paste clipboard item into this folder", "Change file or folder name",
+            "Permanently remove this item", "Create directory in current location",
+            "Dismiss menu and return to browser"
+        };
+        static constexpr const char* icons[] = {
+            "../icons/icon_recent_files.png", "../icons/icon_recent_files.png", "../icons/icon_folder.png",
+            "../icons/icon_type.png", "../icons/icon_trash.png", "../icons/icon_folder.png", "../icons/btn_circle.png"
+        };
+        for (int row = 0; row < params.action_menu_count; ++row) {
+            const int action = actionForRow(row);
+            auto& item = params.action_menu_items[row];
+            if (action == 7) {
+                const bool saved = m_actionFavoriteIndex >= 0;
+                item.label = saved ? "Remove from Favorites" : "Add to Favorites";
+                item.desc = saved ? "Remove this shortcut" : "Save a shortcut to this folder";
+                item.icon_path = "../icons/icon_favorites.png";
+            } else {
+                item.label = labels[action];
+                item.desc = descriptions[action];
+                item.icon_path = icons[action];
+                item.danger = action == 4;
+                item.disabled = action == 2 && !params.action_paste_enabled;
+            }
+        }
 
         if (m_actionTargetIsDir) {
             std::snprintf(m_actionTargetSubBuf, sizeof(m_actionTargetSubBuf), "Directory");
@@ -2934,7 +3110,7 @@ void BrowserScreen::render(uint32_t* framebuffer, int width, int height) {
         }
         params.action_target_sub = m_actionTargetSubBuf;
 
-        if (transferService && transferService->hasClipboardItem()) {
+        if (m_actionFileOps && transferService && transferService->hasClipboardItem()) {
             const auto& clip = transferService->getClipboard();
             std::snprintf(m_actionClipboardBuf, sizeof(m_actionClipboardBuf), "CLIPBOARD: %s (%s)",
                           clip.name.c_str(), clip.action == ClipboardAction::Cut ? "Move" : "Copy");
