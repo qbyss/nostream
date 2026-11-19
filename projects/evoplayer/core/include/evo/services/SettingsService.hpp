@@ -148,7 +148,7 @@ private:
     bool m_autoSubtitlesEnabled = true;
     bool m_sortFoldersFirst = true;
     std::string m_themeName = "NoStream Dark";
-    bool m_soundFeedbackEnabled = true;
+    bool m_soundFeedbackEnabled = false;
     bool m_lightbarFeedbackEnabled = true;
     int m_subtitleFontFace = 0; // STANDARD (prospero_subtitle_style)
     int m_subtitleSize = 1;       // #231: MEDIUM (prospero_subtitle_face - 1)

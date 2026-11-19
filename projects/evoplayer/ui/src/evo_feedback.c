@@ -51,7 +51,7 @@ static const int PATTERN_SFX[EVO_FB_COUNT] = {
 static int   g_pad = -1;
 static void (*g_sfx)(int);
 
-static int   g_sound_on    = 1;
+static int   g_sound_on    = 0;
 static int   g_lightbar_on = 1;
 
 /* Lightbar flash overlay. */

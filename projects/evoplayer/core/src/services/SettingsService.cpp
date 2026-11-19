@@ -391,7 +391,7 @@ bool SettingsService::loadSettings() {
     int rawDebugOverlay = 0;
     int rawSortFolders = 1;
     char themeBuffer[128] = {0};
-    int rawSoundFeedback = 1;
+    int rawSoundFeedback = 0;
     int rawLightbarFeedback = 1;
     int rawSubtitleFace = 1;
     int rawKeyboardType = 0;
@@ -500,8 +500,7 @@ bool SettingsService::loadSettings() {
         evo_theme_set_by_name(themeBuffer);
     }
     if (readCount >= 8) {
-        m_soundFeedbackEnabled = (rawSoundFeedback != 0);
-        evo_feedback_set_sound(rawSoundFeedback);
+        setSoundFeedbackEnabled(rawSoundFeedback != 0);
     }
     if (readCount >= 9) {
         m_lightbarFeedbackEnabled = (rawLightbarFeedback != 0);
