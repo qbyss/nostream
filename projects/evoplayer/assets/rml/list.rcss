@@ -1,7 +1,7 @@
 /* =============================================================================
  * EVO PLAYER PRO - Generic scrolling list screen
  *
- * RECENT, FAVORITES, EMBY SETUP and EMBY BROWSE. All four are evo_list_model
+ * RECENT and FAVORITES. Both use the evo_list_model
  * in the immediate-mode UI, so they share one document here rather than four
  * near-identical ones. Geometry and type follow settings.rcss so a user
  * moving between sections sees one interface, not four.

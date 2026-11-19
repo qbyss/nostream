@@ -111,7 +111,6 @@ extern "C" void test_settings_save_load_roundtrip(void)
     TEST_ASSERT(svc1.getHdrOutputMode() == evo::HdrOutputMode::Auto, "Initial HdrOutputMode default mismatch");
     TEST_ASSERT(svc1.getSecondarySubtitlePosition() == 0, "Initial SecondarySubtitlePosition default mismatch");
     TEST_ASSERT(svc1.getSecondarySubtitleColor() == 0, "Initial SecondarySubtitleColor default mismatch");
-    TEST_ASSERT(svc1.isAskStreamEnabled() == true, "Initial AskStreamEnabled default mismatch");
     TEST_ASSERT(svc1.getAudioOutputChannels() == evo::AudioOutputChannels::Auto, "Initial AudioOutputChannels default mismatch");
     TEST_ASSERT(svc1.getMotionSmoothing() == evo::MotionSmoothing::Off, "Initial MotionSmoothing default mismatch");
     TEST_ASSERT(svc1.getDeepBlacks() == evo::DeepBlacks::Off, "Initial DeepBlacks default mismatch");
@@ -148,7 +147,6 @@ extern "C" void test_settings_save_load_roundtrip(void)
     svc1.setHdrOutputMode(evo::HdrOutputMode::Off);
     svc1.setSecondarySubtitlePosition(1);
     svc1.setSecondarySubtitleColor(1);
-    svc1.setAskStreamEnabled(false);
     svc1.setAudioOutputChannels(evo::AudioOutputChannels::Stereo);
     svc1.setMotionSmoothing(evo::MotionSmoothing::Low);
     svc1.setDeepBlacks(evo::DeepBlacks::Low);
@@ -160,7 +158,6 @@ extern "C" void test_settings_save_load_roundtrip(void)
     svc1.setHdrPeak(evo::HdrPeak::Nits1500);
     svc1.setAudioLanguage(evo::PreferredLanguage::Italian);
     svc1.setSubtitleLanguage(evo::PreferredLanguage::English);
-    svc1.setAddonAutoPickEnabled(false);
     svc1.setSkipSegments(evo::SkipSegments::Auto);
     svc1.setWebBrowserEnabled(true);
     svc1.setSubtitleSize(3);
@@ -205,7 +202,6 @@ extern "C" void test_settings_save_load_roundtrip(void)
     TEST_ASSERT(svc2.getHdrOutputMode() == evo::HdrOutputMode::Off, "HdrOutputMode round-trip mismatch");
     TEST_ASSERT(svc2.getSecondarySubtitlePosition() == 1, "SecondarySubtitlePosition round-trip mismatch");
     TEST_ASSERT(svc2.getSecondarySubtitleColor() == 1, "SecondarySubtitleColor round-trip mismatch");
-    TEST_ASSERT(svc2.isAskStreamEnabled() == false, "AskStreamEnabled round-trip mismatch");
     TEST_ASSERT(svc2.getAudioOutputChannels() == evo::AudioOutputChannels::Stereo, "AudioOutputChannels round-trip mismatch");
     TEST_ASSERT(svc2.getMotionSmoothing() == evo::MotionSmoothing::Low, "MotionSmoothing round-trip mismatch");
     TEST_ASSERT(svc2.getDeepBlacks() == evo::DeepBlacks::Low, "DeepBlacks round-trip mismatch");
@@ -217,7 +213,6 @@ extern "C" void test_settings_save_load_roundtrip(void)
     TEST_ASSERT(svc2.getHdrPeak() == evo::HdrPeak::Nits1500, "HdrPeak round-trip mismatch");
     TEST_ASSERT(svc2.getAudioLanguage() == evo::PreferredLanguage::Italian, "AudioLanguage round-trip mismatch");
     TEST_ASSERT(svc2.getSubtitleLanguage() == evo::PreferredLanguage::English, "SubtitleLanguage round-trip mismatch");
-    TEST_ASSERT(svc2.isAddonAutoPickEnabled() == false, "AddonAutoPick round-trip mismatch");
     TEST_ASSERT(svc2.getSkipSegments() == evo::SkipSegments::Auto, "SkipSegments round-trip mismatch");
     TEST_ASSERT(svc2.isWebBrowserEnabled() == true, "WebBrowserEnabled round-trip mismatch");
     TEST_ASSERT(svc2.getSubtitleSize() == 3, "SubtitleSize round-trip mismatch");
@@ -303,7 +298,6 @@ extern "C" void test_settings_legacy_compat(void)
     TEST_ASSERT(svc.getHdrPeak() == evo::HdrPeak::Off, "Missing HdrPeak must default to Off");
     TEST_ASSERT(svc.getAudioLanguage() == evo::PreferredLanguage::Auto, "Missing AudioLanguage must default to Auto");
     TEST_ASSERT(svc.getSubtitleLanguage() == evo::PreferredLanguage::Auto, "Missing SubtitleLanguage must default to Auto");
-    TEST_ASSERT(svc.isAddonAutoPickEnabled() == true, "Missing AddonAutoPick must default to on");
     TEST_ASSERT(svc.getSkipSegments() == evo::SkipSegments::Ask, "Missing SkipSegments must default to Ask");
     TEST_ASSERT(svc.getSubtitleSize() == 1 && svc.getSubtitleColor() == 0 &&
                 svc.getSubtitleLift() == 0 && svc.getSubtitleBackground() == 0 &&
@@ -328,7 +322,6 @@ extern "C" void test_settings_legacy_compat(void)
     TEST_ASSERT(svc.getHdrOutputMode() == evo::HdrOutputMode::Off, "Legacy hdrOutputMode mismatch");
     TEST_ASSERT(svc.getSecondarySubtitlePosition() == 1, "Legacy secondarySubtitlePosition mismatch");
     TEST_ASSERT(svc.getSecondarySubtitleColor() == 1, "Legacy secondarySubtitleColor mismatch");
-    TEST_ASSERT(svc.isAskStreamEnabled() == false, "Legacy askStream mismatch");
     TEST_ASSERT(svc.getAudioOutputChannels() == evo::AudioOutputChannels::Stereo, "Legacy audioOutputChannels mismatch");
     /* #233: a file from before the Experimental section resets those once. */
     TEST_ASSERT(svc.getMotionSmoothing() == evo::MotionSmoothing::Off, "Legacy motionSmoothing must reset to Off");
@@ -396,7 +389,6 @@ extern "C" void test_settings_legacy_compat(void)
     evo::SettingsService svc34;
     TEST_ASSERT(svc34.getSkipSegments() == evo::SkipSegments::Ask, "Default SkipSegments must be Ask");
     TEST_ASSERT(svc34.loadSettings(), "loadSettings failed on 34-line legacy configuration");
-    TEST_ASSERT(svc34.isAddonAutoPickEnabled() == false, "34-line legacy addonAutoPick mismatch");
     TEST_ASSERT(svc34.getSkipSegments() == evo::SkipSegments::Ask, "Missing 35th line must default to Ask");
     TEST_ASSERT(svc34.isWebBrowserEnabled() == false, "Missing 36th line must default to false");
     TEST_ASSERT(svc34.getSubtitleSize() == 1 && svc34.getSubtitleColor() == 0 &&

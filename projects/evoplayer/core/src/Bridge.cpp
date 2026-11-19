@@ -5,7 +5,6 @@
 #include "evo/screens/BrowserScreen.hpp"
 #include "evo/screens/TextReaderScreen.hpp"
 #include "evo/screens/ImageViewerScreen.hpp"
-#include "evo/screens/ProviderHostScreen.hpp"
 #include "pp_playback.h"
 #include "evo_playback.h"
 #include "evo_demux.h"
@@ -342,23 +341,6 @@ void evo_remote_goto_screen(int screen_id) {
         sm->navigateTo(static_cast<evo::ScreenId>(screen_id));
 }
 
-/*
- * `provider <id>`: open that provider's own screen (shelves, or its setup
- * card), the same path as choosing it in the chooser. Replaces the 6-10 D-pad
- * presses from the home screen. A provider already on screen is left through
- * the home screen first, so it re-enters and opens fresh.
- */
-void evo_remote_open_provider(const char *id) {
-    auto sm = evo::Application::getInstance().getScreenManager();
-    if (!sm || !id || !id[0])
-        return;
-    if (sm->getCurrentScreenId() == evo::ScreenId::EmbyBrowse)
-        sm->navigateTo(evo::ScreenId::MainMenu);
-    evo::ProviderHostScreen::setPendingProvider(id);
-    sm->navigateTo(evo::ScreenId::EmbyBrowse);
-    evo::ProviderHostScreen::setPendingProvider("");
-}
-
 void evo_remote_browser_source(int sidebar_index) {
     auto sm = evo::Application::getInstance().getScreenManager();
     if (!sm)
@@ -589,16 +571,5 @@ void draw_profile_screen(uint32_t *fb) {
 void draw_theme_select_screen(uint32_t *fb) {
     draw_settings_screen(fb);
 }
-
-/*
- * #90: draw_emby_setup_screen / draw_emby_browse_screen are gone.
- *
- * Both were legacy C draw hooks that pointed at the developer-tools screen -
- * no declaration in any header, no caller anywhere in the compiled tree, and
- * drawing the wrong screen if anything had ever found them. The provider
- * screen is ProviderHostScreen, which renders the provider's own document; it
- * is reached through the screen manager like every other screen and needs no
- * C draw hook.
- */
 
 } // extern "C"

@@ -157,20 +157,6 @@ ADDON_SRCS := \
     addons/src/evo_net.c \
     addons/src/evo_http_avio.c \
     addons/src/evo_updater.c \
-    addons/src/addon_emby.c \
-    addons/src/evo_provider_mgr.c \
-    addons/src/evo_provider_bundle.c \
-    addons/src/evo_hls_variants.c \
-    addons/src/provider_iptv.c \
-    addons/src/provider_xtream.c \
-    addons/src/xtream_epg.c \
-    addons/src/provider_emby.c \
-    addons/src/provider_jellyfin.c \
-    addons/src/provider_plex.c \
-    addons/src/provider_nuvio.c \
-    addons/src/provider_stremio.c \
-    addons/src/evo_online_subs.c \
-    addons/src/evo_stremio_account.c \
     addons/src/evo_yt_link.c \
     addons/src/evo_ytjs_blob.c \
     addons/src/quickjs-amalgam.c
@@ -255,8 +241,6 @@ CORE_SRCS := \
     core/src/screens/MediaInfoScreen.cpp \
     core/src/screens/SurroundTestScreen.cpp \
     core/src/screens/DeveloperToolsScreen.cpp \
-    core/src/screens/EmbyScreen.cpp \
-    core/src/screens/ProviderHostScreen.cpp \
     core/src/screens/RecentFilesScreen.cpp \
     core/src/screens/FavoritesScreen.cpp \
     core/src/screens/AboutSupportScreen.cpp \
@@ -277,8 +261,6 @@ RMLUI_SRCS := \
     ui_rml/src/evo_rmlui_fileinterface.cpp \
     ui_rml/src/evo_rmlui_bundle.cpp \
     ui_rml/src/evo_rmlui_bundle_data.cpp \
-    ui_rml/src/evo_rmlui_provider.cpp \
-    ui_rml/src/evo_rmlui_provider_art.cpp \
     ui_rml/src/evo_rmlui_devstate.cpp
 
 ifeq ($(AGC_DEVICE),1)
@@ -313,7 +295,6 @@ ifeq ($(AGC_DEVICE),1)
                    ui_kit/src/evo_hui_misc.cpp \
                    ui_kit/src/evo_hui_extra.cpp \
                    ui_kit/src/evo_hui_surround.cpp \
-                   ui_kit/src/evo_hui_provider.cpp \
                    ui_kit/src/evo_hui_complex.cpp \
                    ui_kit/src/evo_hui_web.cpp
     # #237: Prospero Browser's app and kit UI, copied (browser/), on EVO's engine.

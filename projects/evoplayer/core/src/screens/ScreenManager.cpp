@@ -1,4 +1,3 @@
-#include "evo_features.h"
 #include "evo/screens/ScreenManager.hpp"
 #include "evo/Application.hpp"
 #include "evo_rmlui_bridge.h"
@@ -65,13 +64,7 @@ IScreen* ScreenManager::getScreen(ScreenId screenId) const {
     return nullptr;
 }
 
-/* Rail order: Home, Browse, Providers (when built), Web (when enabled),
- * Settings, About, then QUIT EVO. P shifts everything after the Providers
- * slot. W shifts everything after the Web slot when enabled. The kit draws
- * the same list (rail_items in ui_kit/src/evo_hui_screens.cpp). */
-namespace {
-constexpr int P = EVO_ENABLE_EMBY ? 1 : 0;
-}
+/* Rail order: Home, Browse, optional Web, Settings, About and Quit. */
 
 bool ScreenManager::isWebEnabled() const {
     auto ss = Application::getInstance().getSettingsService();
@@ -80,19 +73,15 @@ bool ScreenManager::isWebEnabled() const {
 
 int ScreenManager::getSectionForScreen(ScreenId screenId) const {
     const int W = isWebEnabled() ? 1 : 0;
-    const int secWeb = W ? (2 + P) : -1;
-    const int secSettings = 2 + P + W;
-    const int secAbout = 3 + P + W;
+    const int secWeb = W ? 2 : -1;
+    const int secSettings = 2 + W;
+    const int secAbout = 3 + W;
 
     switch (screenId) {
         case ScreenId::MainMenu:        return 0; // Home
         case ScreenId::UsbBrowser:      return 1; // Browse USB
         case ScreenId::RecentFiles:     return 1; // Recent Files (part of file browser)
         case ScreenId::Favorites:       return 1; // Favorites (part of file browser)
-#if EVO_ENABLE_EMBY
-        case ScreenId::EmbySetup:
-        case ScreenId::EmbyBrowse:      return 2; // Emby
-#endif
         case ScreenId::WebHome:
         case ScreenId::WebPage:         return secWeb; // the page sits right of the rail
         case ScreenId::Settings:
@@ -130,9 +119,7 @@ void ScreenManager::setRailFocused(bool focused) {
 }
 
 void ScreenManager::stepRail(int delta) {
-    /* One fewer section while Emby is disabled, so the rail does not step onto
-     * an entry with nothing behind it. See EVO_ENABLE_EMBY in evo_features.h.
-     * Plus one entry after the sections: QUIT EVO (see activateRail). */
+    /* Quit is the entry after the navigable sections. */
     const int numEntries = railSectionCount() + 1;
     m_railIndex = (m_railIndex + delta) % numEntries;
     if (m_railIndex < 0) m_railIndex += numEntries;
@@ -142,20 +129,13 @@ void ScreenManager::stepRail(int delta) {
 
 ScreenId ScreenManager::getRootScreenForSection(int section) const {
     /* Must stay the inverse of getSectionForScreen() above, including the
-     * shift when Emby is compiled out or Web is disabled. */
+     * shift when Web is enabled. */
     if (section == 0) return ScreenId::MainMenu;
     if (section == 1) return ScreenId::UsbBrowser;
-#if EVO_ENABLE_EMBY
-    /* #90: the one shared provider slot lands on the generic provider host
-     * (ProviderHostScreen), not on the Emby setup stub. The host picks the
-     * first enabled provider and sends the user to Settings if none is
-     * configured, so the slot is useful before anything is set up. */
-    if (section == 2) return ScreenId::EmbyBrowse;
-#endif
     const int W = isWebEnabled() ? 1 : 0;
-    const int secWeb = W ? (2 + P) : -1;
-    const int secSettings = 2 + P + W;
-    const int secAbout = 3 + P + W;
+    const int secWeb = W ? 2 : -1;
+    const int secSettings = 2 + W;
+    const int secAbout = 3 + W;
 
     if (W && section == secWeb) return ScreenId::WebHome;
     if (section == secSettings) return ScreenId::Settings;
@@ -182,7 +162,7 @@ bool ScreenManager::isPlaybackScreen(ScreenId screenId) const {
 
 int ScreenManager::railSectionCount() const {
     const int W = isWebEnabled() ? 1 : 0;
-    return 4 + P + W;
+    return 4 + W;
 }
 
 void ScreenManager::activateRail() {

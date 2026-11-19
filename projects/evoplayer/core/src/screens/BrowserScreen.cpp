@@ -1,4 +1,3 @@
-#include "evo/screens/ProviderHostScreen.hpp"
 #include "evo/screens/BrowserScreen.hpp"
 #include "evo_jailbreak.h"
 #include "evo/screens/TextReaderScreen.hpp"
@@ -1173,13 +1172,11 @@ void BrowserScreen::rebuildItems() {
 
             std::string displayName = rec.title[0] ? rec.title : "";
             /* The same tidy name Home shows, also for entries saved before the
-             * title cleaner knew release tags. Provider titles are kept. */
-            if (std::strncmp(rec.path, "evo://", 6) != 0) {
-                if (auto meta = Application::getInstance().getMediaMetadataService()) {
-                    std::string t, catName;
-                    meta->cleanMediaTitle(rec.path, t, catName);
-                    if (!t.empty()) displayName = t;
-                }
+             * title cleaner knew release tags. */
+            if (auto meta = Application::getInstance().getMediaMetadataService()) {
+                std::string t, catName;
+                meta->cleanMediaTitle(rec.path, t, catName);
+                if (!t.empty()) displayName = t;
             }
             if (displayName.empty()) {
                 std::string p(rec.path);
@@ -1667,11 +1664,6 @@ void BrowserScreen::activateSelection() {
             browser->navigateInto(item.name);
             resetSelection();
         }
-    } else if (m_activeSource == 4 &&
-               item.fullPath.compare(0, 6, "evo://") == 0) {
-        evo_feedback(EVO_FB_CONFIRM);
-        ProviderHostScreen::launchRecent(
-            item.fullPath.c_str(), item.name.c_str(), item.lastPos);
     } else if (item.category == FileCategory::Video || item.category == FileCategory::Audio) {
         auto settings = Application::getInstance().getSettingsService();
         bool resumeEnabled = settings ? settings->isResumePlaybackEnabled() : true;

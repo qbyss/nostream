@@ -69,11 +69,11 @@
 #   seek <sec> | seek +<sec> | seek -<sec>  seek
 #   stop                                    end playback, back to the browser
 #   go <name>                               jump to any screen by name: home browse
-#                                           internal favorites recent providers
+#                                           internal favorites recent
 #                                           settings[-playback|-subtitles|-interface|
 #                                           -system|-audio|-experimental] about
 #                                           changelog themes surround devtools, a
-#                                           provider id, or a ScreenId number
+#                                           or a ScreenId number
 #   set <setting> <value>                   #201: write a setting, apply it live, print it
 #                                           back (set audio-delay +100). A name with
 #                                           no value prints the current one;
@@ -82,9 +82,6 @@
 #                                           lower case, dashes (volume-boost)
 #   focus <row>                             open the row's settings section and put
 #                                           the cursor on it (a name from set --list)
-#   provider <id>                           open a provider's own screen directly
-#                                           (iptv xtream emby jellyfin plex stremio
-#                                           nuvio), no D-pad walk from home
 #   key <button>...                         synthetic pad presses (up down left
 #                                           right cross circle square triangle
 #                                           l1 r1 l2 r2 l3 r3 options touchpad
@@ -641,8 +638,6 @@ go)     case "${1:-}" in
           network)             put_cmd "source 2" ;;
           favorites)           put_cmd "source 3" ;;
           recent)              put_cmd "source 4" ;;
-          providers|chooser)   put_cmd "screen 23" ;;
-          iptv|xtream|emby|jellyfin|plex|stremio|nuvio) put_cmd "provider $1" ;;
           settings)            put_cmd "screen 10" ;;
           settings-playback)   put_cmd "screen 24" ;;
           settings-subtitles)  put_cmd "screen 25" ;;
@@ -656,9 +651,8 @@ go)     case "${1:-}" in
           surround)            put_cmd "screen 28" ;;
           devtools)            put_cmd "screen 15" ;;
           [0-9]*)              put_cmd "screen $1" ;;
-          *) die "usage: evo-remote.sh go <home|browse|internal|network|favorites|recent|providers|iptv|xtream|emby|jellyfin|plex|stremio|nuvio|settings[-playback|-subtitles|-interface|-system|-audio|-experimental]|about|changelog|themes|surround|devtools|<ScreenId>>" ;;
+          *) die "usage: evo-remote.sh go <home|browse|internal|network|favorites|recent|settings[-playback|-subtitles|-interface|-system|-audio|-experimental]|about|changelog|themes|surround|devtools|<ScreenId>>" ;;
         esac ;;
-provider) [[ -n "${1:-}" ]] || die "usage: evo-remote.sh provider <id>  (iptv xtream emby jellyfin plex stremio nuvio)"; put_cmd "provider $1" ;;
 source) [[ "${1:-}" =~ ^[0-9]+$ ]] || die "usage: evo-remote.sh source <n>  (0 USB, 1 Internal, 2 Favorites, 3 Recent)"; put_cmd "source $1" ;;
 iobench) put_cmd "iobench ${1:-}" ;;
 ptprobe) [[ -n "${1:-}" ]] || die "usage: evo-remote.sh ptprobe info | mode <n> [target] | reset | stream <pt|main> <secs> <path> | sweep <path> | sony <path>"; put_cmd "ptprobe $*" ;;

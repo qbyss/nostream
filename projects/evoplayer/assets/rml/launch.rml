@@ -201,37 +201,25 @@
                     <div class="tile tile-destination" id="lib-tile-3">
                         <div class="tile-index">04</div>
                         <div class="tile-icon-box tile-icon-box-lg" id="lib-iconbox-3">
-                            <img class="tile-icon tile-icon-lg" id="lib-icon-3" src="../icons/icon_emby.png"/>
+                            <img class="tile-icon tile-icon-lg" id="lib-icon-3" src="../icons/icon_settings.png"/>
                         </div>
                         <div class="tile-scrim"></div>
                         <div class="tile-status" id="lib-status-3"></div>
                         <div class="tile-caption">
-                            <div class="tile-title" id="lib-title-3">EMBY</div>
-                            <div class="tile-detail" id="lib-detail-3">Emby and media server streaming</div>
+                            <div class="tile-title" id="lib-title-3">SETTINGS</div>
+                            <div class="tile-detail" id="lib-detail-3">Playback and display preferences</div>
                         </div>
                     </div>
                     <div class="tile tile-destination" id="lib-tile-4">
                         <div class="tile-index">05</div>
                         <div class="tile-icon-box tile-icon-box-lg" id="lib-iconbox-4">
-                            <img class="tile-icon tile-icon-lg" id="lib-icon-4" src="../icons/icon_settings.png"/>
+                            <img class="tile-icon tile-icon-lg" id="lib-icon-4" src="../icons/icon_about_support.png"/>
                         </div>
                         <div class="tile-scrim"></div>
                         <div class="tile-status" id="lib-status-4"></div>
                         <div class="tile-caption">
-                            <div class="tile-title" id="lib-title-4">SETTINGS</div>
-                            <div class="tile-detail" id="lib-detail-4">Playback and display preferences</div>
-                        </div>
-                    </div>
-                    <div class="tile tile-destination" id="lib-tile-5">
-                        <div class="tile-index">06</div>
-                        <div class="tile-icon-box tile-icon-box-lg" id="lib-iconbox-5">
-                            <img class="tile-icon tile-icon-lg" id="lib-icon-5" src="../icons/icon_about_support.png"/>
-                        </div>
-                        <div class="tile-scrim"></div>
-                        <div class="tile-status" id="lib-status-5"></div>
-                        <div class="tile-caption">
-                            <div class="tile-title" id="lib-title-5">ABOUT</div>
-                            <div class="tile-detail" id="lib-detail-5">Credits and project info</div>
+                            <div class="tile-title" id="lib-title-4">ABOUT</div>
+                            <div class="tile-detail" id="lib-detail-4">Credits and project info</div>
                         </div>
                     </div>
                 </div>

@@ -750,7 +750,6 @@ public:
      * for whichever EVO screen was last up, and a provider screen must not
      * invalidate it.
      */
-    void RenderNavOverlay(uint32_t* framebuffer, int width, int height);
 
     /* #81: virtual keyboard modal - own context, composited over the screen. */
     void UpdateKeyboard(const evo_keyboard_params_t* p);

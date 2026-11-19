@@ -81,8 +81,6 @@ enum class SettingKey : int {
     PhoneCast,
     CastNativePlayer,
     YouTubeLink,
-    AskStream,
-    AddonAutoPick,
     /* SYSTEM & DIAGNOSTICS */
     ReportProblem,
     ReportLastRun,
@@ -150,7 +148,7 @@ const PreviewSpec kPreviews[] = {
     {SettingKey::AudioLanguage, EVO_RMLUI_PREVIEW_AUDIO_LANGUAGE,
      "The audio track a film starts with when it has several languages. Auto takes the first one."},
     {SettingKey::SubtitleLanguage, EVO_RMLUI_PREVIEW_SUB_LANGUAGE,
-     "The subtitles chosen when a film opens: embedded tracks first, then online subtitles from your Stremio addons. Forced (signs only) tracks are only picked when the audio is already in your language."},
+     "The subtitles chosen when a film opens: embedded tracks and local subtitle files. Forced (signs only) tracks are only picked when the audio is already in your language."},
     {SettingKey::VolumeBoost, EVO_RMLUI_PREVIEW_VOLUME_BOOST,
      "Makes quiet files louder. Very loud passages are cut off cleanly instead of wrapping into noise. Has no effect on Dolby/DTS passthrough."},
     {SettingKey::AudioDelay, EVO_RMLUI_PREVIEW_AUDIO_DELAY,
@@ -198,14 +196,10 @@ const PreviewSpec kPreviews[] = {
      "Plays YouTube casts in NoStream, full length up to 1080p60, instead of the 720p WebKit browser."},
     {SettingKey::YouTubeLink, EVO_RMLUI_PREVIEW_YT_LINK,
      "Paste or type a YouTube link (or use the phone page) and EVO plays the whole video, up to 1080p60."},
-    {SettingKey::AskStream, EVO_RMLUI_PREVIEW_ASK_STREAM,
-     "Lets you choose the format and quality each time you open a live channel."},
     {SettingKey::ReportProblem, EVO_RMLUI_PREVIEW_REPORT,
      "The report has EVO's log, version and settings. Passwords and tokens are taken out."},
     {SettingKey::ReportLastRun, EVO_RMLUI_PREVIEW_REPORT,
      "The log of the run before this one. Use it when EVO crashed or froze and you reopened it."},
-    {SettingKey::AddonAutoPick, EVO_RMLUI_PREVIEW_ASK_STREAM,
-     "Plays the best source at once: Remux and high bitrate, Dolby Vision or HDR, already cached on your debrid service. The full list is in OPTIONS on the title."},
     {SettingKey::DebugOverlay, EVO_RMLUI_PREVIEW_DEBUG_OVERLAY, "Shows live performance numbers on screen."},
     {SettingKey::DeveloperTools, EVO_RMLUI_PREVIEW_DEV_TOOLS, "System diagnostics and performance stats."},
     {SettingKey::ConsoleModel, EVO_RMLUI_PREVIEW_CONSOLE,
@@ -239,7 +233,7 @@ const SettingKey kSubtitleKeys[] = {
 };
 const SettingKey kInterfaceKeys[] = {
     SettingKey::Theme, SettingKey::Lightbar, SettingKey::FoldersFirst,
-    SettingKey::KeyboardInput, SettingKey::PhonePort, SettingKey::PhoneCast, SettingKey::CastNativePlayer, SettingKey::YouTubeLink, SettingKey::AskStream, SettingKey::AddonAutoPick,
+    SettingKey::KeyboardInput, SettingKey::PhonePort, SettingKey::PhoneCast, SettingKey::CastNativePlayer, SettingKey::YouTubeLink,
 };
 const SettingKey kSystemKeys[] = {
     SettingKey::ReportProblem, SettingKey::ReportLastRun, SettingKey::DebugOverlay, SettingKey::DeveloperTools,
@@ -685,16 +679,6 @@ SettingDef makeDef(SettingKey key, ISettingsService* settings) {
                       "../icons/icon_link.png", "");
         break;
 
-    case SettingKey::AskStream:
-        d = toggleDef(key, "ASK WHICH LIVE STREAM", "PICK THE FORMAT AND QUALITY WHEN YOU OPEN A CHANNEL",
-                      "../icons/icon_list_video.png", settings->isAskStreamEnabled());
-        break;
-
-    case SettingKey::AddonAutoPick:
-        d = toggleDef(key, "PLAY BEST ADDON STREAM", "REMUX, DOLBY VISION / HDR, CACHED FIRST - LIST IN OPTIONS",
-                      "../icons/icon_wand_sparkles.png", settings->isAddonAutoPickEnabled());
-        break;
-
     case SettingKey::ReportProblem:
         d = actionDef(key, "REPORT A PROBLEM", "SEND EVO'S LOG FROM YOUR PHONE, OR SAVE IT TO USB",
                       "../icons/icon_report.png", "SAVE");
@@ -975,8 +959,6 @@ void toggleSetting(SettingKey key) {
         st->setCastNativePlayerEnabled(!st->isCastNativePlayerEnabled());
         toast("CAST PLAYER", st->isCastNativePlayerEnabled() ? "NoStream (up to 1080p60)" : "System WebKit (720p)");
         break;
-    case SettingKey::AskStream:        st->setAskStreamEnabled(!st->isAskStreamEnabled()); break;
-    case SettingKey::AddonAutoPick:    st->setAddonAutoPickEnabled(!st->isAddonAutoPickEnabled()); break;
     case SettingKey::AutoSubtitles:    st->setAutoSubtitlesEnabled(!st->isAutoSubtitlesEnabled()); break;
     case SettingKey::NavigationSounds: st->setSoundFeedbackEnabled(!st->isSoundFeedbackEnabled()); break;
     case SettingKey::Lightbar:         st->setLightbarFeedbackEnabled(!st->isLightbarFeedbackEnabled()); break;

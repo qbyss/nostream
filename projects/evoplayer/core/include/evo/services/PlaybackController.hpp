@@ -86,7 +86,6 @@ public:
     bool switchVideoVariant(int streamIndex) override;
 
 private:
-    void applyOnlineSubtitles();
     void initStateMachine();
     void applyViewMode();
     double clampScrubTarget(double target) const;
@@ -103,7 +102,6 @@ private:
     ::evo_stream_io_ctx *m_streamIo = nullptr;
     /* Wall-clock of the last report_progress, so a provider gets an update
      * roughly every ten seconds rather than on every resume save. */
-    double m_lastProgressReport = 0.0;
     double m_durationSeconds = 0.0;
     double m_resumeBaseOffset = 0.0;
     bool m_musicMode = false;

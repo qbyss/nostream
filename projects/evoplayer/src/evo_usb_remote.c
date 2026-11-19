@@ -131,10 +131,6 @@ static void run_command(const char *line)
         evo_remote_focus(buf + 6);
         return;
     }
-    if (strncmp(buf, "provider ", 9) == 0) {
-        evo_remote_open_provider(buf + 9);
-        return;
-    }
     if (strncmp(buf, "source ", 7) == 0) {
         evo_remote_browser_source(atoi(buf + 7));
         return;

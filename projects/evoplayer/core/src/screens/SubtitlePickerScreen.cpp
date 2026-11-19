@@ -6,7 +6,6 @@
 #include "evo_rmlui_bridge.h"
 #include "evo_feedback.h"
 #include "evo_toast.h"
-#include "evo_online_subs.h"
 
 extern "C" {
 #include <libavformat/avformat.h>
@@ -50,15 +49,14 @@ void SubtitlePickerScreen::refreshTracks() {
     offTrack.detail = "Disable subtitles";
     m_tracks.push_back(std::move(offTrack));
 
-    // 2. External SRT if available (a sidecar, a media server's, or an online one)
+    // 2. External SRT if available
     if (prospero_subtitle_count > 0) {
         SubtitleTrackEntry extTrack;
         extTrack.trackId = -1;
         extTrack.label = prospero_subtitle_external_label[0] ? prospero_subtitle_external_label
                                                              : "EXTERNAL SRT";
         char cueBuf[48];
-        std::snprintf(cueBuf, sizeof(cueBuf), "%s%d CUES",
-                      prospero_subtitle_external_label[0] ? "ONLINE · " : "", prospero_subtitle_count);
+        std::snprintf(cueBuf, sizeof(cueBuf), "%d CUES", prospero_subtitle_count);
         extTrack.detail = cueBuf;
         if (prospero_subtitle_enabled && prospero_subtitle_use_external) {
             m_activeTrackIndex = static_cast<int>(m_tracks.size());
@@ -123,32 +121,6 @@ void SubtitlePickerScreen::refreshTracks() {
             }
 
             m_tracks.push_back(std::move(streamTrack));
-        }
-    }
-
-    // 4. Online subtitles from the Stremio addons for this title (not yet loaded)
-    bool onlineForThis = false;
-    if (auto pb = Application::getInstance().getPlaybackController()) {
-        char key[512];
-        evo_osubs_key(key, sizeof key);
-        const PlaybackSource& src = pb->getSource();
-        onlineForThis = src.isProvider() && !src.item_id.empty() && src.item_id == key;
-    }
-    if (onlineForThis) {
-        const int n = evo_osubs_count();
-        const int active = (prospero_subtitle_count > 0 && prospero_subtitle_external_label[0])
-                               ? evo_osubs_active() : -1;
-        for (int i = 0; i < n && i < kMaxOnlineRows; ++i) {
-            if (i == active) continue;          /* it is the external row above */
-            evo_osub_t s;
-            if (!evo_osubs_get(i, &s)) continue;
-            SubtitleTrackEntry row;
-            row.trackId = kOnlineBase - i;
-            char lang[64];
-            evo_osubs_label(i, lang, sizeof lang);
-            row.label = lang;
-            row.detail = std::string("ONLINE · ") + s.source;
-            m_tracks.push_back(std::move(row));
         }
     }
 
@@ -235,16 +207,7 @@ void SubtitlePickerScreen::activateSelection() {
         evo_subsync_cancel();
     }
 
-    if (trackId <= kOnlineBase) {
-        // An online subtitle: fetched off the UI thread, loaded by the player
-        // when it lands (PlayerScreen::update -> pumpOnlineSubtitles).
-        if (evo_osubs_fetch_async(kOnlineBase - trackId) != 0) {
-            evo_feedback(EVO_FB_ERROR);
-            toast("SUBTITLES", "A DOWNLOAD IS ALREADY RUNNING");
-            return;
-        }
-        toast("SUBTITLES", "DOWNLOADING...");
-    } else if (trackId == -2) {
+    if (trackId == -2) {
         // Off
         prospero_subtitle_enabled = 0;
         toast("SUBTITLES", "OFF");
@@ -273,9 +236,8 @@ void SubtitlePickerScreen::activateSecondary() {
 
     const SubtitleTrackEntry& entry = m_tracks[m_selectedIndex];
 
-    if (entry.trackId == kAutoSyncTrack || entry.trackId == kLoadFileTrack ||
-        entry.trackId <= kOnlineBase) {
-        evo_feedback(EVO_FB_ERROR);   // an online row must be loaded first
+    if (entry.trackId == kAutoSyncTrack || entry.trackId == kLoadFileTrack) {
+        evo_feedback(EVO_FB_ERROR);
         return;
     }
 

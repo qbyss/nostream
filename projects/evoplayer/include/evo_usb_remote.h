@@ -86,7 +86,6 @@ unsigned int evo_usb_remote_take_buttons(void);
  */
 void evo_remote_goto_screen(int screen_id);
 void evo_remote_browser_source(int sidebar_index);
-void evo_remote_open_provider(const char *id);   /* "provider <id>": iptv xtream emby jellyfin plex stremio nuvio */
 
 /* #201: `set <setting> <value>` writes a setting through the settings service,
  * applies it live and writes the new value (or ERR ...) to /mnt/usb0/evo_set.txt.

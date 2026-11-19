@@ -527,11 +527,12 @@ extern "C" void test_smb_recent_and_favorites(void) {
     // 2. Load of an old file containing user:pass@ -> migrated
     rfp = fopen(RECENT_FILE_DB, "w");
     TEST_ASSERT(rfp != nullptr, "open recent DB for writing");
+    fprintf(rfp, "evo://emby/legacy-id\tOld provider title\t25.000\t140.000\t1700000000\n");
     fprintf(rfp, "smb://legacyuser:legacypass@10.0.0.5:445/Media/OldMovie.mp4\tOld Movie\t50.000\t200.000\t1700000000\n");
     fclose(rfp);
 
     recent_load();
-    TEST_ASSERT(recent_file_count == 1, "recent_load must load migrated entry");
+    TEST_ASSERT(recent_file_count == 1, "recent_load must keep the SMB entry and skip the removed provider");
     TEST_ASSERT(std::string(recent_files[0].path) == "smb://10.0.0.5:445/Media/OldMovie.mp4",
                 "loaded entry must be sanitized on load");
     TEST_ASSERT(recent_files[0].audio_stream == -1, "old 5-column entry must default audio_stream to -1");
@@ -581,11 +582,13 @@ extern "C" void test_smb_recent_and_favorites(void) {
     // 4. Load of an old file containing user:pass@ in Favorites -> migrated
     ffp = fopen(FAVORITES_FILE_DB, "w");
     TEST_ASSERT(ffp != nullptr, "open favorites DB for writing");
+    fputs("https://example.test/provider/stream.mkv\tOld provider movie\t120.000\n", ffp);
+    fputs("Old provider channel\tOld provider channel\t0.000\n", ffp);
     fprintf(ffp, "smb://legacyuser:legacypass@10.0.0.5/Media/OldFav.mp4\tOld Fav\t150.000\n");
     fclose(ffp);
 
     favorites_load();
-    TEST_ASSERT(favorite_count == 1, "favorites_load must load migrated entry");
+    TEST_ASSERT(favorite_count == 1, "favorites_load must keep the SMB entry and skip old provider favorites");
     TEST_ASSERT(std::string(favorite_files[0].path) == "smb://10.0.0.5/Media/OldFav.mp4",
                 "loaded favorite must be sanitized on load");
     favorites_save();

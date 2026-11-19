@@ -1941,80 +1941,6 @@ void draw_qr_tile(DrawList &list, float x0, float y0, float qs, const SettingsPr
     }
 }
 
-/* ---- 21. ASK WHICH LIVE STREAM: channel tile to quality dialog vs direct play ---- */
-void draw_ask_stream(DrawList &list, const Context &ctx, const Rect &box, const SettingsPreview &pv)
-{
-    Area a = begin_card(list, ctx, box, pv);
-    const bool on = (pv.index == 1);
-    const Palette &p = ctx.palette;
-
-    // Channel tile on the left
-    const float tile_w = 130.0f;
-    const float tile_h = 130.0f;
-    const Rect tile{a.x, a.top + 10.0f, tile_w, tile_h};
-    list.rounded_rect(tile, 14.0f, Color::rgb(0x181c28));
-    list.bordered_rect(tile, 14.0f, Color::rgb(0, 0), 1.0f, p.border);
-
-    // Red "LIVE" pill
-    const Rect live_pill{tile.x + 10.0f, tile.y + 10.0f, 40.0f, 18.0f};
-    list.rounded_rect(live_pill, 4.0f, Color::rgb(0xef4444));
-    ui::text(list, ctx.fonts.semibold, "LIVE", live_pill.cx(), live_pill.cy() + 4.5f, 10, kWhite, Align::center);
-
-    // Play glyph
-    const float tcx = tile.cx(), tcy = tile.cy() + 4.0f;
-    list.circle(tcx, tcy, 18.0f, kWhite.with_alpha(0.12f));
-    list.triangle({tcx - 8.0f, tcy - 8.0f, 20.0f, 16.0f}, p.accent, 0.0f, 1.5708f);
-    ui::text(list, ctx.fonts.semibold, "Sports 1", tcx, tile.y + tile_h - 14.0f, 12, p.text_muted, Align::center);
-
-    // Arrow to target
-    const float arrow_x1 = tile.x + tile_w + 10.0f;
-    const float arrow_x2 = a.x + 190.0f;
-    const float arrow_y = tile.cy();
-    list.line(arrow_x1, arrow_y, arrow_x2, arrow_y, 2.0f, on ? p.accent : p.text_muted);
-    list.triangle({arrow_x2 - 8.0f, arrow_y - 6.0f, 8.0f, 12.0f}, on ? p.accent : p.text_muted, 0.0f, 1.5708f);
-
-    const float target_x = arrow_x2 + 8.0f;
-    const float target_w = a.x + a.w - target_x;
-
-    if (on)
-    {
-        // Dialog mock "Choose quality" with 3 rows
-        const Rect dialog{target_x, a.top, target_w, 150.0f};
-        list.rounded_rect(dialog, 12.0f, Color::rgb(0x1a1e2a));
-        frame_border(list, ctx, dialog, true);
-
-        ui::text(list, ctx.fonts.semibold, "Choose quality", dialog.x + 14.0f, dialog.y + 22.0f, 15, kWhite);
-
-        static const char *const kQualities[3] = {"Auto", "1080p", "720p"};
-        for (int r = 0; r < 3; ++r)
-        {
-            const float qy = dialog.y + 36.0f + static_cast<float>(r) * 34.0f;
-            const Rect qr{dialog.x + 10.0f, qy, dialog.w - 20.0f, 28.0f};
-            const bool sel_q = (r == 0);
-            list.rounded_rect(qr, 6.0f, sel_q ? p.accent.with_alpha(0.20f) : kWhite.with_alpha(0.03f));
-            if (sel_q)
-                list.bordered_rect(qr, 6.0f, Color::rgb(0, 0), 1.0f, p.accent);
-            ui::text(list, ctx.fonts.semibold, kQualities[r], qr.x + 12.0f, qr.y + 18.0f, 13,
-                     sel_q ? p.accent : p.text_muted);
-        }
-    }
-    else
-    {
-        // Mock player frame labelled "Plays right away"
-        const Rect player{target_x, a.top + 10.0f, target_w, 130.0f};
-        list.gradient_rect(player, 0, Color::rgb(0x161a26), Color::rgb(0x0a0c12));
-        frame_border(list, ctx, player, false);
-
-        list.circle(player.cx(), player.cy() - 10.0f, 20.0f, kWhite.with_alpha(0.12f));
-        list.triangle({player.cx() - 6.0f, player.cy() - 18.0f, 16.0f, 16.0f}, kWhite, 0.0f, 1.5708f);
-        ui::text(list, ctx.fonts.semibold, "Plays right away", player.cx(), player.y + player.h - 16.0f, 15,
-                 p.accent, Align::center);
-    }
-
-    const float y = chips(list, ctx, a, a.top + 170.0f, chip_labels(pv), pv.index);
-    benefit(list, ctx, a, y + 24.0f, pv.benefit);
-}
-
 /* ---- 22. DEBUG OVERLAY: mock video frame with stats HUD in top-left corner ---- */
 void draw_debug_overlay(DrawList &list, const Context &ctx, const Rect &box, const SettingsPreview &pv)
 {
@@ -2964,9 +2890,6 @@ void draw_settings_preview(DrawList &list, const Context &ctx, const Rect &box, 
         break;
     case EVO_RMLUI_PREVIEW_KEYBOARD:
         draw_keyboard(list, ctx, box, pv);
-        break;
-    case EVO_RMLUI_PREVIEW_ASK_STREAM:
-        draw_ask_stream(list, ctx, box, pv);
         break;
     case EVO_RMLUI_PREVIEW_DEBUG_OVERLAY:
         draw_debug_overlay(list, ctx, box, pv);

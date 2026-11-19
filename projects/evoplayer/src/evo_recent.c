@@ -150,7 +150,7 @@ void recent_load(void)
         char *last_played = strtok(NULL,  "\t\r\n");
         char *audio_stream= strtok(NULL,  "\t\r\n");
 
-        if (!path || !title) continue;
+        if (!path || !title || strncmp(path, "evo://", 6) == 0) continue;
 
         evo_url_sanitize(path, e->path, sizeof(e->path));
         evo_url_sanitize(title, e->title, sizeof(e->title));

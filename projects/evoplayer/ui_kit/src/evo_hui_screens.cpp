@@ -9,7 +9,6 @@
 #include "evo_hui_screens.hpp"
 #include "evo_hui_cover.hpp"
 
-#include "evo_features.h"
 #include "evo_browser_engine.h"
 
 #include "ui/glyphs.hpp"
@@ -312,14 +311,12 @@ struct RailItem
     const char *icon;
 };
 
-/* ScreenManager's section order; Providers only when the build has them. */
+/* ScreenManager's section order. */
 int rail_items(RailItem *out)
 {
     int n = 0;
     out[n++] = {"Home", "../icons/icon_home.png"};
     out[n++] = {"Browse", "../icons/icon_browse_usb.png"};
-    if (EVO_ENABLE_EMBY)
-        out[n++] = {"Providers", "../icons/icon_emby.png"};
     if (evo_settings_web_browser_enabled())
         out[n++] = {"Web", "../icons/icon_globe.png"}; /* #237 */
     out[n++] = {"Settings", "../icons/icon_settings.png"};

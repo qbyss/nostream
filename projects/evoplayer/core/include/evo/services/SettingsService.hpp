@@ -39,10 +39,6 @@ public:
     int getSubtitleFontFace() const override { return m_subtitleFontFace; }
     void setSubtitleFontFace(int face) override;
 
-    bool isAskStreamEnabled() const override { return m_askStream; }
-    void setAskStreamEnabled(bool enabled) override { m_askStream = enabled; }
-    bool isAddonAutoPickEnabled() const override { return m_addonAutoPick; }
-    void setAddonAutoPickEnabled(bool enabled) override { m_addonAutoPick = enabled; }
 
     int getSecondarySubtitlePosition() const override { return m_secondarySubtitlePosition; }
     void setSecondarySubtitlePosition(int position) override;
@@ -159,7 +155,6 @@ private:
     int m_subtitleColor = 0;      // #231: WHITE
     int m_subtitleLift = 0;       // #231: BOTTOM
     int m_subtitleBackground = 0; // #231: BOX
-    bool m_askStream = true;    // Live TV: pick the stream yourself
     int m_secondarySubtitlePosition = 0; // #110: stacked above the primary
     int m_secondarySubtitleColor = 0;    // #110: yellow
     int m_secondarySubtitleSize = 1;     // MEDIUM (prospero_secondary_face - 1)
@@ -187,7 +182,6 @@ private:
     bool m_webBrowser = false;
     bool m_debugOverlayEnabled = false;
     HdrPeak m_hdrPeak = HdrPeak::Off;
-    bool m_addonAutoPick = true;   /* addons: rank the sources, play the best at once */
     SkipSegments m_skipSegments = SkipSegments::Ask;
     PreferredLanguage m_audioLanguage = PreferredLanguage::Auto;
     PreferredLanguage m_subtitleLanguage = PreferredLanguage::Auto;

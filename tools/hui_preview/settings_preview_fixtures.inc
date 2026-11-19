@@ -351,7 +351,6 @@ static void fill_settings_pv_fixture(evo_rmlui_settings_params_t &p, const std::
              "Plays YouTube casts in EVO Player, full length up to 1080p60, instead of the 720p WebKit browser.", {}, 0, -1, false},
             {EVO_RMLUI_ROW_ACTION, "PLAY A YOUTUBE LINK", "PASTE OR TYPE A LINK - PLAYS FULL LENGTH (UP TO 1080P60)", "../icons/icon_tv.png", "", 0, yt,
              "Paste or type a YouTube link (or use the phone page) and EVO plays the whole video, up to 1080p60.", {}, 0, -1, false},
-            {EVO_RMLUI_ROW_TOGGLE, "ASK WHICH LIVE STREAM", "PICK THE FORMAT AND QUALITY WHEN YOU OPEN A CHANNEL", "../icons/icon_tv.png", "", 1, 0, "", {}, 0, -1, false},
         });
     }
     else if (kind == "info_quit")
@@ -390,7 +389,7 @@ static void fill_settings_pv_fixture(evo_rmlui_settings_params_t &p, const std::
     {
         build_preview_section(p, 2, "Subtitles", "PREFERENCES & APPEARANCE", {
             {EVO_RMLUI_ROW_TOGGLE, "AUTO SUBTITLES", "AUTOMATICALLY LOAD SUBTITLES ON PLAYBACK", "../icons/icon_captions.png", "", 1, 0, "", {}, 0, -1, false},
-            {EVO_RMLUI_ROW_VALUE, "SUBTITLE LANGUAGE", "EMBEDDED FIRST, THEN ONLINE FROM YOUR ADDONS", "../icons/icon_languages.png", "ENGLISH", 0, EVO_RMLUI_PREVIEW_SUB_LANGUAGE, "The subtitles chosen when a film opens: embedded tracks first, then online subtitles from your Stremio addons. Forced (signs only) tracks are only picked when the audio is already in your language.", {"AUTO", "ITALIANO", "ENGLISH", "ESPAÑOL", "FRANÇAIS", "DEUTSCH", "PORTUGUÊS", "JAPANESE"}, 2, -1, false},
+            {EVO_RMLUI_ROW_VALUE, "SUBTITLE LANGUAGE", "EMBEDDED SUBTITLES AND LOCAL FILES", "../icons/icon_languages.png", "ENGLISH", 0, EVO_RMLUI_PREVIEW_SUB_LANGUAGE, "The subtitles chosen when a film opens: embedded tracks first, then online subtitles from your Stremio addons. Forced (signs only) tracks are only picked when the audio is already in your language.", {"AUTO", "ITALIANO", "ENGLISH", "ESPAÑOL", "FRANÇAIS", "DEUTSCH", "PORTUGUÊS", "JAPANESE"}, 2, -1, false},
             {EVO_RMLUI_ROW_VALUE, "DEFAULT FONT STYLE", "SUBTITLE TYPEFACE", "../icons/icon_type.png", "STANDARD", 0, 0, "", {"STANDARD", "LIGHT", "ROUNDED", "BOLD"}, 0, -1, false}
         });
     }

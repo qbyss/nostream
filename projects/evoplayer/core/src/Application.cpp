@@ -11,8 +11,6 @@
 #include "evo/screens/MediaInfoScreen.hpp"
 #include "evo/screens/SurroundTestScreen.hpp"
 #include "evo/screens/DeveloperToolsScreen.hpp"
-#include "evo/screens/EmbyScreen.hpp"
-#include "evo/screens/ProviderHostScreen.hpp"
 #include "evo/screens/ModalDialogScreen.hpp"
 #include "evo/screens/RecentFilesScreen.hpp"
 #include "evo/screens/FavoritesScreen.hpp"
@@ -26,7 +24,6 @@
 
 #include "evo_boot_log.h"
 #include "evo_error.h"
-#include "evo_stream_io.h"
 
 #include <algorithm>
 #include <cmath>
@@ -40,7 +37,6 @@
 #include "evo_sweep.h"
 #include "evo_toast.h"
 #include <chrono>
-#include <atomic>
 #include <cctype>
 #include <pthread.h>
 extern "C" void evo_log_alloc_state(const char *when);  /* PlaybackController.cpp */
@@ -71,14 +67,6 @@ extern "C" int perf_render_fps;
 #include "evo_usb_remote.h"
 #include "evo_phone_remote.h"
 #include "evo_webui.h"
-/* #90: providers are reached through the vtable registry, never by name.
- * addon_emby.h is gone from here - provider_emby.c is the only thing that
- * includes it now. */
-#include "evo_provider.h"
-#include "evo_provider_bundle.h"
-/* For the provider host's teardown ordering in shutdown(); the C entry points
- * live beside the class that implements them. */
-#include "evo_rmlui_provider.h"
 #include "pp_playback.h"
 #include "evo_playback.h"
 #include "evo_adec.h"
@@ -439,17 +427,6 @@ bool Application::initHardware() {
 
     evo_net_init();
     /*
-     * #90: bring up the provider registry. It calls each provider's init(),
-     * which loads persisted credentials and touches no network - this runs
-     * during boot, before the self-unjail has necessarily opened /data, and a
-     * DNS lookup here would stall the splash.
-     *
-     * emby_init() is now reached through the registry (provider_emby.c), so it
-     * is no longer called by name. Nothing else in the tree knows the word
-     * "emby" any more, which is the whole point of the seam.
-     */
-    evo_provider_mgr_init();
-    /*
      * avformat_network_init() was already here and was a no-op for the whole
      * 0.6-0.10 era, because the production FFmpeg profile was built
      * --disable-network. It does something now (#90 scope 1).
@@ -513,10 +490,6 @@ bool Application::initScreens() {
     m_screenManager->registerScreen(std::make_unique<MediaInfoScreen>());
     m_screenManager->registerScreen(std::make_unique<SurroundTestScreen>());
     m_screenManager->registerScreen(std::make_unique<DeveloperToolsScreen>());
-    m_screenManager->registerScreen(std::make_unique<EmbyScreen>());
-    /* #90: the generic provider host. Fills ScreenId::EmbyBrowse, which had an
-     * id and a rail path but no class registered at all. */
-    m_screenManager->registerScreen(std::make_unique<ProviderHostScreen>());
     m_screenManager->registerScreen(std::make_unique<RecentFilesScreen>());
     m_screenManager->registerScreen(std::make_unique<FavoritesScreen>());
     m_screenManager->registerScreen(std::make_unique<AboutSupportScreen>());
@@ -583,20 +556,6 @@ void Application::shutdown() {
     /* #101: the web UI's proxy threads and the browser subsystem. */
     evo_webui_shutdown();
 
-    /*
-     * #90: providers down before RmlUi.
-     *
-     * The provider host holds an Rml context and textures in the render
-     * interface's registry, so it has to let go of them while Rml is still
-     * alive - evo_rmlui_shutdown() below runs Rml::Shutdown(), after which
-     * closing a context is a use-after-free. Same ordering constraint the
-     * comment above evo_rmlui_shutdown() describes for the AGC runtime.
-     */
-    if (evo_rmlui_provider_is_open())
-        evo_rmlui_provider_close();
-    evo_provider_art_clear();
-    evo_provider_mgr_shutdown();
-    evo_boot_log("shutdown: providers down");
     evo_boot_log_flush();
 
     pp_playback_shutdown(&g_pp_pb);
@@ -623,194 +582,6 @@ void Application::shutdown() {
 }
 
 namespace {
-
-#if defined(EVO_APP_MODULE)
-/*
- * #101: a page in the system browser handed a stream over (evo_webui.c).
- * Play it the way ProviderHostScreen does - startPlaybackSource() blocks on
- * network I/O, so it runs on a worker and the Player screen follows once it
- * has started - then tell the probe when playback is over so it can reopen
- * the page.
- */
-PlaybackSource g_web_src;
-pthread_t g_web_thread;
-std::atomic<bool> g_web_done{false};
-std::atomic<bool> g_web_ok{false};
-
-void* web_start_worker(void*) {
-    IPlaybackController* pb = Application::getInstance().getPlaybackController();
-    evo_stream_headers[0] = '\0';       /* a provider's headers must not follow us here */
-    evo_stream_user_agent[0] = '\0';
-    g_web_ok = pb && pb->startPlaybackSource(g_web_src, 0.0);
-    g_web_done = true;
-    return nullptr;
-}
-
-/*
- * Watched state and resume points back to Emby / Jellyfin. The page hands
- * over a server URL that already names the item (/Videos/<id>/...) and
- * carries the user's api_key, so EVO can make the same three session calls
- * the server's own player makes. The server decides "played" from the
- * position in the Stopped report, exactly as for its own player. A URL
- * without both (Nuvio, a plain stream) reports nothing.
- */
-struct WebReport {
-    bool on = false;
-    bool emby = false;      /* /emby/ prefix: Emby, else Jellyfin */
-    std::string base;       /* scheme://host:port[/emby] */
-    std::string item;
-    std::string key;
-    std::string mediaSource;
-    std::string playSession;
-    double lastPos = 0.0;
-    int frames = 0;
-};
-WebReport g_web_rep;
-
-std::string url_lower(const std::string& s) {
-    std::string r = s;
-    for (char& c : r) c = (char)std::tolower((unsigned char)c);
-    return r;
-}
-
-/* The value of query parameter `name` (matched case-insensitively). */
-std::string url_param(const std::string& url, const char* name) {
-    const std::string low = url_lower(url);
-    const std::string want = url_lower(name) + "=";
-    size_t q = low.find('?');
-    while (q != std::string::npos) {
-        size_t at = q + 1;
-        if (low.compare(at, want.size(), want) == 0) {
-            size_t v = at + want.size();
-            size_t e = url.find_first_of("&#", v);
-            return url.substr(v, e == std::string::npos ? std::string::npos : e - v);
-        }
-        q = low.find('&', at);
-    }
-    return std::string();
-}
-
-void web_report_begin(const std::string& url) {
-    g_web_rep = WebReport();
-    const std::string low = url_lower(url);
-    size_t scheme = low.find("://");
-    if (scheme == std::string::npos) return;
-    size_t path = low.find('/', scheme + 3);
-    if (path == std::string::npos) return;
-    size_t v = low.find("/videos/", path);
-    if (v == std::string::npos) v = low.find("/audio/", path);
-    if (v == std::string::npos) return;
-    size_t idStart = low.find('/', v + 1) + 1;
-    size_t idEnd = url.find_first_of("/?#", idStart);
-    std::string key = url_param(url, "api_key");
-    if (key.empty()) key = url_param(url, "ApiKey");
-    if (idEnd == std::string::npos || idEnd == idStart || key.empty()) return;
-
-    g_web_rep.base = url.substr(0, path);
-    if (low.compare(path, 6, "/emby/") == 0) { g_web_rep.base += "/emby"; g_web_rep.emby = true; }
-    g_web_rep.item = url.substr(idStart, idEnd - idStart);
-    g_web_rep.key = key;
-    g_web_rep.mediaSource = url_param(url, "MediaSourceId");
-    if (g_web_rep.mediaSource.empty()) g_web_rep.mediaSource = g_web_rep.item;
-    g_web_rep.playSession = url_param(url, "PlaySessionId");
-    g_web_rep.on = true;
-}
-
-void web_report_cb(int success, int status, const char*, size_t, void* what) {
-    EVO_LOGI("web", "report %s -> ok=%d http=%d", (const char*)what, success, status);
-}
-
-void web_report(const char* what, double pos) {
-    if (!g_web_rep.on) return;
-    char body[640];
-    std::snprintf(body, sizeof body,
-                  "{\"ItemId\":\"%s\",\"MediaSourceId\":\"%s\",\"PlaySessionId\":\"%s\","
-                  "\"PositionTicks\":%lld,\"CanSeek\":true,\"PlayMethod\":\"DirectPlay\"}",
-                  g_web_rep.item.c_str(), g_web_rep.mediaSource.c_str(),
-                  g_web_rep.playSession.c_str(), (long long)(pos * 10000000.0));
-    std::string url = g_web_rep.base + "/Sessions/Playing" + what;
-    /* Emby reads X-Emby-Token; Jellyfin answers it 401 and wants the
-     * MediaBrowser Authorization header (Jellyfin has no /emby prefix). */
-    std::string hdr = g_web_rep.emby
-        ? "X-Emby-Token: " + g_web_rep.key
-        : std::string("Authorization: MediaBrowser Client=\"NoStream\", Device=\"PlayStation 5\", "
-                      "DeviceId=\"evo-ps5-web\", Version=\"") + EVO_PLAYER_VERSION + "\", Token=\"" + g_web_rep.key + "\"";
-    const char* headers[1] = { hdr.c_str() };
-    evo_net_request_async("POST", url.c_str(), body, headers, 1, web_report_cb,
-                          (void*)(what[0] ? what : "/start"));
-}
-
-void webui_playback_pump() {
-    static int phase = 0;           /* 0 idle, 1 starting, 2 playing */
-    static int frames = 0;
-    static bool seen_active = false;
-    Application& app = Application::getInstance();
-
-    if (phase == 0) {
-        char url[2048], title[256];
-        if (!evo_webui_take_play(url, sizeof url, title, sizeof title))
-            return;
-        g_web_src = PlaybackSource();
-        g_web_src.url = url;
-        g_web_src.title = title[0] ? title : "Web";
-        g_web_src.provider = "web";
-        g_web_done = false;
-        g_web_ok = false;
-        pthread_attr_t attr;
-        pthread_attr_init(&attr);
-        pthread_attr_setstacksize(&attr, 2 * 1024 * 1024);
-        int rc = pthread_create(&g_web_thread, &attr, web_start_worker, nullptr);
-        pthread_attr_destroy(&attr);
-        if (rc != 0) {
-            EVO_LOGE("web", "playback worker pthread_create rc=%d", rc);
-            evo_webui_playback_ended(0);
-            return;
-        }
-        phase = 1;
-    } else if (phase == 1) {
-        if (!g_web_done)
-            return;
-        pthread_join(g_web_thread, nullptr);
-        EVO_LOGI("web", "startPlaybackSource -> %s", g_web_ok ? "ok" : "failed");
-        evo_boot_log_flush();
-        if (!g_web_ok) {
-            toast("STREAM", "The web page's stream would not open");
-            evo_webui_playback_ended(0);
-            phase = 0;
-            return;
-        }
-        if (auto sm = app.getScreenManager())
-            sm->navigateTo(ScreenId::Player);
-        phase = 2;
-        frames = 0;
-        seen_active = false;
-        web_report_begin(g_web_src.url);
-        EVO_LOGI("web", "server reporting %s (item %s)", g_web_rep.on ? "on" : "off",
-               g_web_rep.on ? g_web_rep.item.c_str() : "-");
-        web_report("", 0.0);
-    } else {
-        IPlaybackController* pb = app.getPlaybackController();
-        bool active = pb && pb->isActive();
-        if (active) {
-            seen_active = true;
-            /* Kept while playing: the position is gone once playback stops,
-             * and the Stopped report is what sets watched / resume. */
-            double pos = pb->getPositionSeconds();
-            if (pos > 0.0) g_web_rep.lastPos = pos;
-            if (++g_web_rep.frames % 600 == 0)          /* ~10 s */
-                web_report("/Progress", g_web_rep.lastPos);
-        }
-        if ((seen_active && !active) || (!seen_active && ++frames > 600)) {
-            web_report("/Stopped", g_web_rep.lastPos);
-            g_web_rep.on = false;
-            evo_webui_playback_ended(seen_active ? 1 : 0);
-            phase = 0;
-        }
-    }
-}
-#else
-void webui_playback_pump() {}
-#endif
 
 #ifdef EVO_APP_MODULE
 /*
@@ -1257,10 +1028,6 @@ int Application::run() {
         }
 
         evo_net_poll();
-        /* #90: completed provider UI bundle refreshes. Next to evo_net_poll
-         * because a refresh finishes inside one of its callbacks and this is
-         * what turns that into a main-thread callback for the screen. */
-        evo_bundle_poll();
         /* #120: one background release check ~8 s after start-up, a toast if
          * there is a newer one. Never downloads without the user (Settings). */
         {
@@ -1277,8 +1044,7 @@ int Application::run() {
             }
             /* A small card at the side, not a screen: it stays until the user
              * answers (Options = update, Triangle = later; see the input code).
-             * It shows only on calm screens, so it never covers playback or a
-             * provider, and comes back when the user returns to one. */
+             * It shows only on calm screens, so it never covers playback, and comes back when the user returns to one. */
             if (evo_updater_take_new_flag()) g_upd_card_wanted = true;
             if (g_upd_card_wanted && m_screenManager && !m_softClose) {
                 bool calm = false;
@@ -1314,8 +1080,7 @@ int Application::run() {
         }
         evo_usb_remote_poll();
         evo_phone_remote_poll();   /* #238: commands from the phone remote page */
-        evo_webui_pump();   /* #101: the system browser, when a web UI is open */
-        webui_playback_pump();
+        evo_webui_pump();
 
         /* Non-blocking: wakes the log writer thread. This was a blocking
          * fflush+fsync to the USB stick the movie streams from, once a
@@ -1341,10 +1106,6 @@ int Application::run() {
                 }
             }
             evo_speaker_cal_load();
-            /* #90: every provider re-reads its config from the real data
-             * root - same reason recent_load() and the settings service are
-             * re-run here. */
-            evo_provider_mgr_rebind();
             EVO_LOGI("persistence", "rebound to %s after late unjail", evo_data_dir());
             evo_boot_log_flush();
 #endif
@@ -1747,15 +1508,8 @@ int Application::run() {
         }
 
         bool hasAnim = evo::animation::AnimationManager::getInstance().hasActiveAnimations();
-        /*
-         * #90: a provider screen lives in its own Rml context, so its changes
-         * are invisible to evo_rmlui_needs_frame(). Without this a catalog
-         * page or a bundle refresh landing between two button presses would
-         * not be drawn until the next press.
-         */
         int uiActive = (frame < 10) || isPlayer || isSurround || hasInput || hasAnim ||
-                       evo_rmlui_needs_frame() ||
-                       evo_rmlui_provider_needs_frame() || (jb_repaint > 0);
+                       evo_rmlui_needs_frame() || (jb_repaint > 0);
         if (jb_repaint > 0) jb_repaint--;
         evo_rmlui_set_active(uiActive);
 

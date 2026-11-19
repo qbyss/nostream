@@ -52,8 +52,6 @@ const char* screen_name(int id)
     case 19: return "Changelog";
     case 20: return "ExitConfirm";
     case 21: return "TextReader";
-    case 22: return "EmbySetup";
-    case 23: return "EmbyBrowse";
     case 24: return "SettingsPlayback";
     case 25: return "SettingsSubtitles";
     case 26: return "SettingsInterface";

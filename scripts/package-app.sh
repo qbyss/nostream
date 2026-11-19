@@ -498,7 +498,7 @@ PRX_STUB_WANT=()
 # sceCommonDialogInitialize() must run before any common dialog will start.
 if [[ "${MODE}" == "player" ]]; then
     PRX_STUB_WANT+=(libSceVideodec2 libSceAudiodec libSceAgc libSceAgcDriver libSceCommonDialog)
-    # #101: the system web browser (src/evo_webui.c) - a provider's own web UI
+    # System browser dialog used by the YouTube cast receiver.
     # opens in it. No SDK stub exists for it either.
     PRX_STUB_WANT+=(libSceWebBrowserDialog)
     # #106: the DualSense microphone for the Surround Studio's speaker

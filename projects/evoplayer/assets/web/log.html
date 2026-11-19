@@ -233,7 +233,7 @@ mark{background:var(--accent-soft);color:var(--text);border-radius:3px;outline:1
         <div class="seg2" id="sh-kind"><button data-k="play" class="on">Playing a video</button><button data-k="bug">Something else</button></div>
         <div class="dim" id="sh-about"></div></li>
       <li><b>Say what you did and what you saw</b> <span class="dim">(you can also write it on GitHub)</span>
-        <textarea id="sh-text" rows="4" placeholder="I opened a 4K film from Jellyfin and it kept pausing after about 10 minutes."></textarea></li>
+        <textarea id="sh-text" rows="4" placeholder="I opened a 4K film from a USB drive and it kept pausing after about 10 minutes."></textarea></li>
       <li><b>Open GitHub</b>, sign in, drag the downloaded report into <i>Report file</i>, add your firmware and press <i>Submit</i>.</li>
     </ol>
     <div class="shrow"><button class="btn" id="sh-close">Cancel</button><a class="btn pri" id="sh-go" target="_blank" rel="noopener">Open GitHub &#8599;</a></div>
@@ -339,7 +339,6 @@ function storyLine(o, idx) {
   let x;
   if (/^log session start/.test(m)) { S.events.push({ k: "start", t: o.t, i: idx }); return; }
   if ((x = /EVO boot: BUILD (\S+)/.exec(m))) { const s = S.events[S.events.length - 1]; if (s && s.k === "start") s.build = x[1]; return; }
-  if ((x = /provider: stream \d+ chosen for (.+?): \S+$/.exec(m))) { S.pendingTitle = x[1]; S.pendingT = o.t; return; }
   if ((x = /P8_01a_SIO_ENTER (\S+)/.exec(m))) {
     if (S.cur && !S.cur.end) S.cur.end = o.t;
     const url = x[1];
@@ -734,7 +733,7 @@ function syncSheet() {
   const p = reportVideo();
   $("sh-about").textContent = REPORT_KIND === "play"
     ? (p ? "About: " + p.title + (playSummary(p)[0] ? " - " + playSummary(p)[0] : "") : "No video was opened in this run.")
-    : "Screens, settings, providers, drives, start-up or closing EVO.";
+    : "Screens, settings, drives, start-up or closing NoStream.";
   $("sh-go").href = reportURL();
 }
 $("report").onclick = openSheet;

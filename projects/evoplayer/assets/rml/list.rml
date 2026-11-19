@@ -179,7 +179,7 @@
         </div>
     </div>
 
-    <!-- OPTIONS menu (provider chooser): the file browser's operations card -->
+    <!-- OPTIONS menu: the file browser's operations card -->
     <div id="list-menu-scrim" style="display: none;">
         <div id="list-menu-card">
             <div id="list-menu-header">
@@ -188,7 +188,7 @@
                     <span id="list-menu-eyebrow">OPTIONS</span>
                 </div>
                 <div id="list-menu-target">
-                    <img id="list-menu-icon" src="../icons/icon_emby.png" class="action-target-icon"/>
+                    <img id="list-menu-icon" src="../icons/icon_settings.png" class="action-target-icon"/>
                     <div class="action-target-col">
                         <span id="list-menu-title" class="action-target-title"></span>
                         <span id="list-menu-sub" class="action-target-sub"></span>

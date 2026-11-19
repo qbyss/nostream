@@ -26,51 +26,8 @@ python3 tools/bundle_rml_assets.py
 # that path is gone (the console is bare-metal AGC only), so the compare had
 # nothing left to compare against and went with it.
 # -----------------------------------------------------------------------------
-# #90: the provider seam's C sources.
-#
-# Compiled as C with gcc and linked in as objects rather than handed to the g++
-# command below: they use C11 _Thread_local (evo_data_path.c,
-# evo_provider_bundle.c) and designated initialisers in the vtables, neither of
-# which is C++17. One list, so adding a provider is one line here.
-#
-# Two host substitutions, both deliberate and documented where they are made:
-#   NO_OPENSSL=1                 the dev image has no host OpenSSL. https is
-#                                out; the fixture's local server speaks http.
-#   EVO_PROVIDER_ART_NO_DECODE=1 no host FFmpeg development libraries, so
-#                                posters render as the no-artwork branch. Every
-#                                other part of the art path still runs.
-# -----------------------------------------------------------------------------
-echo "--- building provider seam (C)"
-mkdir -p output/uiview/obj
-PROVIDER_OBJS=()
-for c in projects/evoplayer/addons/src/cJSON.c \
-         projects/evoplayer/addons/src/evo_net.c \
-         projects/evoplayer/addons/src/addon_emby.c \
-         projects/evoplayer/addons/src/evo_provider_mgr.c \
-         projects/evoplayer/addons/src/evo_provider_bundle.c \
-         projects/evoplayer/addons/src/provider_iptv.c \
-         projects/evoplayer/addons/src/provider_xtream.c \
-         projects/evoplayer/addons/src/provider_emby.c \
-         projects/evoplayer/addons/src/provider_jellyfin.c \
-         projects/evoplayer/addons/src/provider_nuvio.c \
-         projects/evoplayer/addons/src/provider_stremio.c \
-         projects/evoplayer/addons/src/evo_online_subs.c \
-         projects/evoplayer/addons/src/evo_stremio_account.c \
-         projects/evoplayer/media/src/evo_langpref.c \
-         projects/evoplayer/media/src/evo_langname.c \
-         projects/evoplayer/src/evo_data_path.c \
-         projects/evoplayer/src/evo_error.c \
-         projects/evoplayer/src/evo_readdir.c; do
-    o="output/uiview/obj/$(basename "${c%.c}").o"
-    gcc -O2 -std=c11 -Wall -D_DEFAULT_SOURCE -DNO_OPENSSL=1 \
-        -Iprojects/evoplayer/include \
-        -Iprojects/evoplayer/addons/include \
-        -Iprojects/evoplayer/media/include \
-        -c "$c" -o "$o"
-    PROVIDER_OBJS+=("$o")
-done
-
 echo "--- building uiview_playback_rml"
+mkdir -p output/uiview/obj
 # One g++ over every source took ~95 s, serial. Compile each file on its own, all at
 # once, through ccache (the container's /ccache volume, same as package-app.sh), then
 # link: an unchanged file costs nothing on the next run.
@@ -86,9 +43,13 @@ CXX_SRCS=(
     projects/evoplayer/ui_rml/src/evo_rmlui_fileinterface.cpp
     projects/evoplayer/ui_rml/src/evo_rmlui_bundle.cpp
     projects/evoplayer/ui_rml/src/evo_rmlui_bundle_data.cpp
-    projects/evoplayer/ui_rml/src/evo_rmlui_provider.cpp
-    projects/evoplayer/ui_rml/src/evo_rmlui_provider_art.cpp
 )
+C_OBJS=()
+for c in projects/evoplayer/src/evo_data_path.c projects/evoplayer/src/evo_error.c; do
+    o="output/uiview/obj/$(basename "${c%.c}").o"
+    gcc -O2 -std=c11 -D_DEFAULT_SOURCE -Iprojects/evoplayer/include -c "$c" -o "$o"
+    C_OBJS+=("$o")
+done
 CXX_OBJS=()
 CXX_PIDS=()
 for c in "${CXX_SRCS[@]}"; do
@@ -106,7 +67,6 @@ for c in "${CXX_SRCS[@]}"; do
         -Iprojects/evoplayer/addons/include \
         -Iprojects/evoplayer/core/include \
         -Iprojects/evoplayer/media/include \
-        -DNO_OPENSSL=1 -DEVO_PROVIDER_ART_NO_DECODE=1 \
         -c "$c" -o "$o" &
     CXX_PIDS+=($!)
 done
@@ -115,8 +75,7 @@ for p in "${CXX_PIDS[@]}"; do wait "$p" || cxx_fail=1; done
 (( cxx_fail == 0 )) || { echo "uiview: a source failed to compile" >&2; exit 1; }
 g++ -O2 -std=c++17 \
     -o output/uiview/uiview_playback_rml \
-    "${CXX_OBJS[@]}" \
-    "${PROVIDER_OBJS[@]}" \
+    "${CXX_OBJS[@]}" "${C_OBJS[@]}" \
     -Lbuild/rmlui-host-dist/lib \
     -Lbuild/rmlui-host/RmlUi/build \
     -lrmlui -lfreetype -lpng16 -lz -lpthread \
@@ -125,149 +84,6 @@ g++ -O2 -std=c++17 \
 export LD_LIBRARY_PATH="/workspace/build/rmlui-host-dist/lib:/workspace/build/rmlui-host/RmlUi/build:${LD_LIBRARY_PATH:-}"
 
 # -----------------------------------------------------------------------------
-# #90: stage a provider so its screen renders for real.
-#
-# The fixture drives the actual IPTV provider, the actual evo_net HTTP client
-# and the actual bundle fetch, so it needs a server and a data root. Both are
-# local to this run: a python http.server on the loopback interface - which the
-# container can always reach, unlike the console (docs/console/networking.md)
-# - and a temp directory that EVO_DATA_DIR_OVERRIDE points the data root at.
-#
-# Anything failing here is non-fatal: the provider shots are skipped and every
-# other screen still renders. A broken provider fixture must not cost the whole
-# preview.
-# -----------------------------------------------------------------------------
-PROVIDER_PORT="${EVO_UIVIEW_PROVIDER_PORT:-18099}"
-PROVIDER_SERVE="$(mktemp -d)"
-PROVIDER_DATA="$(mktemp -d)"
-export EVO_DATA_DIR_OVERRIDE="${PROVIDER_DATA}/evoplayer"
-mkdir -p "${EVO_DATA_DIR_OVERRIDE}" "${PROVIDER_SERVE}/ui" "${PROVIDER_SERVE}/media"
-
-PROVIDER_PID=""
-cleanup_provider() {
-    if [[ -n "${PROVIDER_PID}" ]]; then kill "${PROVIDER_PID}" 2>/dev/null || true; fi
-    rm -rf "${PROVIDER_SERVE}" "${PROVIDER_DATA}" 2>/dev/null || true
-}
-trap cleanup_provider EXIT
-
-if [[ -n "${EVO_UIVIEW_ONLY:-}" && ",${EVO_UIVIEW_ONLY}," != *",provider,"* ]]; then
-    echo "--- provider fixture: not needed for EVO_UIVIEW_ONLY=${EVO_UIVIEW_ONLY}, skipping"
-elif [[ -d assets/providers/iptv ]]; then
-    python3 tools/gen_provider_manifest.py assets/providers/iptv >/dev/null 2>&1 || true
-    cp -r assets/providers/iptv "${PROVIDER_SERVE}/ui/iptv"
-
-    # A fixed playlist, not the one tools/provider-server.sh generates: these
-    # shots get diffed against baselines by shot.sh, so the rows have to be
-    # identical between runs. The group titles vary on purpose - the
-    # group-folder path is what a flat list would not exercise - and one name
-    # carries a comma, which is the M3U parse bug every quick parser has.
-    cat > "${PROVIDER_SERVE}/media/iptv.m3u" <<'M3UEOF'
-#EXTM3U
-#EXTINF:-1 tvg-id="n1" tvg-name="News One" group-title="News",News One HD
-http://127.0.0.1:1/n1.m3u8
-#EXTINF:-1 tvg-id="n2" tvg-name="World Report" group-title="News",World Report
-http://127.0.0.1:1/n2.m3u8
-#EXTINF:-1 tvg-id="s1" tvg-name="Sports Prime" group-title="Sports",Sports Prime
-http://127.0.0.1:1/s1.m3u8
-#EXTINF:-1 tvg-id="s2" tvg-name="Match Centre" group-title="Sports",Match Centre
-http://127.0.0.1:1/s2.m3u8
-#EXTINF:-1 tvg-id="s3" tvg-name="Extra Time" group-title="Sports",Extra Time, Highlights
-http://127.0.0.1:1/s3.m3u8
-#EXTINF:-1 tvg-id="c1" tvg-name="Cinema Classics" group-title="Movies",Cinema Classics
-http://127.0.0.1:1/c1.m3u8
-#EXTINF:-1 tvg-id="c2" tvg-name="Action Now" group-title="Movies",Action Now
-http://127.0.0.1:1/c2.m3u8
-#EXTINF:-1 tvg-id="k1" tvg-name="Kids Zone" group-title="Kids",Kids Zone
-http://127.0.0.1:1/k1.m3u8
-M3UEOF
-
-    # A second, deliberately LARGE playlist: one channel in each of 120 groups,
-    # so the root level is 120 folder rows.
-    #
-    # It exists to exercise the row window past EVO_PROVIDER_ROW_WINDOW_MAX,
-    # where the window stops growing and starts SLIDING. That path moves focus
-    # itself to compensate for the slide, and nothing in the fixed playlist
-    # above comes anywhere near it - four groups never leave the first window,
-    # so the whole slide path would otherwise be first executed on hardware.
-    # Generated rather than spelled out only because 120 stanzas is noise.
-    #
-    # Every row also carries a tvg-logo pointing back at this server, so the
-    # fixture exercises the ARTWORK path: request -> fetch -> sniff the magic
-    # bytes -> mkdir -p -> write the cache file. The host cannot decode it
-    # (EVO_PROVIDER_ART_NO_DECODE), so the run ends at "art DECODE fail" - but
-    # that line prints the full cache path, which is the thing worth asserting.
-    # A build that gets the path wrong says `path=.png` there instead, which is
-    # exactly the bug that shipped to hardware twice because nothing off-device
-    # ever asked a provider for a poster.
-    cp -f "${REPO_ROOT}/projects/evoplayer/assets/icons/icon_folder.png" \
-          "${PROVIDER_SERVE}/media/logo.png"
-    {
-        echo "#EXTM3U"
-        i=1
-        while [ "${i}" -le 120 ]; do
-            printf '#EXTINF:-1 tvg-id="g%03d" tvg-name="Group %03d" tvg-logo="http://127.0.0.1:%s/media/logo.png" group-title="Group %03d",Channel %03d\n' \
-                   "${i}" "${i}" "${PROVIDER_PORT}" "${i}" "${i}"
-            printf 'http://127.0.0.1:1/g%03d.m3u8\n' "${i}"
-            i=$((i + 1))
-        done
-    } > "${PROVIDER_SERVE}/media/iptv_big.m3u"
-
-    # XMLTV to go with it. Without an EPG the bundle's NOW/NEXT rows never
-    # render, so the most distinctive part of a channel card was the one part
-    # the preview could not show.
-    #
-    # The programme windows are relative to now, which keeps the shots
-    # diffable: the times move every run but the titles do not, and the titles
-    # are all that reaches a pixel. Only two channels are covered, on purpose -
-    # a grid where every card has an EPG would not show what a card without one
-    # falls back to.
-    python3 - "${PROVIDER_SERVE}/media/epg.xml" <<'EPGEOF'
-import sys, time
-out = sys.argv[1]
-now = time.time()
-def stamp(t):
-    return time.strftime("%Y%m%d%H%M%S +0000", time.gmtime(t))
-chans = [
-    ("n1", "News One",     "World News At One", "Markets Tonight"),
-    ("n2", "World Report", "The Long Read",     "Correspondents"),
-]
-lines = ['<?xml version="1.0" encoding="UTF-8"?>', '<tv>']
-for cid, name, _, _ in chans:
-    lines.append(f'  <channel id="{cid}"><display-name>{name}</display-name></channel>')
-for cid, _, now_t, next_t in chans:
-    lines.append(f'  <programme start="{stamp(now - 900)}" stop="{stamp(now + 1800)}" channel="{cid}">')
-    lines.append(f'    <title>{now_t}</title>')
-    lines.append('  </programme>')
-    lines.append(f'  <programme start="{stamp(now + 1800)}" stop="{stamp(now + 5400)}" channel="{cid}">')
-    lines.append(f'    <title>{next_t}</title>')
-    lines.append('  </programme>')
-lines.append('</tv>')
-open(out, "w", encoding="utf-8").write(chr(10).join(lines) + chr(10))
-EPGEOF
-
-    ( cd "${PROVIDER_SERVE}" && exec python3 -m http.server "${PROVIDER_PORT}" --bind 127.0.0.1 >/dev/null 2>&1 ) &
-    PROVIDER_PID=$!
-
-    cat > "${EVO_DATA_DIR_OVERRIDE}/iptv.conf" <<CONFEOF
-playlist=http://127.0.0.1:${PROVIDER_PORT}/media/iptv.m3u
-xmltv=http://127.0.0.1:${PROVIDER_PORT}/media/epg.xml
-bundle=http://127.0.0.1:${PROVIDER_PORT}/ui/iptv
-CONFEOF
-
-    # Wait for the listener rather than sleeping a guessed interval: the
-    # fixture's first request is the manifest, and losing that race produces a
-    # fallback-skin shot where the bundle was supposed to be.
-    for _ in $(seq 1 50); do
-        if python3 -c "import socket,sys; s=socket.socket(); s.settimeout(0.2); sys.exit(0 if s.connect_ex(('127.0.0.1',${PROVIDER_PORT}))==0 else 1)"; then
-            break
-        fi
-        sleep 0.1
-    done
-    echo "--- provider fixture: http://127.0.0.1:${PROVIDER_PORT} -> ${EVO_DATA_DIR_OVERRIDE}"
-else
-    echo "--- provider fixture: assets/providers/iptv missing, skipping"
-fi
-
 shopt -s nullglob
 rm -f output/uiview/rml_*.bmp   # stale from a prior run
 

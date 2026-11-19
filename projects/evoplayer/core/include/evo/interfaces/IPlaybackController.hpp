@@ -60,10 +60,6 @@ struct PlaybackSource {
     /** What the OSD shows. For a local file this is left empty and the title
      *  is derived from the filename as before. */
     std::string title;
-    /** Provider id, or empty for a local file. */
-    std::string provider;
-    /** Opaque provider item id, or empty for a local file. */
-    std::string item_id;
     /** No duration, not seekable: the OSD, the resume store and the seek path
      *  all assume otherwise, so this has to be known rather than discovered
      *  by a seek that fails. */
@@ -71,10 +67,6 @@ struct PlaybackSource {
     /** Keep out of Recent and the resume store (a cast: the phone owns the
      *  session, and its signed stream URL cannot be replayed later). */
     bool no_history = false;
-    /** A text subtitle file for this stream (a media server's sidecar); empty = none. */
-    std::string subtitleUrl;
-
-    bool isProvider() const { return !provider.empty(); }
 };
 
 /**

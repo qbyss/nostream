@@ -68,18 +68,15 @@ extern "C" void evo_log_alloc_state(const char *when)
 #include "evo_adec.h"
 #include "evo_subtitle.h"
 #include "evo_langpref.h"
-#include "evo_online_subs.h"
 #include "evo_agc_runtime.h"
 #include "evo_stream_io.h"
 #include "pp_stage_breadcrumb.h"
 /* #90: the provider seam. Needed for report_progress from saveResumePosition
  * and for the resolver chain's stream choices; no provider-specific header is
  * included here, which is the point of the vtable. */
-#include "evo_provider.h"
 #include "evo_recent.h"
 #include "evo_toast.h"
 #include "evo_data_path.h"
-#include "evo_net.h"
 #include "evo_boot_log.h"
 #include "evo_boot_trace.h"
 #include "prospero_thumbnail.h"
@@ -131,90 +128,6 @@ extern long long video_queue_byte_cap;
 extern long long audio_queue_byte_cap;
 
 namespace evo {
-
-/*
- * Online subtitles (Stremio addons, evo_online_subs): the file has no track in
- * SUBTITLE LANGUAGE, the addons offered one, so it is fetched now - on the
- * playback worker, like a media server's sidecar - and loaded as the external
- * track. An embedded track in the preferred language always wins; English
- * online subtitles only stand in when the file has no usable track at all.
- *
- * The loaded file is kept for the title, so an audio switch (which reopens the
- * file and clears the external track) brings the same subtitles back.
- */
-void PlaybackController::applyOnlineSubtitles()
-{
-    if (!m_source.isProvider() || m_source.item_id.empty() || !m_source.subtitleUrl.empty())
-        return;
-    if (!play_fmt || isLiveSource())
-        return;
-    char key[512];
-    evo_osubs_key(key, sizeof key);
-    if (m_source.item_id != key)
-        return;
-
-    /* The same title again (audio switch, reopen): restore what was loaded. */
-    {
-        char keptPath[512], keptLabel[96];
-        if (evo_osubs_active() >= 0 &&
-            evo_osubs_remembered(keptPath, sizeof keptPath, keptLabel, sizeof keptLabel)) {
-            if (prospero_subtitle_load_file_quiet(keptPath) > 0)
-                std::snprintf(prospero_subtitle_external_label, sizeof prospero_subtitle_external_label,
-                              "%s", keptLabel);
-            return;
-        }
-    }
-    if (prospero_subtitle_count > 0)
-        return;                       /* a sidecar is already loaded */
-    if (!prospero_subtitle_enabled)
-        return;                       /* AUTO SUBTITLES is off: the picker still lists them */
-
-    int embRank = -1;                 /* -1: no embedded track chosen */
-    const int ei = prospero_embedded_subtitle_stream_index;
-    if (ei >= 0 && ei < static_cast<int>(play_fmt->nb_streams)) {
-        AVStream* st = play_fmt->streams[ei];
-        embRank = prospero_subtitle_stream_is_forced(st) ? 0 : prospero_subtitle_stream_rank(st);
-    }
-    if (embRank >= 2)
-        return;                       /* the file already has your language */
-
-    /* The requests went out with the stream list; give them a moment. */
-    const int n = evo_osubs_wait(key, 4000);
-    int rank = 0;
-    const int best = evo_osubs_best(embRank < 0, &rank);
-    evo_bt("PlaybackController: online subtitles: %d offered, best=%d rank=%d (embedded rank %d)",
-           n, best, rank, embRank);
-    if (best < 0 || rank <= embRank)
-        return;
-
-    const char* path = evo_osubs_fetch_sync(best);
-    if (!path) {
-        evo_bt("PlaybackController: online subtitle download failed");
-        return;
-    }
-    const std::string saved = path;
-    if (prospero_subtitle_load_file_quiet(saved.c_str()) <= 0)
-        return;
-
-    char lang[64];
-    evo_osubs_label(best, lang, sizeof lang);
-    evo_osub_t meta;
-    std::string label = lang;
-    if (evo_osubs_get(best, &meta)) {
-        label += " - ";
-        label += meta.source;
-    }
-    std::snprintf(prospero_subtitle_external_label, sizeof prospero_subtitle_external_label,
-                  "%s", label.c_str());
-    prospero_subtitle_use_external = 1;
-    prospero_subtitle_enabled = 1;
-    evo_osubs_set_active(best);
-    evo_osubs_remember(saved.c_str(), label.c_str());
-    char msg[128];
-    std::snprintf(msg, sizeof msg, "%s (ONLINE)", lang);
-    toast("SUBTITLES", msg);
-}
-
 
 /*
  * Ceiling on avformat_find_stream_info(). It has to clear the slowest probe we
@@ -575,20 +488,6 @@ void PlaybackController::stopPlayback() {
         saveResumePosition();
     }
 
-    /*
-     * #90: close the provider's playback session. After saveResumePosition so
-     * the final position has already gone out as an UPDATE, and before the
-     * source identity is cleared further down.
-     */
-    if (m_source.isProvider()) {
-        const evo_provider_t* prov = evo_provider_find(m_source.provider.c_str());
-        if (prov && (prov->caps & EVO_PROVIDER_CAP_PROGRESS) && prov->report_progress)
-            prov->report_progress(m_source.item_id.c_str(),
-                                  static_cast<int64_t>(getPositionSeconds()),
-                                  static_cast<int64_t>(m_durationSeconds),
-                                  EVO_PROVIDER_PLAY_STOP);
-    }
-
     m_playbackFsm.postEvent(PlaybackEvent::Stop);
     player_paused = 0;
     resetScrubHold();
@@ -725,7 +624,6 @@ void PlaybackController::stopPlayback() {
     }
     m_currentFilePath.clear();
     m_source = PlaybackSource{};
-    m_lastProgressReport = 0.0;
 
     video_decode_ready = 0;
     video_decode_done = 0;
@@ -813,9 +711,6 @@ bool PlaybackController::startPlaybackSource(const PlaybackSource& source,
      */
     if (m_requestedAudioStream < 0 && resumeOffset > 0.0) {
         std::string resumeKey = filePath;
-        if (source.isProvider()) {
-            resumeKey = "evo://" + source.provider + "/" + source.item_id;
-        }
         int rememberedAudio = recent_lookup_audio(resumeKey.c_str());
         if (rememberedAudio < 0) {
             rememberedAudio = loadResumeAudioStream(resumeKey);
@@ -830,20 +725,9 @@ bool PlaybackController::startPlaybackSource(const PlaybackSource& source,
     m_source = source;
     m_source.url = filePath;
     m_currentFilePath = filePath;
-    m_lastProgressReport = 0.0;
 
-    /*
-     * current_media_path is read by the subtitle sidecar scan, the demuxer and
-     * the favourites toggle, all of which expect a filesystem path. A provider
-     * URL is not one - the sidecar scan would stat() nonsense and the
-     * favourites toggle would persist a token - so it stays empty for a
-     * provider source, which is the "no external subtitles, no favouriting"
-     * behaviour those call sites already handle for an empty path.
-     */
-    if (source.isProvider())
-        current_media_path[0] = 0;
-    else
-        std::snprintf(current_media_path, sizeof(current_media_path), "%s", filePath.c_str());
+    std::snprintf(current_media_path, sizeof(current_media_path), "%s",
+                  source.no_history ? "" : filePath.c_str());
 
     std::string openUrl = NetworkStorageService::attachCredentials(rawUrl);
 
@@ -872,8 +756,7 @@ bool PlaybackController::startPlaybackSource(const PlaybackSource& source,
         char why[256];
         toast("OPEN FAIL", evo_error_take(why, sizeof why)
                                ? why
-                               : (source.isProvider() ? "Could not open the stream"
-                                                      : "Could not open media"));
+                               : "Could not open media");
         return false;
     }
 
@@ -995,7 +878,7 @@ bool PlaybackController::startPlaybackSource(const PlaybackSource& source,
      * than leaving the OSD, the resume store and the #32-era seek/overlay path
      * to work it out from a seek that fails - none of them can.
      */
-    if (m_source.isProvider() && !m_source.is_live && play_fmt->duration <= 0)
+    if (m_source.no_history && !m_source.is_live && play_fmt->duration <= 0)
         m_source.is_live = true;
 
     if (play_fmt->duration > 0) {
@@ -1617,24 +1500,6 @@ bool PlaybackController::startPlaybackSource(const PlaybackSource& source,
             EVO_LOGI("subtitles", "sidecar on: %d cues", prospero_subtitle_count);
         }
     }
-    if (!m_source.subtitleUrl.empty()) {
-        /* A media server's sidecar subtitle: fetch it, then it loads like a local .srt. */
-        char* body = nullptr;
-        size_t blen = 0;
-        int st = 0;
-        if (evo_net_http_get_sync(m_source.subtitleUrl.c_str(), nullptr, 0, &body, &blen, &st) == 0 &&
-            body && blen > 0 && st == 200) {
-            const char* tmp = evo_data_path("ext_sub.srt");
-            if (FILE* f = std::fopen(tmp, "wb")) {
-                std::fwrite(body, 1, blen, f);
-                std::fclose(f);
-                prospero_subtitle_load_external(tmp);
-            }
-        } else {
-            EVO_LOGE("playback", "sidecar subtitle fetch failed (http %d)", st);
-        }
-        std::free(body);
-    }
     /*
      * AUTO SUBTITLES: a new file starts with subtitles on or off as the
      * setting says (it was stored and never read, so whatever the last file
@@ -1647,7 +1512,6 @@ bool PlaybackController::startPlaybackSource(const PlaybackSource& source,
     }
     prospero_embedded_subtitle_open(play_fmt);
     prospero_secondary_subtitle_open(play_fmt);   // #110: only if one was chosen for this file
-    applyOnlineSubtitles();
 
     /*
      * Apply the resume position. This has to be a real seek on play_fmt before
@@ -1728,33 +1592,20 @@ bool PlaybackController::startPlaybackSource(const PlaybackSource& source,
     /*
      * Add to recent files database.
      *
-     * #90: a provider source is keyed and titled by its identity, never by its
-     * URL - see saveResumePosition() for why. A live stream is not recorded at
-     * all: there is no position to come back to, and a channel that happens to
-     * be on right now is not a thing the user asked to resume.
+     * Live streams have no position to resume. A transient source may carry
+     * a signed URL that expires, so it also stays out of the history.
      */
     if (!m_source.is_live && !m_source.no_history) {
-        std::string recentKey = filePath;
         std::string mediaTitle = m_source.title, mediaCat;
-        if (m_source.isProvider())
-            recentKey = "evo://" + m_source.provider + "/" + m_source.item_id;
         if (mediaTitle.empty()) {
             if (auto metaService = Application::getInstance().getMediaMetadataService())
                 metaService->cleanMediaTitle(filePath.c_str(), mediaTitle, mediaCat);
         }
-        recent_add_or_update(recentKey.c_str(), mediaTitle.c_str(),
+        recent_add_or_update(filePath.c_str(), mediaTitle.c_str(),
                              m_resumeBaseOffset, m_durationSeconds, audio_stream_index);
         recent_save();
     }
 
-    /* Let the provider know a session started, if it tracks them. */
-    if (m_source.isProvider()) {
-        const evo_provider_t* prov = evo_provider_find(m_source.provider.c_str());
-        if (prov && (prov->caps & EVO_PROVIDER_CAP_PROGRESS) && prov->report_progress)
-            prov->report_progress(m_source.item_id.c_str(), 0,
-                                  static_cast<int64_t>(m_durationSeconds),
-                                  EVO_PROVIDER_PLAY_START);
-    }
     player_paused = 0;
     video_decode_ready = (video_stream_index >= 0) ? 1 : 0;
     video_decode_done = 0;
@@ -2083,30 +1934,6 @@ void PlaybackController::saveResumePosition() {
     double pos = getPositionSeconds();
 
     /*
-     * #90 scope 15: tell the provider where we are, before the local
-     * bookkeeping. Rate-limited to roughly every ten seconds: this function is
-     * the periodic tick (Bridge.cpp's save_resume_position), and Emby's
-     * /Sessions/Playing/Progress on every call would be one request per tick
-     * for a value that has moved by a second.
-     */
-    if (m_source.isProvider()) {
-        const evo_provider_t* p = evo_provider_find(m_source.provider.c_str());
-        if (p && (p->caps & EVO_PROVIDER_CAP_PROGRESS) && p->report_progress) {
-            double now = static_cast<double>(GetCurrentTimeMs()) / 1000.0;
-            const bool paused = isPaused();
-            const bool pauseChanged = paused != (evo_provider_is_paused() != 0);
-            evo_provider_set_paused(paused ? 1 : 0);
-            if (pauseChanged || m_lastProgressReport <= 0.0 || now - m_lastProgressReport >= 10.0) {
-                m_lastProgressReport = now;
-                p->report_progress(m_source.item_id.c_str(),
-                                   static_cast<int64_t>(pos),
-                                   static_cast<int64_t>(m_durationSeconds),
-                                   EVO_PROVIDER_PLAY_UPDATE);
-            }
-        }
-    }
-
-    /*
      * A live stream has no position worth keeping. Writing one would make the
      * next launch of that channel seek to a point the stream does not have,
      * which on an HLS endpoint is a failed open rather than a wrong position.
@@ -2117,28 +1944,12 @@ void PlaybackController::saveResumePosition() {
         pos = 0.0; // Clear near start or finish
     }
 
-    /*
-     * What gets PERSISTED is never the URL.
-     *
-     * A provider URL carries an auth token and an expiry. Storing it in Recent
-     * or Favorites leaks the token into a plaintext file and stores something
-     * that will not work later anyway. The durable key is the provider id plus
-     * the opaque item id - which is exactly what resolve() takes, so a future
-     * "resume from Recent" has everything it needs and nothing it should not.
-     */
-    std::string persistKey = m_currentFilePath;
-    if (m_source.isProvider()) {
-        persistKey = "evo://" + m_source.provider + "/" + m_source.item_id;
-    } else {
-        char cleanPersist[512];
-        evo_url_sanitize(persistKey.c_str(), cleanPersist, sizeof(cleanPersist));
-        persistKey = cleanPersist;
-    }
-
+    char persistKey[512];
+    evo_url_sanitize(m_currentFilePath.c_str(), persistKey, sizeof(persistKey));
     const char* resumeFile = evo_data_path("ps5_media_resume.txt");
     FILE* fp = std::fopen(resumeFile, "w");
     if (fp) {
-        std::fprintf(fp, "%s\n%.2f\n%d\n", persistKey.c_str(), pos, audio_stream_index);
+        std::fprintf(fp, "%s\n%.2f\n%d\n", persistKey, pos, audio_stream_index);
         std::fclose(fp);
     }
 
@@ -2159,7 +1970,7 @@ void PlaybackController::saveResumePosition() {
     } else if (auto metaService = Application::getInstance().getMediaMetadataService()) {
         metaService->cleanMediaTitle(m_currentFilePath, title, category);
     }
-    recent_add_or_update(persistKey.c_str(), title.c_str(),
+    recent_add_or_update(persistKey, title.c_str(),
                          pos, m_durationSeconds, audio_stream_index);
     recent_save();
 }
@@ -2170,6 +1981,8 @@ double PlaybackController::loadResumePosition(const std::string& filePath) const
     char cleanFile[512];
     evo_url_sanitize(filePath.c_str(), cleanFile, sizeof(cleanFile));
 
+    char persistKey[512];
+    evo_url_sanitize(m_currentFilePath.c_str(), persistKey, sizeof(persistKey));
     const char* resumeFile = evo_data_path("ps5_media_resume.txt");
     FILE* fp = std::fopen(resumeFile, "r");
     if (!fp) return 0.0;
@@ -2200,6 +2013,8 @@ int PlaybackController::loadResumeAudioStream(const std::string& filePath) const
     char cleanFile[512];
     evo_url_sanitize(filePath.c_str(), cleanFile, sizeof(cleanFile));
 
+    char persistKey[512];
+    evo_url_sanitize(m_currentFilePath.c_str(), persistKey, sizeof(persistKey));
     const char* resumeFile = evo_data_path("ps5_media_resume.txt");
     FILE* fp = std::fopen(resumeFile, "r");
     if (!fp) return -1;

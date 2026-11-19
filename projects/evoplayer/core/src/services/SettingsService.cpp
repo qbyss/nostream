@@ -341,7 +341,7 @@ bool SettingsService::saveSettings() {
         static_cast<int>(m_hdrOutputMode),   // line 17 (HDR10 output)
         m_secondarySubtitlePosition,         // line 18 (#110)
         m_secondarySubtitleColor,            // line 19 (#110)
-        m_askStream ? 1 : 0,                 // line 20 (live TV stream picker)
+        0,                                   // line 20 (reserved)
         static_cast<int>(m_audioOutputChannels), // line 21 (#117 stereo downmix)
         static_cast<int>(m_motionSmoothing), // line 22 (#105 motion smoothing)
         static_cast<int>(m_deepBlacks),      // line 23 (#119 deep blacks)
@@ -355,7 +355,7 @@ bool SettingsService::saveSettings() {
         static_cast<int>(m_hdrPeak),         // line 31 (HDR peak mapping)
         static_cast<int>(m_audioLanguage),   // line 32 (preferred audio language)
         static_cast<int>(m_subtitleLanguage), // line 33 (preferred subtitle language)
-        m_addonAutoPick ? 1 : 0,             // line 34 (addons: play the best stream at once)
+        0,                                   // line 34 (reserved)
         static_cast<int>(m_skipSegments),    // line 35 (skip intros & credits: Off=0, Ask=1, Auto=2)
         m_webBrowser ? 1 : 0,                // line 36 (experimental: web browser)
         m_subtitleSize,                      // line 37 (#231 subtitle size: 0 small .. 3 extra large)
@@ -403,7 +403,7 @@ bool SettingsService::loadSettings() {
     int rawHdrOutputMode = 0;
     int rawSecondaryPosition = 0;
     int rawSecondaryColor = 0;
-    int rawAskStream = 1;
+    int reserved20 = 0;
     int rawAudioChannels = 0;
     int rawMotionSmoothing = 0;
     int rawDeepBlacks = 0;
@@ -417,7 +417,7 @@ bool SettingsService::loadSettings() {
     int rawHdrPeak = 0;
     int rawAudioLanguage = 0;
     int rawSubtitleLanguage = 0;
-    int rawAddonAutoPick = 1;
+    int reserved34 = 0;
     int rawSkipSegments = static_cast<int>(SkipSegments::Ask);
     int rawWebBrowser = 0;
     int rawSubtitleSize = 1;
@@ -453,7 +453,7 @@ bool SettingsService::loadSettings() {
         &rawHdrOutputMode,
         &rawSecondaryPosition,
         &rawSecondaryColor,
-        &rawAskStream,
+        &reserved20,
         &rawAudioChannels,
         &rawMotionSmoothing,
         &rawDeepBlacks,
@@ -467,7 +467,7 @@ bool SettingsService::loadSettings() {
         &rawHdrPeak,
         &rawAudioLanguage,
         &rawSubtitleLanguage,
-        &rawAddonAutoPick,
+        &reserved34,
         &rawSkipSegments,
         &rawWebBrowser,
         &rawSubtitleSize,
@@ -539,7 +539,6 @@ bool SettingsService::loadSettings() {
     }
     if (readCount >= 18) setSecondarySubtitlePosition(rawSecondaryPosition);
     if (readCount >= 19) setSecondarySubtitleColor(rawSecondaryColor);
-    if (readCount >= 20) m_askStream = (rawAskStream != 0);
     if (readCount >= 21 && rawAudioChannels >= 0 && rawAudioChannels <= 1) {
         m_audioOutputChannels = static_cast<AudioOutputChannels>(rawAudioChannels);
     }
@@ -574,7 +573,6 @@ bool SettingsService::loadSettings() {
     if (readCount >= 33 && rawSubtitleLanguage >= 0 && rawSubtitleLanguage < kPreferredLanguageCount) {
         setSubtitleLanguage(static_cast<PreferredLanguage>(rawSubtitleLanguage));
     }
-    if (readCount >= 34) m_addonAutoPick = (rawAddonAutoPick != 0);
     if (readCount >= 35 && rawSkipSegments >= 0 && rawSkipSegments <= 2) {
         m_skipSegments = static_cast<SkipSegments>(rawSkipSegments);
     }

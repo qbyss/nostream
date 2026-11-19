@@ -19,7 +19,6 @@
 #include "../../browser/evo_browser_hooks.hpp"
 #include "evo_hui_settings.hpp"
 #include "evo_hui_surround.hpp"
-#include "evo_hui_provider.hpp"
 #include "hui_agc_batch.hpp"
 
 #include "evo_agc_runtime.h"
@@ -95,7 +94,6 @@ enum class Screen
     reader,
     image,
     surround,
-    provider,
     webpage,
     dialog, /* overlays from here on */
     toast,
@@ -333,8 +331,6 @@ const char *doc_name(Screen s)
         return "hui_image";
     case Screen::surround:
         return "hui_surround";
-    case Screen::provider:
-        return "hui_provider";
     case Screen::webpage:
         return "hui_webpage";
     default:
@@ -381,7 +377,6 @@ struct Kit
     evo::kit::ReaderScreen reader;
     evo::kit::ImageViewer image;
     evo::kit::SurroundScreen surround;
-    evo::kit::ProviderGridScreen provider;
     evo::kit::KeyboardOverlay keyboard;
     bool keyboard_visible = false;
     /* Frame bookkeeping: one dt per presented frame, however many kit draws
@@ -531,8 +526,6 @@ struct Kit
                 image.enter();
             else if (screen == Screen::surround)
                 surround.enter();
-            else if (screen == Screen::provider)
-                provider.enter();
         }
         const float dt = step();
         rail.update(dt);
@@ -688,8 +681,6 @@ const char *evo_hui_dev_focus_json(const char **screen_doc)
         has = k.image.focus(&f);
     else if (!has && k.drawn_last_frame == Screen::surround)
         has = k.surround.focus(&f);
-    else if (!has && k.drawn_last_frame == Screen::provider)
-        has = k.provider.focus(&f);
     else if (!has && k.drawn_last_frame == Screen::webpage)
         has = evo::kit::web_browser_focus(&f);
     static std::string o;
@@ -1001,22 +992,6 @@ int evo_hui_render_surround(int width, int height)
                     [&](float dt, hui::gfx::DrawList &list, const Context &ctx) {
                         k.surround.update(dt);
                         k.surround.draw(list, ctx);
-                    });
-}
-
-void evo_hui_update_provider(const evo_hui_provider_params_t *params)
-{
-    if (params)
-        kit().provider.set(*params);
-}
-
-int evo_hui_render_provider(int width, int height)
-{
-    Kit &k = kit();
-    return k.render(Screen::provider, width, height,
-                    [&](float dt, hui::gfx::DrawList &list, const Context &ctx) {
-                        k.provider.update(dt);
-                        k.provider.draw(list, ctx);
                     });
 }
 

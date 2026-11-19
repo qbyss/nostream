@@ -1,4 +1,3 @@
-#include "evo_features.h"
 #include "evo_rmlui_app.h"
 #if defined(EVO_AGC_DEVICE)
 #include "evo_hui.h"
@@ -1058,9 +1057,7 @@ void EvoRmlApp::UpdateLaunchState(const EvoLaunchState& state) {
         }
         if (el_icon) {
             if (!t.icon_path.empty()) el_icon->SetAttribute("src", t.icon_path);
-            /* Library slot 3 is the Emby destination - icon_emby.png is a
-             * trademark excluded from the icon swap/tint, kept as baked. */
-            if (i != 3) SetImageColor(el_icon, t.is_focused ? to_hex_rgb(m_theme.accent_alt) : "#9fb2cc");
+            SetImageColor(el_icon, t.is_focused ? to_hex_rgb(m_theme.accent_alt) : "#9fb2cc");
         }
         if (el_title)  el_title->SetInnerRML(t.title);
         if (el_detail) {
@@ -1087,7 +1084,7 @@ void EvoRmlApp::RenderLaunch(uint32_t* framebuffer, int width, int height) {
 }
 
 /* ==========================================================================
- * Generic list screen — recent, favorites, emby setup, emby browse
+ * Generic list screen — recent and favorites
  * ========================================================================== */
 
 void EvoRmlApp::UpdateListState(const EvoListState& state) {
@@ -3906,29 +3903,13 @@ void EvoRmlApp::UpdateNavState(const EvoNavState& state) {
     if (Rml::Element* el_warn = m_nav_doc->GetElementById("nav-privilege-banner"))
         el_warn->SetProperty("display", state.storage_locked ? "flex" : "none");
 
-    /* ---- collapsed icon rail ----
-     *
-     * navbar.rml carries a fixed five slots, Emby at slot 2. With Emby
-     * compiled out (EVO_ENABLE_EMBY) ScreenManager numbers the remaining
-     * sections 0..3, so the logical section has to be mapped onto the markup
-     * slot that still holds its icon - otherwise Settings would drive the Emby
-     * row. The unused slot is hidden so the rail closes up rather than leaving
-     * a gap where Emby used to be.
-     */
-    const int rail_sections = EVO_ENABLE_EMBY ? 5 : 4;
-    if (!EVO_ENABLE_EMBY) {
-        if (Rml::Element* el_gap = m_nav_doc->GetElementById("nav-wrap-2"))
-            el_gap->SetProperty("display", "none");
-    }
-
-    /* One entry past the sections: QUIT EVO, markup slot 5 at the foot of
+    const int rail_sections = 4;
+    /* One entry past the sections: Quit, at the foot of
      * the rail. It is never the active section, only ever the cursor. */
     for (int i = 0; i <= rail_sections; i++) {
-        const int slot = (i == rail_sections) ? 5
-                       : (!EVO_ENABLE_EMBY && i >= 2) ? i + 1 : i;
-        std::string item_id  = "nav-item-" + std::to_string(slot);
-        std::string bar_id   = "nav-bar-"  + std::to_string(slot);
-        std::string icon_id  = "nav-icon-" + std::to_string(slot);
+        std::string item_id  = "nav-item-" + std::to_string(i);
+        std::string bar_id   = "nav-bar-"  + std::to_string(i);
+        std::string icon_id  = "nav-icon-" + std::to_string(i);
 
         Rml::Element* el_item = m_nav_doc->GetElementById(item_id);
         Rml::Element* el_bar  = m_nav_doc->GetElementById(bar_id);
@@ -3959,10 +3940,8 @@ void EvoRmlApp::UpdateNavState(const EvoNavState& state) {
 
         /* Icon glyph: the cursor pill fills solid accent, so the glyph has to
          * flip to the darkest theme colour there or it disappears into it -
-         * same trick as the settings/list focused badges. Section 2 (Emby) is
-         * a trademark, excluded from the icon swap, so it keeps its own baked
-         * colour rather than being retinted. */
-        if (el_icon && i != 2) {
+         * same trick as the settings/list focused badges. */
+        if (el_icon) {
             if (is_cursor)
                 SetImageColor(el_icon, to_hex_rgb(m_theme.bg_bottom));
             else if (is_active)
@@ -3985,27 +3964,10 @@ void EvoRmlApp::UpdateNavState(const EvoNavState& state) {
     if (scrim)    scrim->SetProperty("display",    state.rail_focused ? "block" : "none");
     if (expanded) expanded->SetProperty("display", state.rail_focused ? "block" : "none");
 
-    /*
-     * Same slot mapping as the collapsed rail above: navbar.rml has five fixed
-     * expanded rows with Emby at slot 2, and with Emby compiled out the four
-     * live sections are numbered 0..3.
-     *
-     * This panel was missed when the collapsed rail was fixed, and the host
-     * preview did not catch it because uiview only renders the rail collapsed
-     * - so Emby disappeared from the icon strip and stayed in the side nav the
-     * moment anyone opened it.
-     */
-    if (!EVO_ENABLE_EMBY) {
-        if (Rml::Element* el_gap = m_nav_doc->GetElementById("nav-exp-2"))
-            el_gap->SetProperty("display", "none");
-    }
-
-    for (int i = 0; i <= rail_sections; i++) {   /* + QUIT EVO, slot 5 */
-        const int eslot = (i == rail_sections) ? 5
-                        : (!EVO_ENABLE_EMBY && i >= 2) ? i + 1 : i;
-        std::string exp_id  = "nav-exp-"       + std::to_string(eslot);
-        std::string lbl_id  = "nav-exp-label-" + std::to_string(eslot);
-        std::string icon_id = "nav-exp-icon-"  + std::to_string(eslot);
+    for (int i = 0; i <= rail_sections; i++) {
+        std::string exp_id  = "nav-exp-"       + std::to_string(i);
+        std::string lbl_id  = "nav-exp-label-" + std::to_string(i);
+        std::string icon_id = "nav-exp-icon-"  + std::to_string(i);
 
         Rml::Element* el_exp  = m_nav_doc->GetElementById(exp_id);
         Rml::Element* el_lbl  = m_nav_doc->GetElementById(lbl_id);
@@ -4024,19 +3986,19 @@ void EvoRmlApp::UpdateNavState(const EvoNavState& state) {
             el_exp->SetProperty("border-color", "#ffffff");
             el_exp->SetProperty("border-width", "1.5px");
             if (el_lbl) el_lbl->SetProperty("color", "#060b16");
-            if (el_icon && i != 2) SetImageColor(el_icon, to_hex_rgb(m_theme.bg_bottom));
+            if (el_icon) SetImageColor(el_icon, to_hex_rgb(m_theme.bg_bottom));
         } else if (is_active) {
             el_exp->SetProperty("background-color", to_hex_rgba(m_theme.surface_sel));
             el_exp->SetProperty("border-color", to_hex_rgba(m_theme.border));
             el_exp->SetProperty("border-width", "1px");
             if (el_lbl) el_lbl->SetProperty("color", to_hex_rgb(m_theme.text_primary));
-            if (el_icon && i != 2) SetImageColor(el_icon, to_hex_rgb(m_theme.accent));
+            if (el_icon) SetImageColor(el_icon, to_hex_rgb(m_theme.accent));
         } else {
             el_exp->SetProperty("background-color", "transparent");
             el_exp->SetProperty("border-color", "transparent");
             el_exp->SetProperty("border-width", "0px");
             if (el_lbl) el_lbl->SetProperty("color", to_hex_rgb(m_theme.text_secondary));
-            if (el_icon && i != 2) SetImageColor(el_icon, to_hex_rgb(m_theme.text_secondary));
+            if (el_icon) SetImageColor(el_icon, to_hex_rgb(m_theme.text_secondary));
         }
     }
 }
@@ -4164,47 +4126,6 @@ void EvoRmlApp::RenderToast(uint32_t* framebuffer, int width, int height) {
     m_render->FrameBegin();
     m_toast_context->Render();
     m_render->FrameEnd();
-#if defined(EVO_AGC_DEVICE)
-    m_drew = true;
-#endif
-}
-
-/* ---- #90: nav rail over a provider screen ---------------------------- */
-
-void EvoRmlApp::RenderNavOverlay(uint32_t* framebuffer, int width, int height) {
-    if (!m_initialized || !m_context || !m_nav_doc || !framebuffer) return;
-    if (!m_last_nav.visible) return;
-
-    /*
-     * Hide every EVO screen document and render the main context, so the only
-     * thing that draws is the rail. navbar.rcss keeps its body transparent, so
-     * this composites over whatever the provider's context already painted.
-     *
-     * m_cached_screen is invalidated because the next EVO screen to come up
-     * must re-rasterise: the cached surface no longer holds what it thinks it
-     * holds, and a stale surface blitted over a provider screen is a
-     * wrong-looking frame with no error anywhere.
-     */
-    ShowOnlyScreen(nullptr);
-    m_nav_doc->Show();
-
-    m_render->SetFramebuffer(framebuffer);
-    m_render->SetDimensions(width, height);
-    m_context->Update();
-    m_render->FrameBegin();
-    m_context->Render();
-    m_render->FrameEnd();
-
-    /*
-     * The cached menu surface no longer holds what it thinks it holds, so the
-     * next EVO screen has to re-rasterise. Invalidating the id is enough -
-     * RenderCachedScreen re-rasters on a screen change - and is deliberately
-     * NOT m_frame_dirty: setting that here would make GlNeedsFrame() true on
-     * every frame for as long as a provider screen is up, which is a redraw
-     * per frame forever. The provider host reports its own liveness through
-     * evo_rmlui_provider_needs_frame() instead.
-     */
-    m_cached_screen = -1;
 #if defined(EVO_AGC_DEVICE)
     m_drew = true;
 #endif

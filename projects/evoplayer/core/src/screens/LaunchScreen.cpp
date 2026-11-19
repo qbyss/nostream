@@ -1,6 +1,4 @@
-#include "evo/screens/ProviderHostScreen.hpp"
 #include "evo/screens/LaunchScreen.hpp"
-#include "evo_features.h"
 #include "evo/screens/BrowserScreen.hpp"
 #include "evo/Application.hpp"
 #include "evo/services/NetworkStorageService.hpp"
@@ -24,14 +22,12 @@
 
 #include <algorithm>
 
-extern "C" const uint32_t* evo_home_art_get(const char*, int, int*, int*);
-extern "C" void evo_provider_art_poll(void);
 
 namespace evo {
 
 namespace {
 
-enum LibAction { LIB_BROWSE, LIB_RECENT, LIB_FAVORITES, LIB_EMBY, LIB_SETTINGS, LIB_ABOUT };
+enum LibAction { LIB_BROWSE, LIB_RECENT, LIB_FAVORITES, LIB_SETTINGS, LIB_ABOUT };
 
 struct LibTile {
     const char* title;
@@ -40,19 +36,12 @@ struct LibTile {
     LibAction   action;
 };
 
-/*
- * The library shelf, with disabled features filtered out once. Emby is off by
- * default (EVO_ENABLE_EMBY in evo_features.h) while it is being reworked; the
- * screens behind it still build and still work, they are just not reachable.
- */
+/* Home library shortcuts. */
 const LibTile* libraryTiles() {
     static const LibTile tiles[] = {
         {"BROWSE",    "USB drives",           "../icons/icon_browse_usb.png",    LIB_BROWSE},
         {"RECENT",    "Resume watching",      "../icons/icon_recent_files.png",  LIB_RECENT},
         {"FAVORITES", "Saved for later",      "../icons/icon_favorites.png",     LIB_FAVORITES},
-#if EVO_ENABLE_EMBY
-        {"PROVIDERS", "Online sources",       "../icons/icon_emby.png",       LIB_EMBY},
-#endif
         {"SETTINGS",  "Video & audio",        "../icons/icon_settings.png",      LIB_SETTINGS},
         {"ABOUT",     "Credits & info",       "../icons/icon_about_support.png", LIB_ABOUT},
     };
@@ -60,7 +49,7 @@ const LibTile* libraryTiles() {
 }
 
 int libraryTileCount() {
-    return EVO_ENABLE_EMBY ? 6 : 5;
+    return 5;
 }
 
 } // namespace
@@ -199,20 +188,16 @@ void LaunchScreen::activateSelection() {
     if (m_selectedRow == 0) {
         // Hero row
         if (recent_file_count > 0) {
-            if (!ProviderHostScreen::launchRecent(recent_files[0].path, recent_files[0].title, recent_files[0].last_pos)) {
-                if (playback->startPlayback(recent_files[0].path, recent_files[0].last_pos))
-                    screenMgr->navigateTo(ScreenId::Player);   // on failure the toast is up and we stay
-            }
+            if (playback->startPlayback(recent_files[0].path, recent_files[0].last_pos))
+                screenMgr->navigateTo(ScreenId::Player);   // on failure the toast is up and we stay
         } else {
             screenMgr->navigateTo(ScreenId::UsbBrowser);
         }
     } else if (m_selectedRow == 1) {
         // Recent shelf
         if (m_selectedCol >= 0 && m_selectedCol < recent_file_count) {
-            if (!ProviderHostScreen::launchRecent(recent_files[m_selectedCol].path, recent_files[m_selectedCol].title, recent_files[m_selectedCol].last_pos)) {
-                if (playback->startPlayback(recent_files[m_selectedCol].path, recent_files[m_selectedCol].last_pos))
-                    screenMgr->navigateTo(ScreenId::Player);
-            }
+            if (playback->startPlayback(recent_files[m_selectedCol].path, recent_files[m_selectedCol].last_pos))
+                screenMgr->navigateTo(ScreenId::Player);
         }
     } else if (m_selectedRow == 2) {
         // Library shelf navigation. Dispatch on the tile's action rather than
@@ -233,12 +218,6 @@ void LaunchScreen::activateSelection() {
                 screenMgr->navigateTo(ScreenId::UsbBrowser);
                 break;
             }
-            /* #90: the provider host, not the old Emby setup stub. The rail
-             * slot already went here; this tile still pointed at
-             * ScreenId::EmbySetup, whose screen is a dead 78-line placeholder
-             * that renders one row and calls no emby_* function. Two entry
-             * points to one slot, landing on different screens. */
-            case LIB_EMBY:     screenMgr->navigateTo(ScreenId::EmbyBrowse); break;
             case LIB_SETTINGS: screenMgr->navigateTo(ScreenId::Settings); break;
             case LIB_ABOUT:    screenMgr->navigateTo(ScreenId::AboutSupport); break;
             default: break;
@@ -308,8 +287,6 @@ void LaunchScreen::render(uint32_t* framebuffer, int width, int height) {
     }
 
     auto coverService = Application::getInstance().getCoverArtService();
-    /* Complete up to two provider artwork decodes per Home frame. */
-    evo_provider_art_poll();
 
     bool railFocused = false;
     if (auto sm = Application::getInstance().getScreenManager()) {
@@ -322,11 +299,10 @@ void LaunchScreen::render(uint32_t* framebuffer, int width, int height) {
     char safeRecentTitles[EVO_RMLUI_TILES][128];
 
     /* A file's name tidied again on the way out, so entries saved before the
-     * title cleaner learned release tags read well too. Provider titles are
-     * real titles already. */
+     * title cleaner learned release tags read well too. */
     auto metaService = Application::getInstance().getMediaMetadataService();
     auto displayTitle = [&](const RecentFileEntry& r) -> std::string {
-        if (std::strncmp(r.path, "evo://", 6) != 0 && metaService) {
+        if (metaService) {
             std::string t, cat;
             metaService->cleanMediaTitle(r.path, t, cat);
             if (!t.empty()) return t;
@@ -345,17 +321,12 @@ void LaunchScreen::render(uint32_t* framebuffer, int width, int height) {
         if (NetworkStorageService::serverStatusForUrl(r.path) == 0)
             params.hero_eyebrow = "SERVER OFFLINE";
         params.hero_title = safeHeroTitle;
-        params.hero_detail = (std::strncmp(safeHeroDetail, "evo://", 6) == 0) ? "Provider media" : safeHeroDetail;
+        params.hero_detail = safeHeroDetail;
         params.hero_action = (r.last_pos > 1.0) ? "RESUME" : "PLAY";
         if (r.duration > 1.0) {
             params.hero_progress = static_cast<int>((r.last_pos / r.duration) * 1000.0);
         }
-        if (std::strncmp(r.path, "evo://", 6) == 0) {
-            int aw = 0, ah = 0;
-            params.hero_art = evo_home_art_get(r.path, 1, &aw, &ah);
-            params.hero_art_w = aw;
-            params.hero_art_h = ah;
-        } else if (coverService) {
+        if (coverService) {
             /*
              * Only pay for the 960x540 extraction once the cursor has settled
              * (see HeroSettleMs). While it is moving, the shelf's own cached
@@ -398,32 +369,13 @@ void LaunchScreen::render(uint32_t* framebuffer, int width, int height) {
         const std::string name = displayTitle(r);
         evo_url_sanitize(!name.empty() ? name.c_str() : safeRecentPath, safeRecentTitles[i], sizeof(safeRecentTitles[i]));
         params.recent[i].title = safeRecentTitles[i];
-        params.recent[i].detail = (std::strncmp(safeRecentPath, "evo://", 6) == 0) ? "Provider media" : "Recent File";
+        params.recent[i].detail = "Recent File";
         params.recent[i].icon_path = "../icons/icon_recent_files.png";
-        if (std::strncmp(r.path, "evo://", 6) == 0) {      /* no poster: the service's own mark, not a clock */
-            static const struct { const char* prefix; const char* icon; } kBrands[] = {
-                { "evo://jellyfin/", "../icons/brand_jellyfin.png" }, { "evo://emby/", "../icons/brand_emby.png" },
-                { "evo://plex/", "../icons/brand_plex.png" },         { "evo://nuvio/", "../icons/brand_nuvio.png" },
-                { "evo://stremio/", "../icons/brand_stremio.png" },   { "evo://addons/", "../icons/brand_stremio.png" },
-                { "evo://iptv/", "../icons/icon_tv.png" },
-                { "evo://xtream/", "../icons/icon_tv.png" },
-            };
-            for (const auto& b : kBrands)
-                if (std::strncmp(r.path, b.prefix, std::strlen(b.prefix)) == 0) params.recent[i].icon_path = b.icon;
-        }
-        if (r.duration > 1.0) {
-            params.recent[i].progress = static_cast<int>((r.last_pos / r.duration) * 1000.0);
-        } else {
-            params.recent[i].progress = -1;
-        }
+        params.recent[i].progress = r.duration > 1.0
+            ? static_cast<int>((r.last_pos / r.duration) * 1000.0) : -1;
 
         const uint32_t* art = nullptr;
-        if (std::strncmp(r.path, "evo://", 6) == 0) {
-            int aw = 0, ah = 0;
-            art = evo_home_art_get(r.path, 0, &aw, &ah);
-            params.recent[i].art_w = aw;
-            params.recent[i].art_h = ah;
-        } else if (coverService) {
+        if (coverService) {
             art = coverService->peekCoverArt(r.path);
             bool tried = coverService->hasTriedCoverArt(r.path);
             if (!art && !tried && coverBudget > 0) {
@@ -434,16 +386,12 @@ void LaunchScreen::render(uint32_t* framebuffer, int width, int height) {
         if (art) {
             params.recent[i].art = art;
         }
-        if (std::strncmp(r.path, "evo://", 6) != 0) {
-            params.recent[i].art_w = ICoverArtService::PosterWidth;
-            params.recent[i].art_h = ICoverArtService::PosterHeight;
-        }
+        params.recent[i].art_w = ICoverArtService::PosterWidth;
+        params.recent[i].art_h = ICoverArtService::PosterHeight;
         params.recent[i].is_focused = (!railFocused && m_selectedRow == 1 && m_selectedCol == i);
     }
 
-    // Library shelf (System sections). One table rather than parallel arrays,
-    // so a disabled feature drops out of the shelf and out of its activation
-    // switch together - see libraryTiles() and EVO_ENABLE_EMBY.
+    // Library shelf
     const LibTile* lib = libraryTiles();
     params.library_visible = libraryTileCount();
 
@@ -481,7 +429,6 @@ void LaunchScreen::fillHomeTips(evo_rmlui_launch_params_t& params) {
     add("Stereo can fill four speakers: Settings > Audio > Upmix stereo to 4.0");
     add("Phone calls in films can play on the controller speaker: Settings > Audio");
     add("Watch from a PC or NAS: Browse > Add Server (SMB or FTP)");
-    add("Jellyfin, Emby, Stremio and IPTV are under Providers");
     add("Subtitles from any folder: press Down in the player, then Load from file");
     add("Skip intros and credits: press Triangle when the Skip button shows");
     add("Upscaling sharpens SD and HD video on a 4K TV: Settings > Video & Display");

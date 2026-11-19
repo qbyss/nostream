@@ -10,10 +10,7 @@
 #include <cmath>
 #include "../projects/evoplayer/ui_rml/include/evo_rmlui_bridge.h"
 #include "../projects/evoplayer/core/include/evo/audio/SpatialField.hpp"
-#include "../projects/evoplayer/include/evo_features.h"
 #include "../projects/evoplayer/include/evo_changelog.h"
-/* #90: the provider host, driven for real - see render_provider_screens(). */
-#include "../projects/evoplayer/ui_rml/include/evo_rmlui_provider.h"
 #include "../projects/evoplayer/ui_rml/include/evo_rmlui_app.h"   /* mock_shot */
 extern "C" {
 #include "../projects/evoplayer/addons/include/evo_net.h"
@@ -34,52 +31,6 @@ extern "C" {
 extern "C" {
 
 char current_media_path[768] = "/mnt/usb0/media/Movies/uiview-fixture.mkv";
-
-/* provider_iptv.c marks favourited channels (#92 / #93). The favourites store
- * is file persistence, which no fixture here needs, so nothing is a favourite.
- * Without this the harness stopped linking when those calls landed. */
-int favorites_is_favorite(const char* path)
-{
-    (void)path;
-    return 0;
-}
-
-int evo_plex_art_auth_header(const char *url, char *out, size_t cap)
-{
-    (void)url; (void)out; (void)cap;
-    return 0;
-}
-
-void xtream_epg_load(const char *url, const char *label) { (void)url; (void)label; }
-int xtream_epg_state(void) { return 0; }
-int xtream_epg_lookup(const char *epg_id, char *now, size_t now_sz,
-                      char *next, size_t next_sz, int *pct)
-{
-    (void)epg_id; (void)now; (void)now_sz; (void)next; (void)next_sz; (void)pct;
-    return 0;
-}
-const char *xtream_epg_status(void) { return ""; }
-static int plex_stub_init(void) { return 0; }
-static void plex_stub_shutdown(void) {}
-static int plex_stub_configured(void) { return 0; }
-static const char* plex_get_source(void) { return ""; }
-static int plex_set_source(const char*) { return 0; }
-static evo_provider_t make_plex_stub() {
-    evo_provider_t p{};
-    p.id = "plex";
-    p.name = "Plex";
-    p.icon = "brand_plex.png";
-    p.caps = EVO_PROVIDER_CAP_CONFIG;
-    p.api_version = EVO_PROVIDER_API_VERSION;
-    p.init = plex_stub_init;
-    p.shutdown = plex_stub_shutdown;
-    p.is_configured = plex_stub_configured;
-    p.get_source = plex_get_source;
-    p.set_source = plex_set_source;
-    return p;
-}
-extern const evo_provider_t evo_provider_plex;
-const evo_provider_t evo_provider_plex = make_plex_stub();
 
 static double s_stub_thumb_time = -1.0;
 static unsigned long long s_stub_thumb_serial = 0;
@@ -333,38 +284,21 @@ static void launch_build(evo_rmlui_launch_params_t& p, int row, int col, bool wi
         { "Dolby Atmos Demo Disc 2024",   "MKV - 12.8 GB",     -1 },
     };
 
-    /* Mirrors libraryTiles() in LaunchScreen.cpp, Emby included or not - a
-     * preview that still advertises a tile the player no longer shows is worse
-     * than no preview. Guarded by the same switch. */
-#if EVO_ENABLE_EMBY
-#define EVO_UIVIEW_LIB_N 6
-#else
-#define EVO_UIVIEW_LIB_N 5
-#endif
-    static const char* lib_titles[EVO_UIVIEW_LIB_N] = {
+    static const char* lib_titles[] = {
         "BROWSE", "RECENT", "FAVORITES",
-#if EVO_ENABLE_EMBY
-        "EMBY",
-#endif
         "SETTINGS", "ABOUT"
     };
-    static const char* lib_details[EVO_UIVIEW_LIB_N] = {
+    static const char* lib_details[] = {
         "Videos and folders on USB storage",
         "Pick up where you left off",
         "Media you saved for later",
-#if EVO_ENABLE_EMBY
-        "Emby and media server streaming",
-#endif
         "Playback profiles and preferences",
         "Credits and project info"
     };
-    static const char* lib_icons[EVO_UIVIEW_LIB_N] = {
+    static const char* lib_icons[] = {
         "projects/evoplayer/assets/icons/icon_browse_usb.png",
         "projects/evoplayer/assets/icons/icon_recent_files.png",
         "projects/evoplayer/assets/icons/icon_favorites.png",
-#if EVO_ENABLE_EMBY
-        "projects/evoplayer/assets/icons/icon_emby.png",
-#endif
         "projects/evoplayer/assets/icons/icon_settings.png",
         "projects/evoplayer/assets/icons/icon_about_support.png"
     };
@@ -411,8 +345,8 @@ static void launch_build(evo_rmlui_launch_params_t& p, int row, int col, bool wi
             }
         }
 
-        p.library_visible = EVO_UIVIEW_LIB_N;
-        for (int i = 0; i < 6; i++) {
+        p.library_visible = sizeof lib_titles / sizeof lib_titles[0];
+        for (int i = 0; i < p.library_visible; i++) {
             p.library[i].title = lib_titles[i];
             p.library[i].detail = lib_details[i];
             p.library[i].icon_path = lib_icons[i];
@@ -457,8 +391,8 @@ static void render_launch_screens(std::vector<uint32_t>& fb, int width, int heig
     /* Hand the rail back the way the settings shots below expect to find it:
      * SETTINGS lit, collapsed. Nav state is sticky across renders, so leaving
      * it expanded here drew the overlay across every screen that follows. */
-    nav.active_section = 5;
-    nav.cursor_index = 5;
+    nav.active_section = 2;
+    nav.cursor_index = 2;
     nav.rail_focused = 0;
     evo_rmlui_update_nav(&nav);
 }
@@ -506,7 +440,7 @@ static void render_list_screens(std::vector<uint32_t>& fb, int width, int height
     /* --- RECENT --- */
     {
         std::fill(fb.begin(), fb.end(), 0xFF0E0906);
-        set_nav(2, 0);
+        set_nav(1, 0);
         evo_rmlui_list_params_t p;
         memset(&p, 0, sizeof(p));
         p.title = "RECENT";
@@ -543,7 +477,7 @@ static void render_list_screens(std::vector<uint32_t>& fb, int width, int height
     /* --- FAVORITES, empty --- */
     {
         std::fill(fb.begin(), fb.end(), 0xFF0E0906);
-        set_nav(3, 0);
+        set_nav(1, 0);
         evo_rmlui_list_params_t p;
         memset(&p, 0, sizeof(p));
         p.title = "FAVORITES";
@@ -563,7 +497,7 @@ static void render_list_screens(std::vector<uint32_t>& fb, int width, int height
     /* --- FAVORITES, populated --- */
     {
         std::fill(fb.begin(), fb.end(), 0xFF0E0906);
-        set_nav(3, 0);
+        set_nav(1, 0);
         evo_rmlui_list_params_t p;
         memset(&p, 0, sizeof(p));
         p.title = "FAVORITES";
@@ -588,176 +522,6 @@ static void render_list_screens(std::vector<uint32_t>& fb, int width, int height
         evo_rmlui_update_list(&p);
         evo_rmlui_render_list(fb.data(), width, height);
         save_bmp_24("output/uiview/rml_favorites.bmp", fb.data(), width, height);
-    }
-
-    /* --- the live TV stream picker (Settings -> ASK WHICH LIVE STREAM): the URL
-     *     as listed, the quality variants read from its HLS master, and the
-     *     extension guess, marked as one. Same list document as every other
-     *     picker; ProviderHostScreen::renderStreamPicker fills it. --- */
-    {
-        std::fill(fb.begin(), fb.end(), 0xFF0E0906);
-        set_nav(2, 0);
-        evo_rmlui_list_params_t p;
-        memset(&p, 0, sizeof(p));
-        p.title = "CHOOSE A STREAM";
-        p.subtitle = "Asianet HD (720p)";
-        p.section = 2;
-        p.total_count = 6;
-        p.cursor_index = 2;
-        static const struct { const char* t; const char* d; const char* b; } r[6] = {
-            { "HLS (Adaptive)", "As the playlist lists it - EVO picks the quality", "LISTED" },
-            { "1080p",  "1920x1080  -  H264  -  AAC  -  4.5 Mbps", "HLS" },
-            { "720p",   "1280x720  -  H264  -  AAC  -  2.8 Mbps",  "HLS" },
-            { "360p",   "640x360  -  H264  -  AAC  -  0.8 Mbps",   "HLS" },
-            { "Audio only", "AAC  -  0.1 Mbps", "HLS" },
-            { "MPEG-TS Fallback", "The same address with a different extension - a guess", "GUESS" },
-        };
-        for (int i = 0; i < 6; i++) {
-            p.rows[i].title = r[i].t;
-            p.rows[i].detail = r[i].d;
-            p.rows[i].icon_path = ico_fav;
-            p.rows[i].badge = r[i].b;
-            p.rows[i].progress = -1;
-            p.rows[i].has_chevron = 1;
-            p.rows[i].is_focused = (i == 2);
-            p.row_count++;
-        }
-        p.hint_count = 2;
-        p.hints[0].glyph_path = "../icons/btn_cross.png";
-        p.hints[0].label = "PLAY";
-        p.hints[1].glyph_path = "../icons/btn_circle.png";
-        p.hints[1].label = "BACK";
-        evo_rmlui_update_list(&p);
-        evo_rmlui_render_list(fb.data(), width, height);
-        save_bmp_24("output/uiview/rml_stream_picker.bmp", fb.data(), width, height);
-    }
-
-    /* --- PROVIDER CHOOSER + OPTIONS menu: ProviderHostScreen::renderPicker
-     *     with openPickerMenu() up on a signed-in Jellyfin. --- */
-    {
-        std::fill(fb.begin(), fb.end(), 0xFF0E0906);
-        set_nav(2, 0);
-        evo_rmlui_list_params_t p;
-        memset(&p, 0, sizeof(p));
-        p.title = "PROVIDERS";
-        p.subtitle = "Choose where to watch from";
-        p.section = 2;
-        p.total_count = 3;
-        p.cursor_index = 1;
-        static const struct { const char* t; const char* d; const char* b; } r[3] = {
-            { "Emby", "http://192.168.0.20:8096", "SERVER" },
-            { "Jellyfin", "http://192.168.0.20:8097  ·  Signed in", "SERVER" },
-            { "IPTV", "Ready", "LIVE" },
-        };
-        for (int i = 0; i < 3; i++) {
-            p.rows[i].title = r[i].t;
-            p.rows[i].detail = r[i].d;
-            p.rows[i].icon_path = "../icons/icon_emby.png";
-            p.rows[i].badge = r[i].b;
-            p.rows[i].progress = -1;
-            p.rows[i].has_chevron = 1;
-            p.rows[i].is_focused = (i == 1);
-            p.row_count++;
-        }
-        p.hint_count = 2;
-        p.hints[0].glyph_path = "../icons/btn_cross.png";
-        p.hints[0].label = "OPEN";
-        p.hints[1].glyph_path = "../icons/icon_settings.png";
-        p.hints[1].label = "OPTIONS";
-        static const struct { const char* l; const char* d; const char* i; int x; } m[6] = {
-            { "Open", "Browse this server's libraries", "../icons/icon_resume.png", 0 },
-            { "Change server", "Address and port - now http://192.168.0.20:8097", "../icons/icon_keyboard.png", 0 },
-            { "Find server on network", "Look for Jellyfin on your home network", "../icons/icon_activity.png", 0 },
-            { "Sign in as another user", "Switch account on this server", "../icons/icon_type.png", 0 },
-            { "Web version", "Open the server's own site in the browser", "../icons/icon_emby.png", 0 },
-            { "Sign out", "Forget the saved session on this console", "../icons/icon_power.png", 1 },
-        };
-        p.menu_count = 6;
-        p.menu_focus = 1;
-        p.menu_eyebrow = "OPTIONS";
-        p.menu_title = "Jellyfin";
-        p.menu_sub = r[1].d;
-        p.menu_icon = "../icons/icon_emby.png";
-        for (int i = 0; i < 6; i++) {
-            p.menu[i].label = m[i].l;
-            p.menu[i].desc = m[i].d;
-            p.menu[i].icon_path = m[i].i;
-            p.menu[i].danger = m[i].x;
-        }
-        evo_rmlui_update_list(&p);
-        evo_rmlui_render_list(fb.data(), width, height);
-        save_bmp_24("output/uiview/rml_provider_menu.bmp", fb.data(), width, height);
-    }
-
-    /* --- EMBY SETUP --- */
-    {
-        std::fill(fb.begin(), fb.end(), 0xFF0E0906);
-        set_nav(4, 0);
-        evo_rmlui_list_params_t p;
-        memset(&p, 0, sizeof(p));
-        p.title = "EMBY MEDIA SERVER";
-        p.subtitle = "STREAMING ADDON CONFIGURATION";
-        p.section = 4;
-        p.total_count = 6;
-        p.cursor_index = 4;
-        hints3(p, "SELECT", "BACK", "MOVE");
-        static const char* t[6] = {
-            "SERVER HOST", "SERVER PORT", "ACCOUNT USERNAME",
-            "ACCOUNT PASSWORD", "CONNECTION STATUS", "EXPLORE MEDIA LIBRARIES"
-        };
-        static const char* d[6] = {
-            "192.168.0.24  (PRESS X TO EDIT)", "8096  (PRESS X TO EDIT)",
-            "sain  (PRESS X TO EDIT)", "********  (PRESS X TO EDIT)",
-            "CONNECTED (PRESS X TO DISCONNECT)",
-            "BROWSE MOVIES, TV SHOWS & COLLECTIONS"
-        };
-        for (int i = 0; i < 6; i++) {
-            p.rows[i].title = t[i];
-            p.rows[i].detail = d[i];
-            p.rows[i].icon_path = (i == 5) ? ico_folder : ico_set;
-            p.rows[i].progress = -1;
-            p.rows[i].has_chevron = 1;
-            p.rows[i].is_focused = (i == 4);
-            p.row_count++;
-        }
-        p.rows[4].badge = "ONLINE";
-        evo_rmlui_update_list(&p);
-        evo_rmlui_render_list(fb.data(), width, height);
-        save_bmp_24("output/uiview/rml_emby_setup.bmp", fb.data(), width, height);
-    }
-
-    /* --- EMBY BROWSE --- */
-    {
-        std::fill(fb.begin(), fb.end(), 0xFF0E0906);
-        set_nav(4, 0);
-        evo_rmlui_list_params_t p;
-        memset(&p, 0, sizeof(p));
-        p.title = "EMBY BROWSER";
-        p.subtitle = "EMBY  -  ROOT LIBRARIES";
-        p.section = 4;
-        p.total_count = 7;
-        p.cursor_index = 2;
-        hints3(p, "OPEN", "BACK", "MOVE");
-        static const char* t[7] = {
-            "Movies", "TV Shows", "Documentaries", "Music Videos",
-            "4K HDR Collection", "Kids", "Home Videos"
-        };
-        static const char* d[7] = {
-            "482 ITEMS", "96 SERIES", "134 ITEMS", "58 ITEMS",
-            "71 ITEMS", "203 ITEMS", "19 ITEMS"
-        };
-        for (int i = 0; i < 7; i++) {
-            p.rows[i].title = t[i];
-            p.rows[i].detail = d[i];
-            p.rows[i].icon_path = ico_folder;
-            p.rows[i].progress = -1;
-            p.rows[i].has_chevron = 1;
-            p.rows[i].is_focused = (i == 2);
-            p.row_count++;
-        }
-        evo_rmlui_update_list(&p);
-        evo_rmlui_render_list(fb.data(), width, height);
-        save_bmp_24("output/uiview/rml_emby_browse.bmp", fb.data(), width, height);
     }
 
     (void)ico_res;
@@ -1200,7 +964,7 @@ static void render_reader_screen(std::vector<uint32_t>& fb, int width, int heigh
         "NEW",
         "  - Retained-mode launch screen with hero, recent shelf and library.",
         "  - USB browser rebuilt as a virtualised twelve-row list.",
-        "  - Shared list document serving recent, favorites and both Emby views.",
+        "  - Shared list document serving recent and favorites.",
         "",
         "FIXED",
         "  - Browser opened in the last played folder instead of the USB root.",
@@ -1261,7 +1025,7 @@ static void surround_fill(evo_rmlui_surround_params_t& p, bool is51,
 static void render_surround_screen(std::vector<uint32_t>& fb, int width, int height) {
     namespace sp = evo::spatial;
     std::fill(fb.begin(), fb.end(), 0xFF160E0A);
-    set_nav(5, 0);
+    set_nav(2, 0);
 
     /* 1. rml_surround - 7.1, speaker cursor on CENTER, its test tone playing */
     evo_rmlui_surround_params_t p;
@@ -1704,387 +1468,6 @@ static void render_subtitles_screen(std::vector<uint32_t>& fb, int width, int he
 /* ------------------------------------------------------------------
  * #16 stress: long strings on the screens the issue calls out.
  * ------------------------------------------------------------------ */
-/* =========================================================================
- * #90: the provider host screen.
- *
- * This fixture is the whole reason provider-UI iteration can stay off
- * hardware, and it is deliberately NOT a mock. It drives the real thing:
- *
- *   - the real evo_provider_iptv vtable, reading a real iptv.conf
- *   - the real evo_net HTTP client, against a real HTTP server
- *     (tools/uiview_playback_rml.sh starts one on 127.0.0.1)
- *   - the real M3U parser, so the rows are parsed from a real playlist
- *   - the real bundle fetch, hash verification and cache write
- *   - the real Rml data model, the real provider document and the
- *     provider's own RCSS
- *
- * The only host substitutions are the two the dev image forces, both
- * documented where they are made: NO_OPENSSL (no https) and
- * EVO_PROVIDER_ART_NO_DECODE (no host FFmpeg, so posters render as the
- * no-artwork branch).
- *
- * Two shots: the provider's own bundle, and the embedded fallback skin with
- * a visible failure reason - because "a corrupt bundle falls back with a
- * message, never a blank screen" is a #90 acceptance criterion and a
- * criterion nobody can see is a criterion nobody checks.
- * ========================================================================= */
-static void pump_provider(std::vector<uint32_t>& fb, int width, int height,
-                          int frames) {
-    for (int i = 0; i < frames; ++i) {
-        evo_net_poll();
-        evo_rmlui_provider_tick();
-        std::fill(fb.begin(), fb.end(), 0xFF000000);
-        evo_rmlui_provider_render(fb.data(), width, height);
-        std::this_thread::sleep_for(std::chrono::milliseconds(16));
-    }
-}
-
-/*
- * One provider shot, composited the way the console composites it.
- *
- * The navigation rail is a document in EVO's MAIN context, so it does not come
- * with the provider's own - ProviderHostScreen::render draws the provider and
- * then lays the rail over it. The preview has to do the same, or every
- * provider bundle is judged against a frame the console never shows: the 152dp
- * gutter EVO's screens leave for the rail reads as a stray left margin, and
- * "is this consistent with the rest of the app" cannot be answered from the
- * picture at all.
- */
-static void provider_shot(std::vector<uint32_t>& fb, int width, int height,
-                          const char* name) {
-    evo_rmlui_provider_render(fb.data(), width, height);
-    evo_rmlui_render_nav_overlay(fb.data(), width, height);
-    std::string out = std::string("output/uiview/") + name + ".bmp";
-    save_bmp_24(out.c_str(), fb.data(), width, height);
-    std::cerr << "uiview: ok -> " << name << std::endl;
-}
-
-/*
- * A design mockup (tools/mockups/*.rml) laid over the live provider frame, in
- * its own Rml context so nothing in EVO's documents is touched. Preview only:
- * lets a proposed layout be judged with the real fonts, icons and the real
- * screen underneath before any of it is built.
- */
-static void mock_shot(std::vector<uint32_t>& fb, int width, int height,
-                      const char* doc_path, const char* name) {
-    std::fill(fb.begin(), fb.end(), 0xFF000000);
-    evo_rmlui_provider_render(fb.data(), width, height);
-    evo_rmlui_render_nav_overlay(fb.data(), width, height);
-
-    Rml::Context* ctx = Rml::CreateContext(std::string("mock_") + name,
-                                           Rml::Vector2i(width, height));
-    if (!ctx) { std::cerr << "uiview: mock context failed" << std::endl; return; }
-    ctx->SetDensityIndependentPixelRatio(EvoRmlApp::Instance().DpRatio());
-    Rml::ElementDocument* doc = ctx->LoadDocument(doc_path);
-    if (!doc) {
-        std::cerr << "uiview: could not load " << doc_path << std::endl;
-        Rml::RemoveContext(ctx->GetName());
-        return;
-    }
-    doc->Show();
-    EvoRenderBridge* r = EvoRmlApp::Instance().RenderBridge();
-    r->SetFramebuffer(fb.data());
-    r->SetDimensions(width, height);
-    ctx->Update();
-    ctx->Update();
-    r->FrameBegin();
-    ctx->Render();
-    r->FrameEnd();
-    Rml::RemoveContext(ctx->GetName());
-
-    std::string out = std::string("output/uiview/") + name + ".bmp";
-    save_bmp_24(out.c_str(), fb.data(), width, height);
-    std::cerr << "uiview: ok -> " << name << std::endl;
-}
-
-static void render_provider_screens(std::vector<uint32_t>& fb, int width, int height) {
-    const char* root = std::getenv("EVO_DATA_DIR_OVERRIDE");
-    if (!root || !*root) {
-        std::cerr << "uiview: EVO_DATA_DIR_OVERRIDE unset - skipping provider "
-                     "screens (run through tools/uiview_playback_rml.sh)"
-                  << std::endl;
-        return;
-    }
-
-    if (evo_provider_mgr_init() <= 0) {
-        std::cerr << "uiview: no providers registered" << std::endl;
-        return;
-    }
-    /* iptv.conf was staged by the shell script; is_configured() is true, but
-     * the persisted enable flag defaults from it only on first load. */
-    evo_provider_mgr_rebind();
-    evo_provider_set_enabled("iptv", 1);
-
-    /* Section 2 is the rail slot ProviderHostScreen occupies - it reports
-     * ScreenId::EmbyBrowse, which ScreenManager::getSectionForScreen maps
-     * there. Set before the first shot so provider_shot() has a rail to
-     * composite. */
-    set_nav(2, 0);
-
-    /* --- IPTV unconfigured (Setup screen: URL & USB cards) -------------- */
-    char conf_real[768];
-    char conf_temp[768];
-    std::snprintf(conf_real, sizeof conf_real, "%s/iptv.conf", root);
-    std::snprintf(conf_temp, sizeof conf_temp, "%s/iptv.conf.tmp", root);
-    std::rename(conf_real, conf_temp);
-    evo_provider_mgr_rebind();
-    evo_provider_set_enabled("iptv", 1);
-
-    if (evo_rmlui_provider_open("iptv", width, height)) {
-        pump_provider(fb, width, height, 10);
-        provider_shot(fb, width, height, "rml_provider_iptv_setup");
-
-        /* Press right to move focus to the USB card */
-        evo_rmlui_provider_key(3 /* KeyRight */);
-        pump_provider(fb, width, height, 2);
-        provider_shot(fb, width, height, "rml_provider_iptv_setup_usb");
-
-        evo_rmlui_provider_close();
-    }
-    std::rename(conf_temp, conf_real);
-    evo_provider_mgr_rebind();
-    evo_provider_set_enabled("iptv", 1);
-
-    /* --- the provider's own bundle ------------------------------------- */
-    if (evo_rmlui_provider_open("iptv", width, height)) {
-        /* Enough frames for: the manifest GET, each asset GET, the cache
-         * write, the reopen onto the real document, and the playlist GET. */
-        pump_provider(fb, width, height, 90);
-        /* And a few more, so the initial focus has definitely been seeded
-         * before the first shot - it is taken on the render after the rows
-         * arrive, and racing it produces a ring-less baseline. */
-        pump_provider(fb, width, height, 4);
-        provider_shot(fb, width, height, "rml_provider_iptv");
-
-        /*
-         * Two presses to the right. This is RmlUi's own spatial navigation
-         * moving its own focus through the provider's own grid - the fixture
-         * does not know how many cards there are per line and could not say
-         * which one ends up focused.
-         */
-        evo_rmlui_provider_key(3 /* KeyRight */);
-        pump_provider(fb, width, height, 2);
-        evo_rmlui_provider_key(3 /* KeyRight */);
-        pump_provider(fb, width, height, 2);
-        provider_shot(fb, width, height, "rml_provider_iptv_focus");
-
-        /*
-         * Activate the focused group. Exercises the whole chain: the bundle's
-         * data-event-click, the host's activate() callback, the folder push,
-         * a second list_catalog against the parsed playlist, and the channel
-         * treatment the bundle draws for a non-folder row.
-         */
-        evo_rmlui_provider_key(4 /* KeyAccept */);
-        pump_provider(fb, width, height, 20);
-        provider_shot(fb, width, height, "rml_provider_iptv_channels");
-
-        /* A notice over a populated level: it must sit ABOVE the cards, never
-         * behind them (the browser view is absolutely positioned). */
-        evo_rmlui_provider_set_status("Could not reach the server - showing the last channel list", 1);
-        pump_provider(fb, width, height, 3);
-        provider_shot(fb, width, height, "rml_provider_iptv_notice");
-        evo_rmlui_provider_set_status("", 0);
-        pump_provider(fb, width, height, 2);
-
-        /* The USB playlist list puts its hint in the same notice strip. */
-        EvoRmlProviderHost::Instance().ShowUsbPlaylists(
-            { "/mnt/usb0/Canais.m3u", "/mnt/usb0/iptv.m3u", "/mnt/usb0/news.m3u",
-              "/mnt/usb0/sports.m3u", "/mnt/usb0/music.m3u", "/mnt/usb0/movies.m3u" });
-        pump_provider(fb, width, height, 4);
-        provider_shot(fb, width, height, "rml_provider_iptv_usb_list");
-
-        /* Live TV options redesign - mockups over this channel frame. */
-        mock_shot(fb, width, height, "tools/mockups/iptv_options.rml",   "mock_iptv_options");
-        mock_shot(fb, width, height, "tools/mockups/iptv_guide.rml",     "mock_iptv_guide");
-        mock_shot(fb, width, height, "tools/mockups/iptv_guide_box.rml", "mock_iptv_guide_box");
-
-        /*
-         * Walk Left off the left edge. The document must CONSUME each press
-         * that moves focus and DECLINE the one that cannot, because
-         * ProviderHostScreen reads that refusal as "give the navigation rail
-         * focus" - the rail lives in EVO's main context and no provider
-         * document can reach it. A build that consumes every Left strands the
-         * user in the grid with no way back to the rail by d-pad, which is not
-         * visible in any screenshot.
-         */
-        /* Two to the right first, so the walk back has to CONSUME presses
-         * before it declines one - otherwise focus starts on the leftmost card
-         * and a build that declines every Left would pass just as happily. */
-        evo_rmlui_provider_key(3 /* KeyRight */);
-        pump_provider(fb, width, height, 1);
-        evo_rmlui_provider_key(3 /* KeyRight */);
-        pump_provider(fb, width, height, 1);
-
-        int left_presses = 0;
-        bool declined = false;
-        for (; left_presses < 8; ++left_presses) {
-            if (evo_rmlui_provider_key(2 /* KeyLeft */) == 0) { declined = true; break; }
-            pump_provider(fb, width, height, 1);
-        }
-        std::cerr << "uiview: provider Left declined after " << left_presses
-                  << " press(es): " << (declined ? "yes (rail reachable)"
-                                                 : "NO - rail unreachable")
-                  << std::endl;
-
-        evo_rmlui_provider_close();
-    } else {
-        std::cerr << "uiview: provider host would not open for 'iptv'" << std::endl;
-    }
-
-    /* --- the row window, past the point where it starts sliding -------- */
-    /*
-     * 120 groups against a 48-row cap, walked with the d-pad until the window
-     * has had to slide several times.
-     *
-     * The shot is worth little on its own - one more grid of folder cards. The
-     * value is in the "row window slide" lines the run prints and in the fact
-     * that it gets there at all: the slide moves RmlUi's focus itself to
-     * compensate for the rows shifting underneath it, and if that arithmetic is
-     * wrong the focus either sticks at the window edge (no further slides are
-     * logged) or runs away (the logged focus index jumps). Both are visible in
-     * the output of a host run, and neither is visible in a screenshot.
-     */
-    {
-        char big_conf[1024];
-        std::snprintf(big_conf, sizeof big_conf,
-                      "playlist=http://127.0.0.1:%s/media/iptv_big.m3u\n",
-                      std::getenv("EVO_UIVIEW_PROVIDER_PORT")
-                          ? std::getenv("EVO_UIVIEW_PROVIDER_PORT") : "18099");
-        FILE* f = std::fopen(conf_real, "w");
-        if (f) { std::fputs(big_conf, f); std::fclose(f); }
-        evo_bundle_clear("iptv");
-        evo_provider_mgr_rebind();
-        evo_provider_set_enabled("iptv", 1);
-
-        if (evo_rmlui_provider_open("iptv", width, height)) {
-            pump_provider(fb, width, height, 60);
-            /* Well past EVO_PROVIDER_ROW_WINDOW_MAX (48) so the window has to
-             * grow to the cap and then slide repeatedly. */
-            for (int i = 0; i < 80; ++i) {
-                evo_rmlui_provider_key(1 /* KeyDown */);
-                pump_provider(fb, width, height, 1);
-            }
-            provider_shot(fb, width, height, "rml_provider_iptv_scroll");
-
-            /*
-             * Into a group, so the level below is CHANNEL rows - the only rows
-             * that carry art. Folder rows have no poster by design, so the
-             * artwork path is not reachable from the level above no matter how
-             * far it is scrolled.
-             */
-            evo_rmlui_provider_key(4 /* KeyAccept */);
-            pump_provider(fb, width, height, 40);
-
-            evo_rmlui_provider_close();
-        } else {
-            std::cerr << "uiview: provider host would not open for the big playlist"
-                      << std::endl;
-        }
-    }
-
-    /* --- the embedded fallback skin, with a reason on it ---------------- */
-    {
-        /* Point the provider at a bundle URL that is not there. The cache was
-         * just populated, so it is cleared first - otherwise the cached copy
-         * would (correctly) render and there would be nothing to see. */
-        evo_bundle_clear("iptv");
-        char conf[768];
-        std::snprintf(conf, sizeof conf, "%s/iptv.conf", root);
-        FILE* f = std::fopen(conf, "r");
-        std::string keep;
-        if (f) {
-            char line[1024];
-            while (std::fgets(line, sizeof line, f)) {
-                if (std::strncmp(line, "bundle=", 7) == 0) continue;
-                keep += line;
-            }
-            std::fclose(f);
-        }
-        f = std::fopen(conf, "w");
-        if (f) {
-            std::fputs(keep.c_str(), f);
-            std::fputs("bundle=http://127.0.0.1:1/nothing/here\n", f);
-            std::fclose(f);
-        }
-        evo_provider_mgr_rebind();
-
-        if (evo_rmlui_provider_open("iptv", width, height)) {
-            pump_provider(fb, width, height, 60);
-            provider_shot(fb, width, height, "rml_provider_fallback");
-            evo_rmlui_provider_close();
-        }
-    }
-
-    evo_provider_art_clear();
-    evo_provider_mgr_shutdown();
-
-    /* Nav state is sticky across renders; hand it back hidden so it does not
-     * bleed into the modal shots that follow. */
-    hide_nav();
-}
-
-/*
- * EVO_UIVIEW_IPTV_SWEEP=<playlist.m3u>: open EVERY root row of a real playlist
- * and drive the same D-pad script inside each, printing where focus lands
- * after every press. Navigation bugs that only some groups hit (size, page
- * count, a partial last page) show up as a line that stops moving, jumps, or
- * loses focus - none of which a screenshot shows.
- */
-static std::string sweep_focus() {
-    const char* id = evo_rmlui_provider_get_focused_id();
-    const char* t = evo_rmlui_provider_get_focused_title();
-    std::string s = (id && *id) ? id : "-";
-    if (t && *t) { s += "|"; s += std::string(t).substr(0, 18); }
-    return s;
-}
-
-static int sweep_iptv(std::vector<uint32_t>& fb, int width, int height, const char* playlist) {
-    const char* root = std::getenv("EVO_DATA_DIR_OVERRIDE");
-    if (!root || !*root) { std::cerr << "sweep: EVO_DATA_DIR_OVERRIDE unset\n"; return 1; }
-    char conf[768];
-    std::snprintf(conf, sizeof conf, "%s/iptv.conf", root);
-    if (FILE* f = std::fopen(conf, "w")) { std::fprintf(f, "playlist=%s\n", playlist); std::fclose(f); }
-    if (evo_provider_mgr_init() <= 0) { std::cerr << "sweep: no providers\n"; return 1; }
-    evo_provider_mgr_rebind();
-    evo_provider_set_enabled("iptv", 1);
-
-    auto key = [&](int k) { int r = evo_rmlui_provider_key(k); pump_provider(fb, width, height, 2); return r; };
-    const char* names[] = {"U", "D", "L", "R", "X", "O", "S", "L1", "R1"};
-
-    /* EVO_UIVIEW_IPTV_SWEEP_ROWS=0,3,8: only those root rows (a full sweep of
-     * a big playlist is ~1 min per group on the CPU rasteriser). */
-    std::vector<int> only;
-    if (const char* rows = std::getenv("EVO_UIVIEW_IPTV_SWEEP_ROWS"))
-        for (const char* q = rows; *q; ) { only.push_back(std::atoi(q)); while (*q && *q != ',') ++q; if (*q) ++q; }
-    for (int target = 0; target < 64; ++target) {
-        if (!only.empty() && std::find(only.begin(), only.end(), target) == only.end()) continue;
-        if (!evo_rmlui_provider_open("iptv", width, height)) { std::cerr << "sweep: open failed\n"; return 1; }
-        pump_provider(fb, width, height, 30);
-        /* Reach root row `target`: Down moves a row of 4 (and flips pages at
-         * the bottom row), Right moves a column. */
-        for (int i = 0; i < target / 4; ++i) key(1);
-        for (int i = 0; i < target % 4; ++i) key(3);
-        std::string at = sweep_focus();
-        if (at == "-" || evo_rmlui_provider_get_focused_is_folder() == 0) {
-            std::cout << "root[" << target << "] end of root (" << at << ")\n";
-            evo_rmlui_provider_close();
-            break;
-        }
-        key(4);
-        pump_provider(fb, width, height, 20);
-        std::cout << "root[" << target << "] " << at << " -> " << sweep_focus() << "\n  ";
-        static const int script[] = {3,3,3,3, 1,1,1, 2,2,2, 0,0,0, 8,8,7,7, 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, 0,0,0,0,0,0, 5};
-        for (int k : script) {
-            int consumed = key(k);
-            std::cout << names[k] << (consumed ? "" : "!") << ">" << sweep_focus() << " ";
-        }
-        std::cout << "\n";
-        evo_rmlui_provider_close();
-    }
-    evo_provider_mgr_shutdown();
-    return 0;
-}
-
 static void render_stress_screens(std::vector<uint32_t>& fb, int width, int height) {
     /* Player OSD: 55-char title + 76-char metadata must ellipsise, never
      * collide with the badge rack. */
@@ -2211,13 +1594,13 @@ static void render_stress_screens(std::vector<uint32_t>& fb, int width, int heig
     /* Settings row: long title + long value badge. */
     {
         std::fill(fb.begin(), fb.end(), 0xFF06090E);
-        set_nav(5, 0);
+        set_nav(2, 0);
         evo_rmlui_settings_params_t s;
         memset(&s, 0, sizeof(s));
         s.title = "PLAYBACK & VIDEO";
         s.subtitle = "SETTINGS  -  PROFILES, ASPECT RATIO & RESUME";
         s.counter = "1 OF 4";
-        s.rail_active_idx = 5;
+        s.rail_active_idx = 2;
         s.row_count = 3;
         s.rows[0].title = "PLAYBACK PROFILE FOR HIGH BITRATE 4K HDR CONTENT";
         s.rows[0].detail = "TUNES THE DECODER, CONVERTER AND PRESENT PATH TOGETHER";
@@ -2285,9 +1668,9 @@ static void render_stress_screens(std::vector<uint32_t>& fb, int width, int heig
         p.hero_action = "RESUME";
         p.hero_progress = 240;
         p.hero_focused = 1;
-        p.library_visible = EVO_UIVIEW_LIB_N;
-        static const char* lt[6] = { "BROWSE", "RECENT", "FAVORITES", "EMBY", "SETTINGS", "ABOUT" };
-        for (int i = 0; i < 6; i++) {
+        static const char* lt[] = { "BROWSE", "RECENT", "FAVORITES", "SETTINGS", "ABOUT" };
+        p.library_visible = sizeof lt / sizeof lt[0];
+        for (int i = 0; i < p.library_visible; i++) {
             p.library[i].title = lt[i];
             p.library[i].detail = "";
             p.library[i].icon_path = "projects/evoplayer/assets/icons/icon_settings.png";
@@ -2432,16 +1815,11 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    if (const char* pl = std::getenv("EVO_UIVIEW_IPTV_SWEEP")) {
-        int rc = sweep_iptv(fb, width, height, pl);
-        evo_rmlui_shutdown();
-        return rc;
-    }
 
     /* EVO_UIVIEW_ONLY=playback,toast renders only those groups (a full run is ~90
      * pictures and takes minutes). Unset = everything. Groups: launch list browser
      * playback changelog reader surround dialog toast debug mediainfo subtitles
-     * stress provider misc (the keyboard, image viewer and the rest below). */
+     * stress miscellaneous screens (the keyboard, image viewer and the rest below). */
     const char* only_env = std::getenv("EVO_UIVIEW_ONLY");
     auto want = [&](const char* group) {
         if (!only_env) return true;
@@ -2469,7 +1847,6 @@ int main(int argc, char** argv) {
     if (want("mediainfo"))  render_mediainfo_screen(fb, width, height);
     if (want("subtitles"))  render_subtitles_screen(fb, width, height);
     if (want("stress"))     render_stress_screens(fb, width, height);
-    if (want("provider"))   render_provider_screens(fb, width, height);
     if (!want("misc")) {
         evo_rmlui_shutdown();
         return 0;
@@ -2531,7 +1908,7 @@ int main(int argc, char** argv) {
         save_bmp_24("output/uiview/rml_image_error.bmp", fb.data(), width, height);
     }
 
-    set_nav(5, 0);
+    set_nav(2, 0);
 
     /* Settings rows (#118): one helper so each fixture below reads like the
      * section list in SettingsScreen.cpp's kSections/makeDef(). */
@@ -2554,7 +1931,7 @@ int main(int argc, char** argv) {
         set.title = "VIDEO & DISPLAY";
         set.subtitle = "DECODER, UPSCALING, 120 HZ & HDR";
         set.counter = "7 SETTINGS";
-        set.rail_active_idx = 5;
+        set.rail_active_idx = 2;
         set.section_active = 0;
         set.sidebar_focused = 1;
         set.rail_focused = 0;
@@ -2581,7 +1958,7 @@ int main(int argc, char** argv) {
         set.title = "VIDEO & DISPLAY";
         set.subtitle = "DECODER, UPSCALING, 120 HZ & HDR";
         set.counter = "7 SETTINGS";
-        set.rail_active_idx = 5;
+        set.rail_active_idx = 2;
         set.section_active = 0;
         set.sidebar_focused = 0;
         set.rail_focused = 0;
@@ -2609,7 +1986,7 @@ int main(int argc, char** argv) {
         set.title = "AUDIO";
         set.subtitle = "OUTPUT CHANNELS, SPEAKERS & SOUNDS";
         set.counter = "3 SETTINGS";
-        set.rail_active_idx = 5;
+        set.rail_active_idx = 2;
         set.section_active = 1;
         set.sidebar_focused = 0;
         set.rail_focused = 0;
@@ -2632,7 +2009,7 @@ int main(int argc, char** argv) {
         set.title = "AUDIO";
         set.subtitle = "OUTPUT CHANNELS, SPEAKERS & SOUNDS";
         set.counter = "3 SETTINGS";
-        set.rail_active_idx = 5;
+        set.rail_active_idx = 2;
         set.section_active = 1;
         set.sidebar_focused = 0;
         set.rail_focused = 0;
@@ -2657,7 +2034,7 @@ int main(int argc, char** argv) {
         set.title = "SUBTITLES";
         set.subtitle = "PREFERENCES & APPEARANCE";
         set.counter = "4 SETTINGS";
-        set.rail_active_idx = 5;
+        set.rail_active_idx = 2;
         set.section_active = 2;
         set.sidebar_focused = 0;
         set.rail_focused = 0;
@@ -2680,17 +2057,16 @@ int main(int argc, char** argv) {
         memset(&set, 0, sizeof(set));
         set.title = "INTERFACE & STORAGE";
         set.subtitle = "THEMES, CONTROLS & BROWSING";
-        set.counter = "5 SETTINGS";
-        set.rail_active_idx = 5;
+        set.counter = "4 SETTINGS";
+        set.rail_active_idx = 2;
         set.section_active = 3;
         set.sidebar_focused = 0;
         set.rail_focused = 0;
-        set.row_count = 5;
+        set.row_count = 4;
         settings_row(set.rows[0], "THEME", "COLOR PALETTE & ACCENTS", "projects/evoplayer/assets/icons/icon_palette.png", EVO_RMLUI_ROW_VALUE, "MIDNIGHT OBSIDIAN", 0);
         settings_row(set.rows[1], "CONTROLLER LIGHTBAR", "DUALSENSE LIGHT FOLLOWS THE THEME ACCENT", "projects/evoplayer/assets/icons/icon_gamepad.png", EVO_RMLUI_ROW_TOGGLE, "", 1);
         settings_row(set.rows[2], "FOLDERS FIRST", "USB FILE BROWSER SORTING", "projects/evoplayer/assets/icons/icon_folder.png", EVO_RMLUI_ROW_TOGGLE, "", 1);
         settings_row(set.rows[3], "KEYBOARD INPUT", "TEXT ENTRY METHOD", "projects/evoplayer/assets/icons/icon_keyboard.png", EVO_RMLUI_ROW_VALUE, "VIRTUAL KEYBOARD", 0);
-        settings_row(set.rows[4], "ASK WHICH LIVE STREAM", "PICK THE FORMAT AND QUALITY WHEN YOU OPEN A CHANNEL", "projects/evoplayer/assets/icons/icon_tv.png", EVO_RMLUI_ROW_TOGGLE, "", 1);
         set.rows[0].is_focused = 1;
 
         evo_rmlui_update_settings(&set);
@@ -2705,12 +2081,12 @@ int main(int argc, char** argv) {
         memset(&set, 0, sizeof(set));
         set.title = "INTERFACE & STORAGE";
         set.subtitle = "THEMES, CONTROLS & BROWSING";
-        set.counter = "5 SETTINGS";
-        set.rail_active_idx = 5;
+        set.counter = "4 SETTINGS";
+        set.rail_active_idx = 2;
         set.section_active = 3;
         set.sidebar_focused = 0;
         set.rail_focused = 0;
-        set.row_count = 12;
+        set.row_count = 11;
         settings_row(set.rows[0], "THEME", "COLOR PALETTE & ACCENTS", "projects/evoplayer/assets/icons/icon_palette.png", EVO_RMLUI_ROW_VALUE, "MIDNIGHT OBSIDIAN", 0);
         settings_row(set.rows[1], "MIDNIGHT OBSIDIAN", "", "", EVO_RMLUI_ROW_OPTION, "", 1);
         settings_row(set.rows[2], "SAPPHIRE BLUE", "", "", EVO_RMLUI_ROW_OPTION, "", 0);
@@ -2722,7 +2098,6 @@ int main(int argc, char** argv) {
         settings_row(set.rows[8], "CONTROLLER LIGHTBAR", "DUALSENSE LIGHT FOLLOWS THE THEME ACCENT", "projects/evoplayer/assets/icons/icon_gamepad.png", EVO_RMLUI_ROW_TOGGLE, "", 1);
         settings_row(set.rows[9], "FOLDERS FIRST", "USB FILE BROWSER SORTING", "projects/evoplayer/assets/icons/icon_folder.png", EVO_RMLUI_ROW_TOGGLE, "", 1);
         settings_row(set.rows[10], "KEYBOARD INPUT", "TEXT ENTRY METHOD", "projects/evoplayer/assets/icons/icon_keyboard.png", EVO_RMLUI_ROW_VALUE, "VIRTUAL KEYBOARD", 0);
-        settings_row(set.rows[11], "ASK WHICH LIVE STREAM", "PICK THE FORMAT AND QUALITY WHEN YOU OPEN A CHANNEL", "projects/evoplayer/assets/icons/icon_tv.png", EVO_RMLUI_ROW_TOGGLE, "", 1);
         set.rows[0].is_focused = 1;
 
         evo_rmlui_update_settings(&set);
@@ -2738,7 +2113,7 @@ int main(int argc, char** argv) {
         set.title = "SYSTEM & DIAGNOSTICS";
         set.subtitle = "DIAGNOSTICS & SYSTEM MANAGEMENT";
         set.counter = "5 SETTINGS";
-        set.rail_active_idx = 5;
+        set.rail_active_idx = 2;
         set.section_active = 4;
         set.sidebar_focused = 0;
         set.rail_focused = 0;
@@ -2764,7 +2139,7 @@ int main(int argc, char** argv) {
         set.title = "EXPERIMENTAL";
         set.subtitle = "UNFINISHED WORK - EXPECT ARTEFACTS";
         set.counter = "1 SETTING";
-        set.rail_active_idx = 5;
+        set.rail_active_idx = 2;
         set.section_active = 5;
         set.sidebar_focused = 0;
         set.rail_focused = 0;
@@ -2791,7 +2166,7 @@ int main(int argc, char** argv) {
         set.title = "PLAYBACK PROFILE";
         set.subtitle = "HOW AGGRESSIVELY THE DECODER IS TUNED";
         set.counter = "2 OF 4";
-        set.rail_active_idx = 5;
+        set.rail_active_idx = 2;
         set.section_active = 0;
         set.sidebar_focused = 0;
         set.rail_focused = 0;
@@ -2838,7 +2213,7 @@ int main(int argc, char** argv) {
         set.title = "DEVELOPER TOOLS";
         set.subtitle = "DIAGNOSTICS & SYSTEM REPORTS";
         set.counter = "1 OF 4";
-        set.rail_active_idx = 5;
+        set.rail_active_idx = 2;
         set.section_active = 4;
         set.sidebar_focused = 0;
         set.rail_focused = 0;
@@ -2948,7 +2323,7 @@ int main(int argc, char** argv) {
         set.title = "COLOR THEMES";
         set.subtitle = "INTERFACE PALETTES & DUALSENSE LIGHTBAR SYNC";
         set.counter = "1 OF 4";
-        set.rail_active_idx = 5;
+        set.rail_active_idx = 2;
         set.section_active = 3;
         set.sidebar_focused = 0;
         set.rail_focused = 0;
@@ -3005,7 +2380,7 @@ int main(int argc, char** argv) {
         set_c.title = "SETTINGS (CARBON THEME)";
         set_c.subtitle = "MONOCHROME SLATE PALETTE";
         set_c.counter = "1 OF 4";
-        set_c.rail_active_idx = 5;
+        set_c.rail_active_idx = 2;
         set_c.row_count = 4;
         set_c.rows[0].title = "PLAYBACK & VIDEO";
         set_c.rows[0].detail = "PROFILE, ASPECT RATIO & RESUME";
@@ -3109,7 +2484,7 @@ int main(int argc, char** argv) {
         /* Same screen with the rail expanded and the cursor on QUIT EVO, the
          * entry after the last section, pinned to the foot of the rail. */
         nav.rail_focused = 1;
-        nav.cursor_index = EVO_ENABLE_EMBY ? 5 : 4;
+        nav.cursor_index = 4;
         evo_rmlui_update_nav(&nav);
         std::fill(fb.begin(), fb.end(), 0xFF06090E);
         evo_rmlui_render_about(fb.data(), width, height);

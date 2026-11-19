@@ -45,8 +45,6 @@ enum class ScreenId : int {
     Changelog = 19,
     ExitConfirm = 20,
     TextReader = 21,
-    EmbySetup = 22,
-    EmbyBrowse = 23,
     SettingsPlayback = 24,
     SettingsSubtitles = 25,
     SettingsInterface = 26,

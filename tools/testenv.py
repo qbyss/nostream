@@ -6,7 +6,6 @@ and always get the real ones back.
 `up` saves the console's real configs to output/testenv/backup/ (git-ignored:
 they hold saved server logins), then writes the test setup:
 
-  /data/nostream/iptv.conf                playlist on a dead host  -> the IPTV
                                            "could not connect" path, timed
   /data/nostream/evo_network_shares.json  the real servers, plus a dead FTP
                                            server ("TEST dead FTP")
@@ -31,7 +30,8 @@ from ftplib import FTP, error_perm
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 BACKUP = ROOT / "output" / "testenv" / "backup"
-FILES = ["/data/nostream/iptv.conf", "/data/nostream/evo_network_shares.json"]
+SHARES_FILE = "/data/nostream/evo_network_shares.json"
+LEGACY_PLAYLIST_FILE = "/data/nostream/iptv.conf"
 MISSING = ".missing"   # marker: the file did not exist before `up`
 
 
@@ -85,21 +85,20 @@ def up():
         sys.exit("testenv: EVO is running - quit and close it first (it reads these files at start)")
     dead = os.environ.get("TESTENV_DEAD_HOST", "192.168.0.253")
     with ftp() as f:
-        saved = {p: get(f, p) for p in FILES}
+        saved = get(f, SHARES_FILE)
         BACKUP.mkdir(parents=True)
-        for p, data in saved.items():
-            if data is None:
-                (BACKUP / (local_name(p) + MISSING)).write_bytes(b"")
-            else:
-                (BACKUP / local_name(p)).write_bytes(data)
+        backup = BACKUP / local_name(SHARES_FILE)
+        if saved is None:
+            backup.with_name(backup.name + MISSING).write_bytes(b"")
+        else:
+            backup.write_bytes(saved)
 
-        put(f, FILES[0], f"playlist=http://{dead}:8091/evo_testenv.m3u\n".encode())
-        shares = json.loads(saved[FILES[1]] or b"[]")
+        shares = json.loads(saved or b"[]")
         shares = [s for s in shares if s.get("id") != "testenv_dead_ftp"]
         shares.append({"id": "testenv_dead_ftp", "name": "TEST dead FTP", "protocol": "ftp",
                        "host": dead, "port": 21, "user": "anonymous", "password": "anonymous",
                        "startPath": "/"})
-        put(f, FILES[1], json.dumps(shares, indent=2).encode())
+        put(f, SHARES_FILE, json.dumps(shares, indent=2).encode())
     print(f"  ok test setup up (dead host {dead}); real configs saved in output/testenv/backup")
     print("     launch EVO; put them back with: tools/testenv.py down (EVO closed)")
 
@@ -111,7 +110,7 @@ def down():
     if evo_running():
         sys.exit("testenv: EVO is running - quit and close it first, or it may save over the restore")
     with ftp() as f:
-        for p in FILES:
+        for p in (SHARES_FILE, LEGACY_PLAYLIST_FILE):
             saved = BACKUP / local_name(p)
             if saved.exists():
                 put(f, p, saved.read_bytes())

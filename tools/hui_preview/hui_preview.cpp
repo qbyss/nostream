@@ -23,7 +23,6 @@
 #include "misc_fixtures.inc"
 #include "evo_hui_extra.hpp"
 #include "evo_hui_surround.hpp"
-#include "evo_hui_provider.hpp"
 #include "extra_fixtures.inc"
 #include "overflow_check.inc"
 
@@ -265,15 +264,14 @@ int main(int argc, char **argv)
     const char *lib[][3] = {{"BROWSE", "USB drives", "../icons/icon_browse_usb.png"},
                             {"RECENT", "Resume watching", "../icons/icon_recent_files.png"},
                             {"FAVORITES", "Saved for later", "../icons/icon_favorites.png"},
-                            {"PROVIDERS", "Online sources", "../icons/icon_emby.png"},
                             {"SETTINGS", "Video & audio", "../icons/icon_settings.png"},
                             {"ABOUT", "Credits & info", "../icons/icon_about_support.png"}};
-    launch.library_visible = 6;
+    launch.library_visible = sizeof lib / sizeof lib[0];
     /* The "Did you know" line; the first tip shows at render time. */
     launch.tips[0] = "Your phone can be the remote: open 192.168.0.12:9780/remote";
     launch.tips[1] = "Stereo can fill four speakers: Settings > Audio > Upmix stereo to 4.0";
     launch.tip_count = 2;
-    for (int i = 0; i < 6; ++i)
+    for (int i = 0; i < launch.library_visible; ++i)
     {
         launch.library[i].title = lib[i][0];
         launch.library[i].detail = lib[i][1];
@@ -393,8 +391,6 @@ int main(int argc, char **argv)
     std::vector<uint32_t> image_px;
     evo_keyboard_params_t kbp{};
     evo_rmlui_surround_params_t srp{};
-    evo_hui_provider_params_t prp{};
-    std::vector<uint32_t> provider_art;
     evo_rmlui_about_params_t aboutp{};
     evo_rmlui_changelog_params_t changelogp{};
 
@@ -777,8 +773,6 @@ int main(int argc, char **argv)
         {"settings_pv_report_nolink", 3, [&] { clear_focus(); fill_settings_pv_extra_fixture(sp, "report_nolink"); }},
         {"settings_pv_keyboard", 3, [&] { clear_focus(); fill_settings_pv_extra_fixture(sp, "keyboard"); }},
         {"settings_pv_keyboard_ps5", 3, [&] { clear_focus(); fill_settings_pv_extra_fixture(sp, "keyboard_ps5"); }},
-        {"settings_pv_ask_stream", 3, [&] { clear_focus(); fill_settings_pv_extra_fixture(sp, "ask_stream"); }},
-        {"settings_pv_ask_stream_off", 3, [&] { clear_focus(); fill_settings_pv_extra_fixture(sp, "ask_stream_off"); }},
         {"settings_pv_debug_overlay", 3, [&] { clear_focus(); fill_settings_pv_extra_fixture(sp, "debug_overlay"); }},
         {"settings_pv_debug_overlay_off", 3, [&] { clear_focus(); fill_settings_pv_extra_fixture(sp, "debug_overlay_off"); }},
         {"settings_pv_motion_off", 3, [&] { clear_focus(); fill_settings_pv_extra_fixture(sp, "motion_off"); }},
@@ -867,36 +861,6 @@ int main(int argc, char **argv)
         {"surround", 16, [&] { clear_focus(); fill_surround_fixture(srp, 0); }},
         {"surround_orb", 16, [&] { clear_focus(); fill_surround_fixture(srp, 1); }},
         {"surround_cal", 16, [&] { clear_focus(); fill_surround_fixture(srp, 2); }},
-        {"provider", 17, [&] { clear_focus(); fill_provider_fixture(prp, provider_art, 2); }},
-        {"livetv", 17, [&] { clear_focus(); fill_channels_fixture(prp, provider_art, 1, 0); }},
-        {"livetv_setup", 17, [&] { clear_focus(); fill_channels_fixture(prp, provider_art, 1, 1); }},
-        {"livetv_panel", 17, [&] { clear_focus(); fill_channels_fixture(prp, provider_art, 1, 2); }},
-        {"xtream", 17, [&] { clear_focus(); fill_channels_fixture(prp, provider_art, 2, 0); }},
-        {"xtream_setup", 17, [&] { clear_focus(); fill_channels_fixture(prp, provider_art, 2, 1); }},
-        {"shelves", 17, [&] { clear_focus(); fill_shelves_fixture(prp, provider_art, 0, 2); }},
-        {"shelves_low", 17, [&] { clear_focus(); fill_shelves_fixture(prp, provider_art, 2, 4); }},
-        {"shelves_stremio", 17, [&] { clear_focus(); fill_provider_shelves_fixture(prp, provider_art, 0, 1, 2); }},
-        {"shelves_details_trending", 17, [&] {
-             clear_focus();
-             fill_provider_shelves_fixture(prp, provider_art, 0, 2, 3);
-             prp.selected_title = "Animals";
-             prp.selected_subtitle = "2025  \xC2\xB7  2h 04m  \xC2\xB7  Thriller, Mystery";
-             prp.selected_rating = "6.9";
-             prp.selected_cert = "R";
-             prp.selected_overview = "A retired detective is pulled back into a cold case when a stranger arrives with a photograph that should not exist.";
-             prp.selected_cast = "Jon Bernthal, Anya Taylor-Joy";
-         }},
-        {"shelves_plex", 17, [&] { clear_focus(); fill_provider_shelves_fixture(prp, provider_art, 1, 0, 1); }},
-        {"shelves_iptv", 17, [&] { clear_focus(); fill_provider_shelves_fixture(prp, provider_art, 2, 1, 0); }},
-        {"shelves_iptv_low", 17, [&] { clear_focus(); fill_provider_shelves_fixture(prp, provider_art, 2, 2, 3); }},
-        {"shelves_xtream", 17, [&] { clear_focus(); fill_provider_shelves_fixture(prp, provider_art, 3, 0, 1); }},
-        {"provider_folder", 17, [&] { clear_focus(); fill_provider_fixture(prp, provider_art, 4); }},
-        {"detail_overview", 17, [&] { clear_focus(); fill_detail_fixture(prp, provider_art, 0); }},
-        {"detail_cast", 17, [&] { clear_focus(); fill_detail_fixture(prp, provider_art, 1); }},
-        {"detail_details", 17, [&] { clear_focus(); fill_detail_fixture(prp, provider_art, 2); }},
-        {"detail_show", 17, [&] { clear_focus(); fill_detail_fixture(prp, provider_art, 3); }},
-        {"detail_streams", 17, [&] { clear_focus(); fill_detail_fixture(prp, provider_art, 5); }},
-        {"detail_loading", 17, [&] { clear_focus(); fill_detail_fixture(prp, provider_art, 4); }},
         {"keyboard", 15, [&] { clear_focus(); fill_keyboard_fixture(kbp); }},
         {"keyboard_phone", 15, [&] { clear_focus(); fill_keyboard_phone_fixture(kbp); }},
         {"keyboard_noport", 15, [&] { clear_focus(); fill_keyboard_noport_fixture(kbp); }},
@@ -926,7 +890,6 @@ int main(int argc, char **argv)
         evo::kit::ImageViewer image;
         evo::kit::KeyboardOverlay keyboard;
         evo::kit::SurroundScreen surround;
-        evo::kit::ProviderGridScreen provider;
         f.setup();
         osd.set(op);
         osd.set_hud(hud);
@@ -953,8 +916,6 @@ int main(int argc, char **argv)
         keyboard.set(kbp);
         keyboard.enter();
         surround.set(srp);
-        provider.set(prp);
-        provider.enter();
         home.set(launch);
         lst.set(lp);
         brw.set(bp);
@@ -999,8 +960,6 @@ int main(int argc, char **argv)
                 keyboard.update(kDt);
             else if (f.kind == 16)
                 surround.update(kDt);
-            else if (f.kind == 17)
-                provider.update(kDt);
             rail.update(kDt);
             textures.tick();
             time += kDt;
@@ -1027,8 +986,6 @@ int main(int argc, char **argv)
             image.draw(list, ctx);
         else if (f.kind == 16)
             surround.draw(list, ctx);
-        else if (f.kind == 17)
-            provider.draw(list, ctx);
         else if (f.kind == 18)
         {
             /* the browser animates as it updates: run it a second, draw the last frame */

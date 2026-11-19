@@ -13,7 +13,7 @@ nothing of the original remains.
 | `ui/` | nav, focus, input, layout and keyboard-state primitives |
 | `ui_kit/` | EVO's screens drawn with the ps5-homebrew-ui kit |
 | `ui_rml/` | the RmlUi bridge, provider documents and the `sceAgc` render interface |
-| `addons/` | `evo_net`, the provider seam and the providers, the in-app updater |
+| `addons/` | `evo_net`, YouTube playback and the in-app updater |
 | `src/`, `include/` | boot log, jailbreak, data paths, recent and favourites, log server, dev remote |
 | `assets/`, `shaders/`, `sce_sys/` | UI documents and fonts, `.pipe` shaders, `param.json` and title art |
 | `main.c.legacy` | the old monolith. **Not compiled.** Kept for `git blame` only |

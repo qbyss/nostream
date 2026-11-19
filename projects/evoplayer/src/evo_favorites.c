@@ -121,6 +121,13 @@ void favorites_load(void)
 
         if (!path || !title) continue;
 
+        /* Older builds also stored provider stream URLs or a bare channel
+         * title here. Keep only paths handled by the storage browser. */
+        if (path[0] != '/' && strncmp(path, "file://", 7) != 0 &&
+            strncmp(path, "ntfs://", 7) != 0 && strncmp(path, "smb://", 6) != 0 &&
+            strncmp(path, "ftp://", 6) != 0 && strncmp(path, "ftps://", 7) != 0)
+            continue;
+
         evo_url_sanitize(path, e->path, sizeof(e->path));
         evo_url_sanitize(title, e->title, sizeof(e->title));
         e->duration = duration ? atof(duration) : 0.0;

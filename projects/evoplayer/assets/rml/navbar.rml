@@ -32,7 +32,7 @@
         <img id="nav-logo-img" src="../icons/icon_logo.png"/>
     </div>
 
-    <!-- Icon-only collapsed items (5 top-level sections) -->
+    <!-- Icon-only collapsed items (4 top-level sections) -->
     <div id="nav-items">
         <!-- 0: HOME -->
         <div class="rail-item-wrap" id="nav-wrap-0">
@@ -48,25 +48,18 @@
                 <img src="../icons/icon_browse_usb.png" class="rail-icon" id="nav-icon-1"/>
             </div>
         </div>
-        <!-- 2: EMBY -->
+        <!-- 2: SETTINGS -->
         <div class="rail-item-wrap" id="nav-wrap-2">
             <div class="rail-accent-bar" id="nav-bar-2"></div>
             <div class="rail-item" id="nav-item-2">
-                <img src="../icons/icon_emby.png" class="rail-icon" id="nav-icon-2"/>
+                <img src="../icons/icon_settings.png" class="rail-icon" id="nav-icon-2"/>
             </div>
         </div>
-        <!-- 3: SETTINGS -->
+        <!-- 3: ABOUT -->
         <div class="rail-item-wrap" id="nav-wrap-3">
             <div class="rail-accent-bar" id="nav-bar-3"></div>
             <div class="rail-item" id="nav-item-3">
-                <img src="../icons/icon_settings.png" class="rail-icon" id="nav-icon-3"/>
-            </div>
-        </div>
-        <!-- 4: ABOUT -->
-        <div class="rail-item-wrap" id="nav-wrap-4">
-            <div class="rail-accent-bar" id="nav-bar-4"></div>
-            <div class="rail-item" id="nav-item-4">
-                <img src="../icons/icon_about_support.png" class="rail-icon" id="nav-icon-4"/>
+                <img src="../icons/icon_about_support.png" class="rail-icon" id="nav-icon-3"/>
             </div>
         </div>
     </div>
@@ -74,15 +67,15 @@
     <!--
       QUIT EVO. An action, not a section: it releases everything and parks the
       app on the safe-to-close screen (Application::requestSoftClose), so it is
-      pinned to the foot of the rail, apart from the places you can go. Slot 5
+      pinned to the foot of the rail, apart from the places you can go. Slot 4
       in both panels; ScreenManager treats the index after the last section
       as this entry.
     -->
     <div id="nav-quit">
-        <div class="rail-item-wrap" id="nav-wrap-5">
-            <div class="rail-accent-bar" id="nav-bar-5"></div>
-            <div class="rail-item" id="nav-item-5">
-                <img src="../icons/icon_power.png" class="rail-icon" id="nav-icon-5"/>
+        <div class="rail-item-wrap" id="nav-wrap-4">
+            <div class="rail-accent-bar" id="nav-bar-4"></div>
+            <div class="rail-item" id="nav-item-4">
+                <img src="../icons/icon_power.png" class="rail-icon" id="nav-icon-4"/>
             </div>
         </div>
     </div>
@@ -109,24 +102,20 @@
                 <span class="rail-exp-label" id="nav-exp-label-1">BROWSE</span>
             </div>
             <div class="rail-exp-item" id="nav-exp-2">
-                <img id="nav-exp-icon-2" src="../icons/icon_emby.png" class="rail-exp-icon"/>
-                <span class="rail-exp-label" id="nav-exp-label-2">PROVIDERS</span>
+                <img id="nav-exp-icon-2" src="../icons/icon_settings.png" class="rail-exp-icon"/>
+                <span class="rail-exp-label" id="nav-exp-label-2">SETTINGS</span>
             </div>
             <div class="rail-exp-item" id="nav-exp-3">
-                <img id="nav-exp-icon-3" src="../icons/icon_settings.png" class="rail-exp-icon"/>
-                <span class="rail-exp-label" id="nav-exp-label-3">SETTINGS</span>
-            </div>
-            <div class="rail-exp-item" id="nav-exp-4">
-                <img id="nav-exp-icon-4" src="../icons/icon_about_support.png" class="rail-exp-icon"/>
-                <span class="rail-exp-label" id="nav-exp-label-4">ABOUT</span>
+                <img id="nav-exp-icon-3" src="../icons/icon_about_support.png" class="rail-exp-icon"/>
+                <span class="rail-exp-label" id="nav-exp-label-3">ABOUT</span>
             </div>
         </div>
 
         <!-- QUIT EVO, pinned to the foot of the panel like the rail entry -->
         <div id="nav-expanded-quit">
-            <div class="rail-exp-item" id="nav-exp-5">
-                <img id="nav-exp-icon-5" src="../icons/icon_power.png" class="rail-exp-icon"/>
-                <span class="rail-exp-label" id="nav-exp-label-5">QUIT EVO</span>
+            <div class="rail-exp-item" id="nav-exp-4">
+                <img id="nav-exp-icon-4" src="../icons/icon_power.png" class="rail-exp-icon"/>
+                <span class="rail-exp-label" id="nav-exp-label-4">QUIT EVO</span>
             </div>
         </div>
     </div>
