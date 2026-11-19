@@ -1,5 +1,5 @@
 /*
- * evo_cast_receiver.c - DIAL (DIscovery And Launch) cast receiver for EVO Player.
+ * evo_cast_receiver.c - DIAL (DIscovery And Launch) cast receiver for NoStream.
  *
  * Implements SSDP discovery (UDP 1900 on 239.255.255.250) and DIAL HTTP
  * server (TCP 8765) as described in the DIAL-multiscreen protocol and CastDesk.
@@ -50,7 +50,7 @@ static pthread_mutex_t s_cast_lock = PTHREAD_MUTEX_INITIALIZER;
 static volatile int    s_running = 0;
 static volatile int    s_app_running = 0;
 static int             s_dial_port = EVO_CAST_DEFAULT_PORT;
-static char            s_friendly_name[128] = "EVO Player";
+static char            s_friendly_name[128] = "NoStream";
 static char            s_device_id[64] = "";
 static evo_cast_launch_cb s_on_launch = NULL;
 static evo_cast_stop_cb   s_on_stop = NULL;
@@ -723,8 +723,8 @@ static void handle_dial_client(int cfd, const char *local_ip, int port)
             "  <device>\n"
             "    <deviceType>urn:dial-multiscreen-org:device:dial:1</deviceType>\n"
             "    <friendlyName>%s</friendlyName>\n"
-            "    <manufacturer>EVO Player</manufacturer>\n"
-            "    <modelName>EVO Player Cast Receiver</modelName>\n"
+            "    <manufacturer>NoStream</manufacturer>\n"
+            "    <modelName>NoStream Cast Receiver</modelName>\n"
             "    <UDN>uuid:%s</UDN>\n"
             "    <serviceList>\n"
             "      <service>\n"

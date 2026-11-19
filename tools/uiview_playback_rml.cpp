@@ -1460,7 +1460,7 @@ static void render_toast_screens(std::vector<uint32_t>& fb, int width, int heigh
     shoot("rml_toast_info",  "SUBTITLES", "English (SRT)", 0);
     shoot("rml_toast_tech",  "DECODER", "sceVideodec2 native, 3840x2160", 1);
     shoot("rml_toast_error", "SEEK", "Unable to submit seek", 2);
-    shoot("rml_toast_ok",    "SCREENSHOT", "Saved to /mnt/usb0/evo_shots", 3);
+    shoot("rml_toast_ok",    "SCREENSHOT", "Saved to /mnt/usb0/nostream_shots", 3);
 
     /* #16-style stress: a long title/message must ellipsise, not overflow
      * the fixed-width card. */

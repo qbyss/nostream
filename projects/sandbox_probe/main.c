@@ -27,7 +27,7 @@
  *                               structural fix (nullfs bind or sandbox-unjail),
  *                               not just a symbol re-harvest.
  *
- * Built as the PPSA99039 app module by scripts/package-app.sh --probe.
+ * Built as the PPSA99273 app module by scripts/package-app.sh --probe.
  * Also buildable as a plain elfldr payload (make -C projects/sandbox_probe)
  * for an A/B against the unsandboxed context.
  */
@@ -122,12 +122,12 @@ main(void)
         "/app0",
         "/download0",
         "/data",
-        "/data/evoplayer",
+        "/data/nostream",
         "/mnt/usb0",
         "/mnt/ext0",
     };
 
-    evo_notify("EVO sandbox probe (PPSA99039) - start");
+    evo_notify("NoStream sandbox probe (PPSA99273) - start");
     evo_notify("errno: 2=ENOENT 13=EACCES 20=ENOTDIR 1=EPERM 93/94=NOTCAPABLE");
 
     int32_t uid = -1;
@@ -139,9 +139,9 @@ main(void)
     for (size_t i = 0; i < sizeof paths / sizeof paths[0]; i++)
         probe_path(paths[i]);
 
-    evo_notify("EVO sandbox probe - done");
+    evo_notify("NoStream sandbox probe - done");
 
-    evo_notify("EVO sandbox probe - resident (PS button to close)");
+    evo_notify("NoStream sandbox probe - resident (PS button to close)");
 
     /* Stay resident so the notifications persist and the title does not
      * exit immediately (which reads as a crash on the home screen). */

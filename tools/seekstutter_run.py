@@ -5,7 +5,7 @@ far enough apart that its 3s trace window finishes before the next seek starts.
 
     PS5_HOST=192.168.0.7 python3 tools/seekstutter_run.py [--clip /mnt/usb0/...]
 
-Requires the build to carry the seek-stutter trace and /mnt/usb0/evo_seektrace
+Requires the build to carry the seek-stutter trace and /mnt/usb0/nostream_seektrace
 to exist (see tools/seekstutter_report.py's docstring for what it reads).
 """
 
@@ -33,14 +33,14 @@ def connect():
 
 def put_cmd(line):
     with connect() as f:
-        f.storbinary("STOR /mnt/usb0/evo_cmd", io.BytesIO((line + "\n").encode()))
+        f.storbinary("STOR /mnt/usb0/nostream_cmd", io.BytesIO((line + "\n").encode()))
 
 
 def status():
     try:
         with connect() as f:
             b = []
-            try: f.retrbinary("RETR /mnt/usb0/evo_status", b.append)
+            try: f.retrbinary("RETR /mnt/usb0/nostream_status", b.append)
             except error_perm: return {}
             out = {}
             for tok in b and b"".join(b).decode("utf-8", "replace").split() or []:

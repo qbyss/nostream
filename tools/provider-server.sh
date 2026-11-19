@@ -24,7 +24,7 @@
 #   ./tools/provider-server.sh [--port 8099] [--host <ip>]
 #
 # Then, on the console, point the IPTV provider at it. The provider reads
-# /data/evoplayer/iptv.conf; the fastest way to write it is over FTP:
+# /data/nostream/iptv.conf; the fastest way to write it is over FTP:
 #
 #   playlist=http://<host>:<port>/media/iptv.m3u
 #   xmltv=http://<host>:<port>/media/epg.xml
@@ -184,7 +184,7 @@ cat <<EOF
  provider bundle server: ${BASE}
 =========================================================================
 
- Write this to /data/evoplayer/iptv.conf on the console (over FTP), then
+ Write this to /data/nostream/iptv.conf on the console (over FTP), then
  open the provider screen:
 
    playlist=${BASE}/media/iptv.m3u
@@ -196,7 +196,7 @@ cat <<EOF
 
    curl -s ${BASE}/ui/iptv/manifest.json | head -5
 
- #101 web probe (a --web-probe build only): write /mnt/usb0/evo_web_probe as
+ #101 web probe (a --web-probe build only): write /mnt/usb0/nostream_web_probe as
 
    url=${BASE}/web/probe.html
    port=8686

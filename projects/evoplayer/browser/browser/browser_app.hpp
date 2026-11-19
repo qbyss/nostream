@@ -125,10 +125,10 @@ public:
     // Tabs: the overview grid (touchpad), new tab, quick switching (L1/R1).
     static constexpr size_t kMaxTabs = 1;   // EVO: the engine host shows one page (was 8)
     static constexpr int kOverviewColumns = 5;
-    static constexpr const char* kBookmarksPath = "/data/evoplayer/browser/bookmarks.txt";
-    static constexpr const char* kHistoryPath = "/data/evoplayer/browser/history.txt";
-    static constexpr const char* kSessionPath = "/data/evoplayer/browser/session.txt";
-    static constexpr const char* kSettingsPath = "/data/evoplayer/browser/settings.ini";
+    static constexpr const char* kBookmarksPath = "/data/nostream/browser/bookmarks.txt";
+    static constexpr const char* kHistoryPath = "/data/nostream/browser/history.txt";
+    static constexpr const char* kSessionPath = "/data/nostream/browser/session.txt";
+    static constexpr const char* kSettingsPath = "/data/nostream/browser/settings.ini";
     void on_touchpad_pressed();
     void open_tab_overview();
     void new_tab();

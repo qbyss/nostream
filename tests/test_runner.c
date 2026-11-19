@@ -377,7 +377,7 @@ static void test_emby_media_sources(void)
  * This is a trust boundary, not a tidiness check. A bundle's manifest names
  * where each of its files is written and, later, what LoadDocument opens, and
  * RmlUi's file interface reaches disk with a plain fopen() that validates
- * nothing. An entry of "../../../data/evoplayer/emby.conf" getting past
+ * nothing. An entry of "../../../data/nostream/emby.conf" getting past
  * evo_bundle_path_safe() means a downloaded file written over stored
  * credentials.
  *

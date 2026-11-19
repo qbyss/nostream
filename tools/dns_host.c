@@ -19,7 +19,7 @@
  *   multifail  the multi-record call errors where the single lookup works
  *   garbage    the multi-record call returns a layout that is not the documented
  *   overrun    the multi-record call writes past the documented struct
- *   killswitch /mnt/usb0/evo_dns_single turns the multi-record call off, and is
+ *   killswitch /mnt/usb0/nostream_dns_single turns the multi-record call off, and is
  *              not sticky
  *
  * What it proves overall:

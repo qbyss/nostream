@@ -25,9 +25,9 @@
 #define EVO_PLAYER_VERSION "v0.13.7"
 #endif
 
-#define UPD_RELEASE_API  "https://api.github.com/repos/sainsaji/EVO-PLAYER-PS5/releases/latest"
-#define UPD_DOWNLOAD_PFX "https://github.com/sainsaji/EVO-PLAYER-PS5/releases/download/"
-#define UPD_TITLE_ID     "PPSA99039"
+#define UPD_RELEASE_API  "https://api.github.com/repos/qbyss/nostream/releases/latest"
+#define UPD_DOWNLOAD_PFX "https://github.com/qbyss/nostream/releases/download/"
+#define UPD_TITLE_ID     "PPSA99273"
 #define UPD_MIN_BYTES    (1u << 20)
 #define UPD_MAX_BYTES    (512u << 20)
 

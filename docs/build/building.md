@@ -7,7 +7,7 @@ tomorrow as today.
 
 ```
 Windows ─► Git Bash / VS Code ─► Docker container ─► clang 18 + PS5 Payload SDK v0.42
-                                                  ─► app module (PPSA99039.ffpfsc) ─► PS5 13.60
+                                                  ─► app module (PPSA99273.ffpfsc) ─► PS5 13.60
 ```
 
 Contents: [prerequisites](#prerequisites) · [first build](#first-build) ·

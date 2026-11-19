@@ -4,7 +4,7 @@ tools/seekstutter_report.py — measure the post-seek stutter from evo.log.
 
     python3 tools/seekstutter_report.py output/logs/evo.log
 
-Reads the `seekstutter` lines EVO writes when /mnt/usb0/evo_seektrace exists:
+Reads the `seekstutter` lines EVO writes when /mnt/usb0/nostream_seektrace exists:
 one SEEK_BEGIN, one SEEK_COMMIT, and one `tick` line per render-loop iteration
 for the 6s window after the seek commits (media/main.c, right next to the #8
 present-timing hooks — reuses their microsecond clock).
@@ -201,7 +201,7 @@ def main():
     ws = windows(events)
     if not ws:
         sys.exit("no `seekstutter` SEEK_COMMIT+tick windows found - was "
-                 "/mnt/usb0/evo_seektrace created, and did a seek happen "
+                 "/mnt/usb0/nostream_seektrace created, and did a seek happen "
                  "on this build?")
 
     verdicts = []

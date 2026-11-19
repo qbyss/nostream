@@ -8,9 +8,9 @@ module is and the traps of running in it, read [app-module.md](app-module.md).
 
 ## What it runs as
 
-EVO is a **fake-signed game-category app module**, title `PPSA99039`. It has its
+EVO is a **fake-signed Media-category app module**, title `PPSA99273`. It has its
 own title id, `param.json`, sandbox and user session, and ShadowMountPlus mounts
-it from `/data/homebrew/PPSA99039.ffpfsc`. That context is what gives it
+it from `/data/homebrew/PPSA99273.ffpfsc`. That context is what gives it
 `sceVideodec2` hardware decode and `sceAgc` GPU access; a payload loaded through
 elfldr or hbldr gets neither. There is one hardware path and no ELF payload.
 

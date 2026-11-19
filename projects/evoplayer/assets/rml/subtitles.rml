@@ -165,7 +165,7 @@
         <div id="subtitles-preview-box">
             <div id="subtitles-preview-label">PREVIEW · ACTUAL DIALOGUE FROM SUBTITLE FILE</div>
             <div id="subtitles-preview-text2" class="preview-medium" style="display: none;"></div>
-            <div id="subtitles-preview-text" class="preview-medium">Welcome to EVO Player on PlayStation 5</div>
+            <div id="subtitles-preview-text" class="preview-medium">Welcome to NoStream on PlayStation 5</div>
         </div>
     </div>
 </body>

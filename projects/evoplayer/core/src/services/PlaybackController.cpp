@@ -1309,7 +1309,7 @@ bool PlaybackController::startPlaybackSource(const PlaybackSource& source,
          * docs/hardware/memory-budget.md has the figures.
          *
          * What is left is speed, not memory: a codec the CPU cannot decode in
-         * real time at 4K plays slowly. Touch /mnt/usb0/evo_no_sw_4k to go back
+         * real time at 4K plays slowly. Touch /mnt/usb0/nostream_no_sw_4k to go back
          * to refusing - a field escape hatch, read once per session.
          *
          * This only concerns the software path: codecs the hardware cannot do
@@ -1321,7 +1321,7 @@ bool PlaybackController::startPlaybackSource(const PlaybackSource& source,
         const bool above_1080p = ((long)vp.width * (long)vp.height) > (1920L * 1080L);
         static int sw_4k_allowed = -1;
         if (sw_4k_allowed < 0)
-            sw_4k_allowed = (access("/mnt/usb0/evo_no_sw_4k", F_OK) == 0) ? 0 : 1;
+            sw_4k_allowed = (access("/mnt/usb0/nostream_no_sw_4k", F_OK) == 0) ? 0 : 1;
 
         if (sw_backend && above_1080p && sw_4k_allowed) {
             evo_boot_log("PlaybackController: %dx%d on the software decoder",
@@ -1331,7 +1331,7 @@ bool PlaybackController::startPlaybackSource(const PlaybackSource& source,
 
         if (sw_backend && above_1080p && !sw_4k_allowed) {
             evo_boot_log("PlaybackController: refusing %dx%d on the software "
-                         "decoder - /mnt/usb0/evo_no_sw_4k is set",
+                         "decoder - /mnt/usb0/nostream_no_sw_4k is set",
                          vp.width, vp.height);
             evo_mem_budget_log("sw-refuse");
             avformat_close_input(&play_fmt);
@@ -1365,7 +1365,7 @@ bool PlaybackController::startPlaybackSource(const PlaybackSource& source,
         }
         if (g_vdec && above_1080p && chosen != EVO_VDEC_BACKEND_NATIVE && !sw_4k_allowed) {
             evo_boot_log("PlaybackController: native declined %dx%d (codec=%d); "
-                         "refusing the FFmpeg fallback - /mnt/usb0/evo_no_sw_4k "
+                         "refusing the FFmpeg fallback - /mnt/usb0/nostream_no_sw_4k "
                          "is set", vp.width, vp.height,
                          vStream->codecpar->codec_id);
             evo_mem_budget_log("native-declined");

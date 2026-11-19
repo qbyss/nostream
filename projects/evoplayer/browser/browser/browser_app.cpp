@@ -53,7 +53,7 @@ bool BrowserApp::initialize(uint32_t screen_width, uint32_t screen_height) {
     }
 
     BROWSER_LOG("[BROWSER_APP] Loading settings...");
-    mkdir("/data/evoplayer/browser", 0777);  // EVO: its own folder. Settings, bookmarks, history and the session are saved here
+    mkdir("/data/nostream/browser", 0777);  // EVO: its own folder. Settings, bookmarks, history and the session are saved here
     settings_.load_from_file(kSettingsPath);
     bookmarks_.load_from_file(kBookmarksPath);
     history_.load_from_file(kHistoryPath);

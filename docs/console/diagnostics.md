@@ -3,7 +3,7 @@
 Where to look when something goes wrong, and the switches that change EVO's
 behaviour for a test.
 
-## The log: `/mnt/usb0/evo.log`
+## The log: `/mnt/usb0/nostream.log`
 
 One file holds everything: the boot trace, breadcrumbs, decoder notes, the
 per-file `sweep` stats, updater, provider and network lines, and a `CRASH` line
@@ -120,11 +120,11 @@ overrides the log port (default 9780).
 ## Screenshots
 
 `key l3` (or R3) in a menu, or `evo-remote.sh key l3`, writes
-`/mnt/usb0/evo_shot_NNN.bmp`, a raw framebuffer at the panel's resolution (3840×2160
+`/mnt/usb0/nostream_shot_NNN.bmp`, a raw framebuffer at the panel's resolution (3840×2160
 on a 4K output; numbers wrap at 32). Fetch and look:
 
 ```bash
-./tools/grab_shot.sh <name>     # presses l3, fetches the shot it wrote (USB0 or /data/evoplayer) -> output/screenshots/<name>.png
+./tools/grab_shot.sh <name>     # presses l3, fetches the shot it wrote (USB0 or /data/nostream) -> output/screenshots/<name>.png
 ./tools/shot.sh grab            # newest capture via the web server (needs websrv on 8080)
 ./tools/shot.sh list            # what is on the stick
 ```
@@ -152,27 +152,27 @@ per use, where noted) and need no rebuild.
 
 | File | Effect |
 |---|---|
-| `/mnt/usb0/evo_no_hui` | keep every screen on RmlUi, kit off |
-| `/mnt/usb0/evo_no_sw_4k` | refuse software decode above 1080p (the default allows it since #95) |
-| `/mnt/usb0/evo_dm_probe` | at boot, allocate, write and verify direct memory in 256 MB steps up to a ceiling in MB (default 8192), log a `dm probe:` line per step, release it. Delete the file to skip |
-| `/mnt/usb0/evo_agc_no_nt` | put copies back on `memcpy` plus a cache flush instead of non-temporal stores |
-| `/mnt/usb0/evo_dns_single` | turn the multi-record DNS lookup off |
-| `/mnt/usb0/evo_web_probe` | the system-browser probe ([../providers/web-ui.md](../providers/web-ui.md)) |
-| `/mnt/usb0/evo_interp_stage`, `evo_interp_debug` | a digit stops the motion-smoothing chain early, or replaces its output with a debug view ([../hardware/motion-smoothing.md](../hardware/motion-smoothing.md)) |
-| `/mnt/usb0/evo_vdec_hang` | test hook: the 100th decode blocks forever, to exercise the watchdog |
+| `/mnt/usb0/nostream_no_hui` | keep every screen on RmlUi, kit off |
+| `/mnt/usb0/nostream_no_sw_4k` | refuse software decode above 1080p (the default allows it since #95) |
+| `/mnt/usb0/nostream_dm_probe` | at boot, allocate, write and verify direct memory in 256 MB steps up to a ceiling in MB (default 8192), log a `dm probe:` line per step, release it. Delete the file to skip |
+| `/mnt/usb0/nostream_agc_no_nt` | put copies back on `memcpy` plus a cache flush instead of non-temporal stores |
+| `/mnt/usb0/nostream_dns_single` | turn the multi-record DNS lookup off |
+| `/mnt/usb0/nostream_web_probe` | the system-browser probe ([../providers/web-ui.md](../providers/web-ui.md)) |
+| `/mnt/usb0/nostream_interp_stage`, `evo_interp_debug` | a digit stops the motion-smoothing chain early, or replaces its output with a debug view ([../hardware/motion-smoothing.md](../hardware/motion-smoothing.md)) |
+| `/mnt/usb0/nostream_vdec_hang` | test hook: the 100th decode blocks forever, to exercise the watchdog |
 
 Written by EVO: `evo_report.txt` (Settings → System & Diagnostics → Report a
-Problem; on `/data/evoplayer` with no stick), and the `evo_status` / `evo_ui.json` / `evo_set.txt` of the
+Problem; on `/data/nostream` with no stick), and the `evo_status` / `evo_ui.json` / `evo_set.txt` of the
 dev remote.
 
-On the data root (`/data/evoplayer`), not the USB stick: `thumb_quarantine` lists
+On the data root (`/data/nostream`), not the USB stick: `thumb_quarantine` lists
 files that crashed the process during poster extraction and are skipped from then
 on (`evo_crash_note.h`). If a file mysteriously has no poster, delete the entry (or
 the file) to retry.
 
 ## Files EVO keeps
 
-`/data/evoplayer/` once the sandbox is open (`/download0/evoplayer/` before that,
+`/data/nostream/` once the sandbox is open (`/download0/nostream/` before that,
 which does not survive a relaunch):
 
 | File | Content |

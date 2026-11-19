@@ -9,9 +9,9 @@ A release carries four files, all built by CI from the pinned toolchain:
 
 | File | For |
 |---|---|
-| `EVOPlayer-<tag>-PPSA99039.ffpfsc` | the standard image, for any console. The only build tested on a base PS5 |
-| `EVOPlayer-<tag>-PPSA99039-pro.ffpfsc` | the same source with `attribute3` bit 22 set ([Pro memory mode](../hardware/memory-budget.md#pro-memory-mode-and-the-caps-143-decided-2026-10-22)); tested on a PS5 Pro only |
-| `EVOPlayer-<tag>-PPSA99039.zip` | the folder-title archive, for loaders that want loose files |
+| `NoStream-<tag>-PPSA99273.ffpfsc` | the standard image, for any console. The only build tested on a base PS5 |
+| `NoStream-<tag>-PPSA99273-pro.ffpfsc` | the same source with `attribute3` bit 22 set ([Pro memory mode](../hardware/memory-budget.md#pro-memory-mode-and-the-caps-143-decided-2026-10-22)); tested on a PS5 Pro only |
+| `NoStream-<tag>-PPSA99273.zip` | the folder-title archive, for loaders that want loose files |
 | `SHA256SUMS.txt` | checksums for the above |
 
 Install options for users are in the root [README.md](../../README.md): copy the
@@ -74,13 +74,13 @@ Settings → System & Diagnostics → Software Update (`addons/src/evo_updater.c
 1. **Check** the latest release from the GitHub API and compare its tag with
    `EVO_PLAYER_VERSION`.
 2. **Download** (only after the user says so) the matching asset: the plain
-   `-PPSA99039.ffpfsc`, or the `-pro.ffpfsc` on a console in Pro memory mode.
+   `-PPSA99273.ffpfsc`, or the `-pro.ffpfsc` on a console in Pro memory mode.
    The image streams through FFmpeg's HTTP client to a staging file beside the
    installed image, never into memory.
 3. **Verify** the SHA-256 against the `digest` GitHub publishes for the asset. No
    digest, or a mismatch, fails the update and leaves the installed image alone.
 4. **Apply** with one rename on the same filesystem, on a second confirmation. The
    old image stays mounted under its open inode, so the running EVO is undisturbed;
-   EVO then closes and the user relaunches from the Games row.
+   EVO then closes and the user relaunches from the Media tab.
 
 Nothing is replaced before the hash matches, and every step needs a yes.

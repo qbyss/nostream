@@ -2,7 +2,7 @@
 """
 tools/evo_ui.py - #115: read EVO's UI state as text (called by evo-remote.sh).
 
-A --usb-remote build writes /mnt/usb0/evo_ui.json whenever the screen, the
+A --usb-remote build writes /mnt/usb0/nostream_ui.json whenever the screen, the
 focused element, a modal or a toast changes. This reads it over FTP, so the
 remote can navigate without a screenshot.
 
@@ -21,8 +21,8 @@ from ftplib import FTP, error_perm
 
 HOST = os.environ["PS5_HOST"]
 PORT = int(os.environ.get("FTP_PORT", "2121"))
-UI_PATHS = ["/mnt/usb0/evo_ui.json", "/data/evoplayer/evo_ui.json"]
-CMD_PATHS = ["/mnt/usb0/evo_cmd", "/data/evoplayer/evo_cmd"]
+UI_PATHS = ["/mnt/usb0/nostream_ui.json", "/data/nostream/evo_ui.json"]
+CMD_PATHS = ["/mnt/usb0/nostream_cmd", "/data/nostream/evo_cmd"]
 
 
 def connect():

@@ -293,7 +293,7 @@ void LaunchScreen::render(uint32_t* framebuffer, int width, int height) {
     evo_rmlui_launch_params_t params;
     std::memset(&params, 0, sizeof(params));
 
-    params.app_name = "EVO PLAYER";
+    params.app_name = "NoStream";
     params.version = (EVO_PLAYER_VERSION[0] == 'v' || EVO_PLAYER_VERSION[0] == 'V')
                      ? EVO_PLAYER_VERSION
                      : ("v" EVO_PLAYER_VERSION);
@@ -379,7 +379,7 @@ void LaunchScreen::render(uint32_t* framebuffer, int width, int height) {
         }
     } else {
         params.hero_eyebrow = "WELCOME";
-        params.hero_title = "Welcome to EVO Player";
+        params.hero_title = "Welcome to NoStream";
         params.hero_detail = "Browse storage to select and play media files";
         params.hero_action = "BROWSE USB";
         params.hero_progress = -1;
@@ -477,7 +477,7 @@ void LaunchScreen::fillHomeTips(evo_rmlui_launch_params_t& params) {
     auto add = [&](const std::string& t) { if (n < EVO_RMLUI_HOME_TIPS) s_tips[n++] = t; };
     if (web) add("Your phone can be the remote: open " + addr + "/remote");
     if (web) add("Paste a YouTube link and EVO plays the whole video: " + addr + "/input");
-    add("Cast from the YouTube app: pick EVO Player in the cast list");
+    add("Cast from the YouTube app: pick NoStream in the cast list");
     add("Stereo can fill four speakers: Settings > Audio > Upmix stereo to 4.0");
     add("Phone calls in films can play on the controller speaker: Settings > Audio");
     add("Watch from a PC or NAS: Browse > Add Server (SMB or FTP)");

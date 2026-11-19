@@ -30,9 +30,9 @@ extern "C" {
 
 extern "C" int sceKernelReserveVirtualRange(void **addr, size_t len, int flags, size_t align);
 
-#define OFF_USB "/mnt/usb0/evo_gpu_broker_off"
-#define OFF_DATA "/data/evoplayer/evo_gpu_broker_off"
-#define BROKER_DIR "/data/evoplayer-gpu"
+#define OFF_USB "/mnt/usb0/nostream_gpu_broker_off"
+#define OFF_DATA "/data/nostream/evo_gpu_broker_off"
+#define BROKER_DIR "/data/nostream-gpu"
 
 namespace {
 
@@ -116,9 +116,9 @@ void *start_body(void *)
     // The host-visible bytes each client may hold. A 2x browser page needs
     // more than the protocol default of 128 MB (the WebProcess retried failed
     // allocations at 127 MB until it died) and 384 hangs a 2x scroll, so the
-    // default is 768; /data/evoplayer/evo_gpu_host_mb overrides it (MB).
+    // default is 768; /data/nostream/evo_gpu_host_mb overrides it (MB).
     unsigned long long host_limit = (unsigned long long)768 << 20;
-    if (FILE *f = fopen("/data/evoplayer/evo_gpu_host_mb", "r")) {
+    if (FILE *f = fopen("/data/nostream/evo_gpu_host_mb", "r")) {
         unsigned mb = 0;
         if (fscanf(f, "%u", &mb) == 1 && mb >= 64 && mb <= 3072)
             host_limit = (unsigned long long)mb << 20;

@@ -16,7 +16,7 @@
 #include <unistd.h>
 
 /* Dev-only crash catcher: the sandbox deletes its coredump and the popup
- * reports nothing, so record the fault address to /mnt/usb0/evo.log with
+ * reports nothing, so record the fault address to /mnt/usb0/nostream.log with
  * raw I/O (async-signal-safe - stdio could deadlock in the handler). */
 static void evo_crash_handler(int sig, siginfo_t *si, void *ctx)
 {
@@ -55,7 +55,7 @@ static void evo_crash_handler(int sig, siginfo_t *si, void *ctx)
             len += snprintf(buf + len, sizeof buf - (size_t)len, "\n");
     }
 
-    int fd = open("/mnt/usb0/evo.log", O_WRONLY | O_CREAT | O_APPEND, 0644);
+    int fd = open("/mnt/usb0/nostream.log", O_WRONLY | O_CREAT | O_APPEND, 0644);
     if (fd >= 0) {
         /* lines still queued for the log writer thread come first, so the
          * log reads in order up to the crash */

@@ -6,9 +6,9 @@ and always get the real ones back.
 `up` saves the console's real configs to output/testenv/backup/ (git-ignored:
 they hold saved server logins), then writes the test setup:
 
-  /data/evoplayer/iptv.conf                playlist on a dead host  -> the IPTV
+  /data/nostream/iptv.conf                playlist on a dead host  -> the IPTV
                                            "could not connect" path, timed
-  /data/evoplayer/evo_network_shares.json  the real servers, plus a dead FTP
+  /data/nostream/evo_network_shares.json  the real servers, plus a dead FTP
                                            server ("TEST dead FTP")
 
 `down` puts the saved files back byte for byte and removes the backup. `up`
@@ -31,7 +31,7 @@ from ftplib import FTP, error_perm
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 BACKUP = ROOT / "output" / "testenv" / "backup"
-FILES = ["/data/evoplayer/iptv.conf", "/data/evoplayer/evo_network_shares.json"]
+FILES = ["/data/nostream/iptv.conf", "/data/nostream/evo_network_shares.json"]
 MISSING = ".missing"   # marker: the file did not exist before `up`
 
 

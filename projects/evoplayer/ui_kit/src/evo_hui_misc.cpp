@@ -385,7 +385,7 @@ void AboutScreen::draw(DrawList &list, const Context &ctx) const
         {"RENDER", "ps5-homebrew-ui on sceAgc"},
         {"MEDIA CORE", "FFmpeg"},
         {"TARGET", "PS5 firmware 13.60 and below"},
-        {"PROJECT", "github.com/sainsaji/EVO-PLAYER-PS5"},
+        {"PROJECT", "github.com/qbyss/nostream"},
         {"HELP", "Settings \xE2\x80\xBA System & Diagnostics \xE2\x80\xBA Report a problem"},
     };
     for (int i = 0; i < 6; ++i)
@@ -614,11 +614,11 @@ void ClosedScreen::draw(DrawList &list, const Context &ctx) const
     if (logo)
         list.image(logo, {cx - 60, 240, 120, 120}, ::hui::gfx::kFullUv, kWhite);
 
-    ui::text(list, fonts.display, "EVO Player", cx, 440, 56, kWhite, Align::center);
+    ui::text(list, fonts.display, "NoStream", cx, 440, 56, kWhite, Align::center);
     ui::text(list, fonts.semibold, "Safe to close", cx, 490, 28, p.accent, Align::center);
     
     ui::text(list, fonts.regular, "Press the PS button to open the control centre.", cx, 550, 20, p.text_muted, Align::center);
-    ui::text(list, fonts.regular, "Highlight EVO Player and close it from the options menu.", cx, 580, 20, p.text_muted, Align::center);
+    ui::text(list, fonts.regular, "Highlight NoStream and close it from the options menu.", cx, 580, 20, p.text_muted, Align::center);
 }
 
 bool ClosedScreen::focus(FocusInfo *out) const

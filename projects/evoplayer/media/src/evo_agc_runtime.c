@@ -521,7 +521,7 @@ void evo_agc_runtime_cache_flush(const void *address, size_t bytes)
  * direct-memory arena; the fallback covers a range that is not 16-byte
  * aligned or sized and keeps the old memcpy + clflush behaviour.
  *
- * Touch /mnt/usb0/evo_agc_no_nt to put every caller back on memcpy + clflush
+ * Touch /mnt/usb0/nostream_agc_no_nt to put every caller back on memcpy + clflush
  * without a rebuild, should a future firmware disagree about non-temporal
  * stores into the scanout pool.
  */
@@ -529,7 +529,7 @@ static int nt_stores_enabled(void)
 {
     static int s_state = -1;
     if (s_state < 0)
-        s_state = (access("/mnt/usb0/evo_agc_no_nt", F_OK) == 0) ? 0 : 1;
+        s_state = (access("/mnt/usb0/nostream_agc_no_nt", F_OK) == 0) ? 0 : 1;
     return s_state;
 }
 
@@ -4144,7 +4144,7 @@ static int agc_motion_smoothing_plan(uint32_t src_w, uint32_t src_h, int ten_bit
     return 1;
 }
 
-/* Write a digit to /mnt/usb0/evo_interp_stage to stop the chain early:
+/* Write a digit to /mnt/usb0/nostream_interp_stage to stop the chain early:
  *   1 = pyramid only   2 = + motion estimation   3 = + median
  * Anything below 4 also forces the warp to pass frame A straight through, so
  * the stage under test is the last thing the GPU is asked to do. A GPU page
@@ -4155,7 +4155,7 @@ static int agc_interp_stage(void)
     static int s_stage = -1;
     if (s_stage < 0) {
         s_stage = 4;
-        FILE *f = fopen("/mnt/usb0/evo_interp_stage", "r");
+        FILE *f = fopen("/mnt/usb0/nostream_interp_stage", "r");
         if (f) {
             int v = 0;
             if (fscanf(f, "%d", &v) == 1 && v > 0 && v < 4)
@@ -4236,7 +4236,7 @@ static int agc_interp_run_me(uint32_t src_w, uint32_t src_h, int mode)
     return rc;
 }
 
-/* Write a digit to /mnt/usb0/evo_interp_debug to replace the interpolated
+/* Write a digit to /mnt/usb0/nostream_interp_debug to replace the interpolated
  * picture with what the vector field holds: 1 = vectors (R/G) and area
  * residual (B), 2 = confidence, 3 = the final warp weight. Read once. */
 static float agc_interp_debug_mode(void)
@@ -4244,7 +4244,7 @@ static float agc_interp_debug_mode(void)
     static int s_mode = -1;
     if (s_mode < 0) {
         s_mode = 0;
-        FILE *f = fopen("/mnt/usb0/evo_interp_debug", "r");
+        FILE *f = fopen("/mnt/usb0/nostream_interp_debug", "r");
         if (f) {
             int v = 0;
             if (fscanf(f, "%d", &v) == 1 && v > 0 && v <= 3)

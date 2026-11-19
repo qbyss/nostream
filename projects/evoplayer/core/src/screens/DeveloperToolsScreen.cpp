@@ -106,7 +106,7 @@ void DeveloperToolsScreen::render(uint32_t* framebuffer, int width, int height) 
     params.row_count = 4;
 
     static const char* items[] = {
-        "Flush Diagnostic Logs (/mnt/usb0/evo.log)",
+        "Flush Diagnostic Logs (/mnt/usb0/nostream.log)",
         "Toggle Development Performance Pill",
         "Run Codec Benchmark Sweep",
         "Inspect DirectMemory Allocations"

@@ -1,7 +1,7 @@
 # Packaging and deploying
 
 One path ships EVO: build the app module with `scripts/package-app.sh`, PFS-pack
-it into `PPSA99039.ffpfsc`, and put that image in `/data/homebrew/` with
+it into `PPSA99273.ffpfsc`, and put that image in `/data/homebrew/` with
 `scripts/deploy-app.sh`. The older routes (homebrew bundles, a fake-SELF ELF
 installed with `sceAppInstUtil`, hbldr launches) were dropped: they reach none of
 the features that need an app module ([../architecture/app-module.md](../architecture/app-module.md)).
@@ -22,8 +22,8 @@ bounded hardware cycle are in [../console/hardware-cycle.md](../console/hardware
 
 | Flag | Effect |
 |---|---|
-| `--ffpfsc` | also PFS-pack the app folder into `output/app/PPSA99039.ffpfsc` with MkPFS |
-| `--zip` | also write `PPSA99039.zip`, the folder-title archive (the layout Kodi PS5 uses) |
+| `--ffpfsc` | also PFS-pack the app folder into `output/app/PPSA99273.ffpfsc` with MkPFS |
+| `--zip` | also write `PPSA99273.zip`, the folder-title archive (the layout Kodi PS5 uses) |
 | `--usb-remote` | add the scriptable FTP dev remote (`evo_cmd`, `evo_status`, `evo_ui.json`, verbose decoder log). **Always use it for testing; off in releases** |
 | `--pro-memory` | set `attribute3` bit 22 in the packaged `param.json` only, so a PS5 Pro gives the app about 1.2 GiB more direct memory (#143) |
 | `--virtual-keyboard` | debug: always use EVO's own keyboard, never the system IME that the dev remote can neither press nor see |
@@ -44,13 +44,13 @@ on every build by `tools/bundle_rml_assets.py`.
 Output:
 
 ```
-output/app/PPSA99039/
+output/app/PPSA99273/
 ├── eboot.bin                 FSELF-signed. Reads as opaque "data" to file/readelf;
 │                             inspect it with `ps5-native-tool self --inspect`
 ├── sce_sys/{param.json, icon0.png, pic0.png, pic1.png}
 ├── sce_module/libc.prx
 └── assets/                   loose copy of the embedded bundle (CI checks it is not empty)
-output/app/PPSA99039.ffpfsc   the same files in a PFS image
+output/app/PPSA99273.ffpfsc   the same files in a PFS image
 output/app/.build/eboot.elf   the pre-sign ELF, the one to check with readelf
 ```
 
@@ -82,10 +82,10 @@ same folder before suspecting code.
   is refused outright and `--force` does not override it. `--force` only applies
   when there is no heartbeat to read.
 - It never launches anything. **ShadowMount+ v1.7 test-mounts an updated image and
-  unmounts it again; it does not launch it.** Launch from the Games row or with
+  unmounts it again; it does not launch it.** Launch from the Media tab or with
   `evo-remote.sh launch`.
-- `--fresh` goes through `tools/wipe-evo.py`: the app, `/data/evoplayer` (settings,
-  logins, playlists, calibration) and `/mnt/usb0/evo*`. A dry run
+- `--fresh` goes through `tools/wipe-evo.py`: the app, `/data/nostream` (settings,
+  logins, playlists, calibration) and `/mnt/usb0/nostream*`. A dry run
   (`python3 tools/wipe-evo.py <host>`) lists what would go; `--do` deletes. It never
   touches other homebrew, games or non-EVO USB files.
 

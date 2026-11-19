@@ -1,7 +1,7 @@
 # EVO Player
 
 A native media player for jailbroken PS5 (FW 13.60), built against the PS5
-Payload SDK and shipped as an app module (`.ffpfsc`, title `PPSA99039`). The UI
+Payload SDK and shipped as an app module (`.ffpfsc`, title `PPSA99273`). The UI
 is RmlUi on bare-metal `sceAgc`; decode is `sceVideodec2` with an FFmpeg
 fallback.
 
@@ -74,7 +74,7 @@ Each issue body also has a "References & sequencing" block.
   build + deploy only, no status poll loop.
 - **The console's `/fs` web route is read-only.** Delete over FTP
   (`tools/shot.sh clean`).
-- **Diagnostics: one file, `/mnt/usb0/evo.log`.** It holds the boot trace,
+- **Diagnostics: one file, `/mnt/usb0/nostream.log`.** It holds the boot trace,
   breadcrumbs, decoder notes and per-file stats. klog gets the same lines live.
   `evo-remote.sh log` pulls it. `evo_status` is the live one-line state
   (`--usb-remote` builds only). A `timeout`/`curl` timeout on an

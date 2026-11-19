@@ -48,10 +48,10 @@ BASH = shutil.which("bash") or "bash"
 
 # ---- the files EVO writes to /mnt/usb0 -------------------------------------
 KNOWN_LOGS = [
-    ("/mnt/usb0/evo.log", "evo.log  —  the one diagnostic log "
+    ("/mnt/usb0/nostream.log", "evo.log  —  the one diagnostic log "
                           "(boot + breadcrumbs + decode + stats)", True),
-    ("/mnt/usb0/evo_status", "evo_status  —  live state snapshot (--usb-remote)", False),
-    ("/mnt/usb0/evo_report.txt", "evo_report.txt  —  saved problem report", False),
+    ("/mnt/usb0/nostream_status", "evo_status  —  live state snapshot (--usb-remote)", False),
+    ("/mnt/usb0/nostream_report.txt", "evo_report.txt  —  saved problem report", False),
 ]
 
 # ---- package-app.sh flags (case block in the script) ----------------------
@@ -202,8 +202,8 @@ def ftp_exists(host: str, port: int, remote: str) -> bool:
 
 
 # Runtime hook files EVO access()-checks at boot (survive until the next
-# deploy-app.sh --ffpfsc, which wipes /mnt/usb0/evo_*).
-HOOK_GL_RMLUI = "/mnt/usb0/evo_gl_rmlui"
+# deploy-app.sh --ffpfsc, which wipes /mnt/usb0/nostream_*).
+HOOK_GL_RMLUI = "/mnt/usb0/nostream_gl_rmlui"
 
 
 # ======================================================================
@@ -305,7 +305,7 @@ class EvoPanel:
         self.pkg_mode.trace_add("write", lambda *_: self._refresh_cmd_preview())
         self._refresh_cmd_preview()
 
-        dp = self._section(t, "Deploy  ·  scripts/deploy-app.sh  (FTP → /data/homebrew/PPSA99039)")
+        dp = self._section(t, "Deploy  ·  scripts/deploy-app.sh  (FTP → /data/homebrew/PPSA99273)")
         self.deploy_ffpfsc = tk.BooleanVar(value=True)
         ttk.Checkbutton(dp, text="--ffpfsc  (upload the PFS image)", variable=self.deploy_ffpfsc).pack(anchor="w")
         drow = ttk.Frame(dp)
@@ -386,7 +386,7 @@ class EvoPanel:
                   foreground="#888").pack(anchor="w", pady=(4, 0))
 
         # ---- GL-3 (#79) render mode switch ----
-        g = self._section(t, "GL-3 render path  ·  /mnt/usb0/evo_gl_rmlui  (takes effect next launch)")
+        g = self._section(t, "GL-3 render path  ·  /mnt/usb0/nostream_gl_rmlui  (takes effect next launch)")
         self.gl_mode = tk.StringVar(value="?")
         rr = ttk.Frame(g)
         rr.pack(anchor="w", pady=2)

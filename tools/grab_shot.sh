@@ -2,7 +2,7 @@
 # tools/grab_shot.sh NAME - press L3 on the console, fetch the shot it wrote over
 # FTP and save it as output/screenshots/NAME.png (1920x1080).
 #
-# EVO writes evo_shot_NNN.bmp to /mnt/usb0, or to /data/evoplayer when no USB
+# EVO writes evo_shot_NNN.bmp to /mnt/usb0, or to /data/nostream when no USB
 # stick is in. Both are listed before and after the press, and the file whose
 # listing line changed is the new shot - FTP times are only to the minute, and
 # the numbers wrap at 32, so neither "newest" nor "highest" is reliable.
@@ -15,7 +15,7 @@ if [ -z "${PS5_HOST:-}" ] && [ -f .env ]; then
 fi
 HOST="${PS5_HOST:?PS5_HOST not set (.env)}"
 FTP="ftp://${HOST}:${FTP_PORT:-2121}"
-DIRS="/mnt/usb0 /data/evoplayer"
+DIRS="/mnt/usb0 /data/nostream"
 
 PY=$(command -v python3 || command -v python || true)
 [ -n "$PY" ] || { echo "grab_shot: no python found" >&2; exit 1; }

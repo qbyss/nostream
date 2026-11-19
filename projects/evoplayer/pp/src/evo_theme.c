@@ -3,7 +3,7 @@
  *
  * File format, deliberately boring so it can be written by hand:
  *
- *     # /mnt/usb0/evo_themes/mytheme.theme
+ *     # /mnt/usb0/nostream_themes/mytheme.theme
  *     name        = Solar
  *     bg_top      = #0A0E14
  *     accent      = #FFB000
@@ -28,12 +28,12 @@
  *
  * elfldr payload: USB, as documented (docs/ui/theming.md). App module: USB is
  * ENOENT in the sandbox until tools/sandbox-unjail (task 7), so custom themes
- * come from /download0/evoplayer/themes/ instead. */
+ * come from /download0/nostream/themes/ instead. */
 #ifndef EVO_THEME_DIR
 #ifdef EVO_APP_MODULE
 #define EVO_THEME_DIR evo_data_path("themes")
 #else
-#define EVO_THEME_DIR "/mnt/usb0/evo_themes"
+#define EVO_THEME_DIR "/mnt/usb0/nostream_themes"
 #endif
 #endif
 

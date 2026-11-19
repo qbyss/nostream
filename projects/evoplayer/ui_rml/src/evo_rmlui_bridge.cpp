@@ -383,7 +383,7 @@ void evo_rmlui_update_launch(const evo_rmlui_launch_params_t* p) {
     evo_hui_update_launch(p);
 #endif
     EvoLaunchState state;
-    state.app_name = p->app_name ? p->app_name : "EVO PLAYER";
+    state.app_name = p->app_name ? p->app_name : "NoStream";
     state.version = p->version ? p->version : "";
     state.clock = p->clock ? p->clock : "";
     state.theme_name = p->theme_name ? p->theme_name : "";
@@ -654,7 +654,7 @@ void evo_rmlui_update_about(const evo_rmlui_about_params_t* p) {
     evo_hui_update_about(p);
 #endif
     EvoAboutState state;
-    state.app_name = p->app_name ? p->app_name : "EVO PLAYER PRO";
+    state.app_name = p->app_name ? p->app_name : "NoStream";
     state.version = p->version ? p->version : "";
     state.build_tag = p->build_tag ? p->build_tag : "PS5 HOMEBREW";
     state.tagline = p->tagline ? p->tagline : "";

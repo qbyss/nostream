@@ -13,7 +13,7 @@
                     <img id="brand-logo" src="../icons/icon_logo.png"/>
                 </div>
                 <div id="brand-text">
-                    <div id="brand-name">EVO PLAYER</div>
+                    <div id="brand-name">NoStream</div>
                     <div id="brand-version">v0.11.0</div>
                 </div>
             </div>
@@ -37,7 +37,7 @@
                     <div id="hero-eyebrow-dot"></div>
                     <div id="hero-eyebrow">CONTINUE WATCHING</div>
                 </div>
-                <div id="hero-title">EVO PLAYER</div>
+                <div id="hero-title">NoStream</div>
                 <div id="hero-detail">Play video and audio from USB storage</div>
             </div>
             <div id="hero-foot">

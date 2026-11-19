@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # =============================================================================
-# tools/evo-remote.sh — scriptable dev remote for the PPSA99039 app module.
+# tools/evo-remote.sh — scriptable dev remote for the PPSA99273 app module.
 #
 # One deployed build (built with --usb-remote) is driven over FTP with no
-# controller and no rebuild between tests. It writes /mnt/usb0/evo_status once
-# a second and reads /mnt/usb0/evo_cmd for commands. Every build also writes
-# ONE diagnostic log, /mnt/usb0/evo.log (boot trace + breadcrumbs + decoder
+# controller and no rebuild between tests. It writes /mnt/usb0/nostream_status once
+# a second and reads /mnt/usb0/nostream_cmd for commands. Every build also writes
+# ONE diagnostic log, /mnt/usb0/nostream.log (boot trace + breadcrumbs + decoder
 # notes + playback stats, timestamped).
 #
 #   PS5_HOST=192.168.0.6 ./tools/evo-remote.sh <subcommand>
@@ -13,7 +13,7 @@
 #   build [--breadcrumbs ...]               package --usb-remote + deploy .ffpfsc
 #   launch [--no-sm-restart]                restart ShadowMount (smrestart: its
 #                                           launch hook serves one launch), then
-#                                           launch PPSA99039 with no controller
+#                                           launch PPSA99273 with no controller
 #                                           (title-aware controller -> elfldr
 #                                           :9021). Refused while ShadowMount
 #                                           shows it resident or the heartbeat
@@ -28,7 +28,7 @@
 #                                           is running or resident
 #   quit                                    soft close (= Settings -> QUIT EVO):
 #                                           stop media, drain the GPU, park.
-#                                           Waits for parked=1 in evo_status
+#                                           Waits for parked=1 in nostream_status
 #   close [--force]                         free the slot: the title-aware close
 #                                           controller, then waits for
 #                                           ShadowMount's "runtime layers
@@ -39,7 +39,7 @@
 #         [--no-build] [-- pkg-args...]     ps5-homebrew-dev-protocol runbook:
 #                                           free slot -> package -> deploy ->
 #                                           ShadowMount registered -> launched
-#                                           (auto, else `launch`) -> klog + evo.log
+#                                           (auto, else `launch`) -> klog + nostream.log
 #                                           for n s -> quit -> close -> classify.
 #                                           Evidence + result.json in
 #                                           output/cycles/<stamp>/, one line
@@ -57,14 +57,14 @@
 #                                           it, never retries
 #   kill                                    = quit + close
 #   play <path>                             open <path> from the start
-#   play --sample                           the 20 s test clip in /data/evoplayer/test
+#   play --sample                           the 20 s test clip in /data/nostream/test
 #                                           (sample-install puts it there)
 #   play --share <share id> <path>          a file on a saved SMB/FTP server, through
 #                                           the URL Browse builds (play --share
 #                                           ps5_local /data/Media/x.mkv)
 #   sample-install [file]                   upload output/sample/evo_sample.mkv (made
 #                                           on the host by tools/make_sample.sh)
-#   logq <text> [lines]                     evo.log lines with <text>, from the log
+#   logq <text> [lines]                     nostream.log lines with <text>, from the log
 #                                           server (:9780), FTP only as a fallback
 #   seek <sec> | seek +<sec> | seek -<sec>  seek
 #   stop                                    end playback, back to the browser
@@ -116,7 +116,7 @@
 #   ui [--line]                             #115: the UI state as text - screen,
 #                                           focused element, its list, modal,
 #                                           toast, player OSD - from
-#                                           /mnt/usb0/evo_ui.json. Use this, not
+#                                           /mnt/usb0/nostream_ui.json. Use this, not
 #                                           a screenshot, to navigate
 #   screen <id>                             go straight to a screen (an evo::
 #                                           ScreenId number: 2 Player, 21 Text
@@ -131,16 +131,16 @@
 #   upcompare [--crop x,y,w,h]            #103: pause, capture the same frame
 #                                           with the upscaler Off/Sharp/AI (no
 #                                           OSD) -> output/upcompare/
-#   status                                  print /mnt/usb0/evo_status once
-#   log                                     pull /mnt/usb0/evo.log (-> output/logs/)
-#   watch [seconds]                         stream evo_status + new evo.log lines
-#   clear                                   delete evo.log + evo_status
+#   status                                  print /mnt/usb0/nostream_status once
+#   log                                     pull /mnt/usb0/nostream.log (-> output/logs/)
+#   watch [seconds]                         stream nostream_status + new nostream.log lines
+#   clear                                   delete nostream.log + nostream_status
 #   sweep [--dir p] [--secs n] [--max n]    #8 codec sweep: play every clip in a
 #         [--skip substr]...                directory, harvest the per-file
 #                                           metrics, render output/logs/sweep.md
 #                                           (--skip fences off a clip that is
 #                                           known to take the app down)
-#   report [evo.log]                        re-render that table offline
+#   report [nostream.log]                        re-render that table offline
 #
 # launch/close send the vendored controllers in tools/ps5-controllers/ (from
 # ps5-homebrew-dev-protocol). Their evidence is ShadowMount+'s debug.log, read
@@ -172,7 +172,7 @@ with FTP() as f:
     except Exception: pass
     cmd_bytes = (sys.argv[1] + "\n").encode()
     sent = False
-    for p in ["/data/evoplayer/evo_cmd", "/mnt/usb0/evo_cmd"]:
+    for p in ["/data/nostream/nostream_cmd", "/mnt/usb0/nostream_cmd"]:
         try:
             f.storbinary("STOR " + p, io.BytesIO(cmd_bytes))
             sent = True
@@ -191,8 +191,8 @@ import os, sys
 from ftplib import FTP, error_perm
 paths = [sys.argv[1]]
 if sys.argv[1].startswith("/mnt/usb0/"):
-    alt = sys.argv[1].replace("/mnt/usb0/", "/data/evoplayer/")
-    if "evo_status" in sys.argv[1] or "evo_ui" in sys.argv[1]:
+    alt = sys.argv[1].replace("/mnt/usb0/", "/data/nostream/")
+    if "nostream_status" in sys.argv[1] or "evo_ui" in sys.argv[1]:
         paths = [alt, sys.argv[1]]
     else:
         paths.append(alt)
@@ -227,7 +227,7 @@ with FTP() as f:
     for p in sys.argv[1:]:
         targets = [p]
         if p.startswith("/mnt/usb0/"):
-            targets.append(p.replace("/mnt/usb0/", "/data/evoplayer/"))
+            targets.append(p.replace("/mnt/usb0/", "/data/nostream/"))
         for t in targets:
             try: f.sendcmd("DELE " + t); print("del", t)
             except error_perm: print("--", t)
@@ -235,14 +235,14 @@ PY
 }
 
 # ask_set "<set|focus ...>": send it, then wait (max ~10 s) for the app to write
-# its answer to evo_set.txt and print it. Exits 1 on an ERR answer or no answer.
+# its answer to nostream_set.txt and print it. Exits 1 on an ERR answer or no answer.
 ask_set() {
     local out="" i
-    del_files /mnt/usb0/evo_set.txt >/dev/null 2>&1 || true
+    del_files /mnt/usb0/nostream_set.txt >/dev/null 2>&1 || true
     put_cmd "$1" >/dev/null
     for i in $(seq 1 20); do
         sleep 0.5
-        out="$(get_file /mnt/usb0/evo_set.txt 2>/dev/null)" && [[ -n "${out}" ]] && break
+        out="$(get_file /mnt/usb0/nostream_set.txt 2>/dev/null)" && [[ -n "${out}" ]] && break
         out=""
     done
     [[ -n "${out}" ]] || die "no answer from EVO (running? built with --usb-remote?)"
@@ -250,15 +250,15 @@ ask_set() {
     [[ "${out}" != ERR* ]]
 }
 
-USB_STATUS="/mnt/usb0/evo_status"
-USB_LOG="/mnt/usb0/evo.log"
-USB_UI="/mnt/usb0/evo_ui.json"
+USB_STATUS="/mnt/usb0/nostream_status"
+USB_LOG="/mnt/usb0/nostream.log"
+USB_UI="/mnt/usb0/nostream_ui.json"
 
 evo_ui() { PS5_HOST="${PS5_HOST}" FTP_PORT="${FTP_PORT}" \
            python3 "$(dirname "${BASH_SOURCE[0]}")/evo_ui.py" "$@"; }
 
 # --- lifecycle: controllers + ShadowMount evidence ---------------------------
-TITLE_ID="PPSA99039"
+TITLE_ID="PPSA99273"
 ELF_PORT="${PS5_ELF_PORT:-9021}"
 CTRL_SRC="$(dirname "${BASH_SOURCE[0]}")/ps5-controllers"
 CTRL_OUT="${OUTPUT_DIR}/controllers"
@@ -316,7 +316,7 @@ do_launch() {
     if [[ "${slot}" == UNKNOWN ]]; then
         # ShadowMount has no verdict, so the heartbeat is all there is, and a
         # parked EVO still holds the slot. (With a slot verdict this check is
-        # wrong: `close` leaves /mnt/usb0/evo_status behind with parked=1, so a
+        # wrong: `close` leaves /mnt/usb0/nostream_status behind with parked=1, so a
         # freed slot still reads PARKED until the next launch deletes it.)
         [[ "${hb}" == PARKED ]] && die "EVO is parked (soft-closed) - the slot is still held. Not launching.
    Free it first: evo-remote.sh close."
@@ -325,7 +325,7 @@ do_launch() {
         # proving the slot is free instead of assuming it - ShadowMount's log
         # reaches back to its own startup banner and records no launch of this
         # title since. The heartbeat has to agree: RUNNING and PARKED are
-        # already out above, so only ABSENT (no evo_status at all, which is
+        # already out above, so only ABSENT (no nostream_status at all, which is
         # what a deploy leaves) and STILL (a stale file) can get here.
         [[ "$(lc coldboot)" == COLDBOOT ]] \
             || die "could not read ShadowMount's log - cannot prove the slot is free. Not launching."
@@ -518,8 +518,8 @@ PY
         [[ -n "${play}" ]] && { sleep 5; put_cmd "play ${play}" > /dev/null; }
         sleep "${secs}"
     fi
-    get_file "${USB_STATUS}" > "${dir}/evo_status.txt" 2>/dev/null || true
-    get_file "${USB_LOG}"    > "${dir}/evo.log"        2>/dev/null || true
+    get_file "${USB_STATUS}" > "${dir}/nostream_status.txt" 2>/dev/null || true
+    get_file "${USB_LOG}"    > "${dir}/nostream.log"        2>/dev/null || true
 
     # 6. close: app-initiated soft close first, the kill controller only once parked
     local hb; hb="$(lc heartbeat)"
@@ -538,8 +538,8 @@ PY
     # 7. classify
     grep -qaE 'A user thread receives a fatal signal|App Crash' "${dir}/klog.log" \
         && finish failed "crash in klog.log despite a clean teardown"
-    grep -q 'fatal=1' "${dir}/evo_status.txt" 2>/dev/null \
-        && finish failed "decoder fatal=1 - see evo.log"
+    grep -q 'fatal=1' "${dir}/nostream_status.txt" 2>/dev/null \
+        && finish failed "decoder fatal=1 - see nostream.log"
     [[ -n "${check_fail}" ]] && finish failed "check ${check_fail}"
     finish pass "${check_pass:--}"
 }
@@ -566,7 +566,7 @@ do_verify() {
 }
 
 # --- test media + log queries -------------------------------------------------
-SAMPLE_REMOTE="/data/evoplayer/test/evo_sample.mkv"   # EVO's own data dir: always readable
+SAMPLE_REMOTE="/data/nostream/test/evo_sample.mkv"   # EVO's own data dir: always readable
 SAMPLE_LOCAL="${OUTPUT_DIR}/sample/evo_sample.mkv"    # tools/make_sample.sh (host, ffmpeg)
 
 do_play() {
@@ -588,9 +588,9 @@ do_sample_install() {
     ok "installed ${SAMPLE_REMOTE} - play it with: evo-remote.sh play --sample"
 }
 
-# logq <text> [lines]: evo.log lines containing <text>, newest last. Asks EVO's
+# logq <text> [lines]: nostream.log lines containing <text>, newest last. Asks EVO's
 # log server (:9780/snapshot - the in-memory ring, and it closes; /raw stays
-# open by design) and falls back to fetching the whole evo.log over FTP only
+# open by design) and falls back to fetching the whole nostream.log over FTP only
 # when EVO is not answering.
 do_logq() {
     local q="${1:?usage: evo-remote.sh logq <text> [lines]}" n="${2:-40}" out enc
@@ -598,7 +598,7 @@ do_logq() {
     if out="$(timeout 8 curl -sf --max-time 6 "http://${PS5_HOST}:${PS5_LOG_PORT:-9780}/snapshot?grep=${enc}")"; then
         printf '%s\n' "${out}" | tail -n "${n}"
     else
-        warn "log server not answering - reading evo.log over FTP"
+        warn "log server not answering - reading nostream.log over FTP"
         get_file "${USB_LOG}" | grep -F -- "${q}" | tail -n "${n}" || true
     fi
 }
@@ -609,7 +609,7 @@ build)
     del_files "${USB_STATUS}" "${USB_LOG}" || true
     "${SCRIPTS_DIR}/deploy-app.sh" --ffpfsc
     echo ""
-    echo "  >>> launch PPSA99039 from the Games row (ShadowMount+ remounted) <<<"
+    echo "  >>> launch PPSA99273 from the Media tab (ShadowMount+ remounted) <<<"
     ;;
 launch) do_launch "${1:-}" ;;
 smrestart) do_smrestart ;;
@@ -694,7 +694,7 @@ dbcompare)
     ;;
 sweep)
     # #8 — the codec sweep. Plays every clip in a directory for a fixed window,
-    # then harvests the per-file `sweep` lines EVO wrote into evo.log and renders
+    # then harvests the per-file `sweep` lines EVO wrote into nostream.log and renders
     # the docs/build/validation.md table. Each `play` implicitly closes the previous
     # file (start_video_playback stops first), which is what flushes its row; the
     # trailing `stop` flushes the last one.
@@ -717,24 +717,24 @@ sweep)
     SWEEP_DIR="${SWEEP_DIR}" SWEEP_SECS="${SWEEP_SECS}" SWEEP_MAX="${SWEEP_MAX}" \
     SWEEP_SKIP="${SWEEP_SKIP}" \
     python3 "$(dirname "${BASH_SOURCE[0]}")/sweep_run.py" || die "sweep aborted"
-    get_file "${USB_LOG}" > "${LOG_OUT}/evo.log" || die "could not pull evo.log"
+    get_file "${USB_LOG}" > "${LOG_OUT}/nostream.log" || die "could not pull nostream.log"
     python3 "$(dirname "${BASH_SOURCE[0]}")/sweep_report.py" \
-        "${LOG_OUT}/evo.log" -o "${LOG_OUT}/sweep.md"
+        "${LOG_OUT}/nostream.log" -o "${LOG_OUT}/sweep.md"
     echo ""
     echo "  table -> output/logs/sweep.md   (paste into docs/build/validation.md)"
     ;;
 report)
-    # Re-render the table from an evo.log already on disk; no console needed.
+    # Re-render the table from an nostream.log already on disk; no console needed.
     mkdir -p "${LOG_OUT}"
     python3 "$(dirname "${BASH_SOURCE[0]}")/sweep_report.py" \
-        "${1:-${LOG_OUT}/evo.log}" -o "${LOG_OUT}/sweep.md"
+        "${1:-${LOG_OUT}/nostream.log}" -o "${LOG_OUT}/sweep.md"
     ;;
 clear)  del_files "${USB_STATUS}" "${USB_LOG}" "${USB_UI}" ;;
-status) get_file "${USB_STATUS}" || echo "(no evo_status — launched? built --usb-remote?)" ;;
+status) get_file "${USB_STATUS}" || echo "(no nostream_status — launched? built --usb-remote?)" ;;
 boot|log)
     mkdir -p "${LOG_OUT}"
-    get_file "${USB_LOG}" 2>/dev/null | tee "${LOG_OUT}/evo.log" \
-        || echo "(no evo.log — launched? sandbox open?)"
+    get_file "${USB_LOG}" 2>/dev/null | tee "${LOG_OUT}/nostream.log" \
+        || echo "(no nostream.log — launched? sandbox open?)"
     ;;
 logs|tail)
     # Live log from EVO's own server (port 9780, or PS5_LOG_PORT), no FTP. Ctrl-C to stop.
@@ -776,7 +776,7 @@ def get(p):
     try:
         paths = [p]
         if p.startswith("/mnt/usb0/"):
-            paths.append(p.replace("/mnt/usb0/", "/data/evoplayer/"))
+            paths.append(p.replace("/mnt/usb0/", "/data/nostream/"))
         with FTP() as f:
             f.connect(H, P, timeout=10); f.login()
             try: f.set_pasv(True)
@@ -793,10 +793,10 @@ def get(p):
         return None
 dl = time.time() + int(sys.argv[1]); vlen = 0; last = ""
 while time.time() < dl:
-    st = get("/mnt/usb0/evo_status")
+    st = get("/mnt/usb0/nostream_status")
     if st and st.strip() and st.strip() != last:
         print(st.strip()); last = st.strip()
-    v = get("/mnt/usb0/evo.log") or ""
+    v = get("/mnt/usb0/nostream.log") or ""
     if len(v) > vlen:
         for ln in v[vlen:].splitlines():
             if ln.strip(): print("  " + ln)

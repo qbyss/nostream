@@ -84,7 +84,7 @@ extern "C" void evo_log_alloc_state(const char *when);
 static bool isSw4kAllowed() {
     static int allowed = -1;
     if (allowed < 0) {
-        allowed = (access("/mnt/usb0/evo_no_sw_4k", F_OK) == 0) ? 0 : 1;
+        allowed = (access("/mnt/usb0/nostream_no_sw_4k", F_OK) == 0) ? 0 : 1;
     }
     return allowed != 0;
 }
@@ -835,7 +835,7 @@ bool CoverArtService::extractVideoFrame(const std::string& videoPath, uint32_t* 
          * Above 1080p with no hardware decoder to take it:
          * Since 115d9ff, blocks >= 1 MB come from direct memory first (8+ GB available),
          * so 4K software decode is safe and enabled by default (see memory-budget.md).
-         * Only skip if the user explicitly switches it off via /mnt/usb0/evo_no_sw_4k.
+         * Only skip if the user explicitly switches it off via /mnt/usb0/nostream_no_sw_4k.
          */
         if (!isSw4kAllowed() && (par->width > 1920 || par->height > 1088)) {
             const int depth = codecparBitDepth(par);
@@ -843,7 +843,7 @@ bool CoverArtService::extractVideoFrame(const std::string& videoPath, uint32_t* 
                 !evo_vdec_native_can_open(par->codec_id, par->profile, depth,
                                           par->width, par->height)) {
                 EVO_LOGW("cover", "extractVideoFrame: skipping %dx%d %d-bit codec=%d before "
-                       "find_stream_info - /mnt/usb0/evo_no_sw_4k is set",
+                       "find_stream_info - /mnt/usb0/nostream_no_sw_4k is set",
                        par->width, par->height, depth, (int)par->codec_id);
                 evo_boot_log_flush();
                 avformat_close_input(&fmt);
@@ -933,11 +933,11 @@ bool CoverArtService::extractVideoFrame(const std::string& videoPath, uint32_t* 
 
     /*
      * Above 1080p software decode: allowed by default since 115d9ff (direct memory
-     * heap backing). Touch /mnt/usb0/evo_no_sw_4k to revert to refusing.
+     * heap backing). Touch /mnt/usb0/nostream_no_sw_4k to revert to refusing.
      */
     if (!isSw4kAllowed() &&
         (st->codecpar->width > 1920 || st->codecpar->height > 1088)) {
-        EVO_LOGW("cover", "extractVideoFrame: no software poster for %dx%d - /mnt/usb0/evo_no_sw_4k is set",
+        EVO_LOGW("cover", "extractVideoFrame: no software poster for %dx%d - /mnt/usb0/nostream_no_sw_4k is set",
                st->codecpar->width, st->codecpar->height);
         evo_boot_log_flush();
         avformat_close_input(&fmt);

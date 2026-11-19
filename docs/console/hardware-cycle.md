@@ -44,8 +44,8 @@ So:
   six minutes apart); never force past the interlock on that basis.
 
 **ShadowMount+ v1.7 does not auto-launch an updated image.** It test-mounts the new
-image, logs `unmount complete: source=/data/homebrew/PPSA99039.ffpfsc`, and
-unmounts it. Launch from the Games row or with `evo-remote.sh launch`. Launching
+image, logs `unmount complete: source=/data/homebrew/PPSA99273.ffpfsc`, and
+unmounts it. Launch from the Media tab or with `evo-remote.sh launch`. Launching
 right after a deploy, while ShadowMount is still scanning, gives "Can't start game
 or app"; `launch` waits for its log to be quiet for 15 s for that reason.
 
@@ -68,10 +68,10 @@ exit code. `tools/evo_lifecycle.py` reads it (and EVO's heartbeat) over FTP:
 | Line | Means |
 |---|---|
 | `NOTIFY: installed game` / `[LINK] mount.lnk created` | registered |
-| `[IMG][LVD] unmount complete: source=/data/homebrew/PPSA99039.ffpfsc` | an updated image was verified (v1.7) |
+| `[IMG][LVD] unmount complete: source=/data/homebrew/PPSA99273.ffpfsc` | an updated image was verified (v1.7) |
 | `[SHELLCORE] hooks installed: ... launch=1` | ShadowMount (re)started with its launch hook live |
-| `[GAME] started: PPSA99039` | launched |
-| `[LINK] runtime layers released: PPSA99039` | process gone, slot free |
+| `[GAME] started: PPSA99273` | launched |
+| `[LINK] runtime layers released: PPSA99273` | process gone, slot free |
 
 and, from `evo_status`: `t=` advancing means running; `parked=1` is written once,
 as the soft close parks.
@@ -82,7 +82,7 @@ as the soft close parks.
 elfldr on `:9021`, with the title id compiled in (vendored GPL-3.0 from
 `ps5-homebrew-dev-protocol`). `launch.c` calls `sceSystemServiceLaunchApp` for the
 foreground user; `close.c` kills the foreground app only if its title is
-`PPSA99039`. **Never send them by hand.** A zero exit only means elfldr took the
+`PPSA99273`. **Never send them by hand.** A zero exit only means elfldr took the
 bytes. The harmless `getAppStatus: LNC_ISOK::0x80940004` line is echoed
 SceLncUtil chatter, not a failure; the old `0x80940005` came from hbldr. The
 `launchApp: LNC_ISOK::0x...` line is the system's real answer, and a launch that

@@ -3,11 +3,11 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "evo_boot_log.h"   /* the one diagnostic log — /mnt/usb0/evo.log */
+#include "evo_boot_log.h"   /* the one diagnostic log — /mnt/usb0/nostream.log */
 
 /*
  * Playback-stage breadcrumbs for 4K crash isolation. Every checkpoint goes to
- * /mnt/usb0/evo.log (via evo_boot_log — timestamped, append-only, shared with
+ * /mnt/usb0/nostream.log (via evo_boot_log — timestamped, append-only, shared with
  * the boot trace and the decoder notes) and, in the app module, to the kernel
  * log. The system notification is opt-in — it shares evo_bt()'s
  * EVO_BOOT_TRACE_POPUP gate (scripts/package-app.sh --breadcrumbs) because it

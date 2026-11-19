@@ -24,4 +24,4 @@ echo "$LOG" | grep -a "cpus busy" | tail -6 | sed 's/cpu: affinity.*| user/user/
 echo "== surface stats"
 curl -s --max-time 30 $H/data/prosperoweb/mesa.txt | tail -n +$((startm+1)) | grep -a "surface: [0-9]*s \|skia:" | cut -c1-240 | tail -9
 echo "== EVO"
-curl -s --max-time 30 -r -5000- $H/mnt/usb0/evo.log | grep -a "browser: frames" | tail -2 | cut -c1-200
+curl -s --max-time 30 -r -5000- $H/mnt/usb0/nostream.log | grep -a "browser: frames" | tail -2 | cut -c1-200

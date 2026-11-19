@@ -148,7 +148,7 @@ struct EvoSettingsState {
 };
 
 struct EvoAboutState {
-    std::string app_name = "EVO PLAYER PRO";
+    std::string app_name = "NoStream";
     std::string version;
     std::string build_tag = "PS5 HOMEBREW";
     std::string tagline;
@@ -271,7 +271,7 @@ struct EvoLaunchTile {
 };
 
 struct EvoLaunchState {
-    std::string app_name = "EVO PLAYER";
+    std::string app_name = "NoStream";
     std::string version;
     std::string clock;
     std::string theme_name;
@@ -1048,7 +1048,7 @@ public:
     void GlEndFrame() { m_frame_dirty = false; }
     /* true  = CPU coverage rasteriser + one GL blit (default; ps5-opengl's fast
      *         path). false = RmlUi renders itself through RenderInterface_GL3
-     *         (selectable via /mnt/usb0/evo_gl_rmlui - slow on ps5-opengl G47,
+     *         (selectable via /mnt/usb0/nostream_gl_rmlui - slow on ps5-opengl G47,
      *         kept for when the driver's render-to-texture path improves). */
     bool GlBlitMode() const { return m_blit_mode; }
 private:

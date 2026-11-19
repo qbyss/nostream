@@ -322,7 +322,7 @@ bool EvoRmlApp::Initialize(int width, int height) {
      * the /app0 sandbox's broken directory traversal never comes into play.
      * The remaining entries are host/dev fallbacks (fopen against loose
      * files) for when the bundle hasn't been (re)generated. The old
-     * /data/evoplayer/app/ and /data/homebrew/EVOPlayer/ search paths - the
+     * /data/nostream/app/ and /data/homebrew/EVOPlayer/ search paths - the
      * #44 out-of-band FTP sync target - are gone: that sync is removed
      * (deploy-app.sh), and shipping a self-contained .ffpfsc means those
      * loose console-side copies must have zero effect on rendering. */
@@ -355,7 +355,7 @@ bool EvoRmlApp::Initialize(int width, int height) {
             Rml::LoadFontFace(p + "NotoSansThai-Bold.ttf", true);
             /* CJK is 4-8 MB a script, too big to embed in the binary: load
              * whichever Noto Sans CJK subset files are in the data folder
-             * (/data/evoplayer/fonts/NotoSansSC-Regular.otf, ...JP, ...KR). */
+             * (/data/nostream/fonts/NotoSansSC-Regular.otf, ...JP, ...KR). */
 #if defined(EVO_AGC_DEVICE)
             for (const char* cjk : { "NotoSansSC-Regular.otf", "NotoSansJP-Regular.otf",
                                      "NotoSansKR-Regular.otf" }) {
@@ -788,7 +788,7 @@ void EvoRmlApp::UpdateLaunchState(const EvoLaunchState& state) {
     };
 
     /* ---- header ---- */
-    set_text("brand-name", state.app_name.empty() ? "EVO PLAYER" : state.app_name);
+    set_text("brand-name", state.app_name.empty() ? "NoStream" : state.app_name);
 
     Rml::Element* el_ver = m_launch_doc->GetElementById("brand-version");
     if (el_ver) {
@@ -3560,7 +3560,7 @@ void EvoRmlApp::RenderClosed(uint32_t* framebuffer, int width, int height) {
             else
                 v_suffix = "  v" + m_version;
         }
-        el->SetInnerRML("EVO PLAYER" + v_suffix);
+        el->SetInnerRML("NoStream" + v_suffix);
     }
 
     Rml::ElementList steps, nums, keys, strongs;
@@ -3661,7 +3661,7 @@ void EvoRmlApp::UpdateSubtitlesState(const EvoSubtitlesState& state) {
 
     Rml::Element* el_pv = m_subtitles_doc->GetElementById("subtitles-preview-text");
     if (el_pv) {
-        el_pv->SetInnerRML(state.preview_text.empty() ? "Welcome to EVO Player on PlayStation 5" : state.preview_text);
+        el_pv->SetInnerRML(state.preview_text.empty() ? "Welcome to NoStream on PlayStation 5" : state.preview_text);
         el_pv->SetClass("preview-small", state.preview_face == 0);
         el_pv->SetClass("preview-medium", state.preview_face == 1);
         el_pv->SetClass("preview-large", state.preview_face == 2);
@@ -3777,7 +3777,7 @@ void EvoRmlApp::UpdateMediaInfoState(const EvoMediaInfoState& state) {
     if (!m_version.empty()) {
         if (Rml::Element* el_ver = m_mediainfo_doc->GetElementById("footer-engine-ver")) {
             std::string v = (m_version[0] == 'v' || m_version[0] == 'V') ? m_version : ("v" + m_version);
-            el_ver->SetInnerRML("EVO PRO DECODER " + v);
+            el_ver->SetInnerRML("VIDEO DECODER " + v);
         }
     }
 
@@ -4074,7 +4074,7 @@ void EvoRmlApp::UpdateToastState(const EvoToastState& state) {
         Rml::Element* el_title = m_toast_doc->GetElementById("toast-title");
         Rml::Element* el_msg = m_toast_doc->GetElementById("toast-message");
 
-        if (el_title) el_title->SetInnerRML(state.title.empty() ? "EVO PLAYER" : state.title);
+        if (el_title) el_title->SetInnerRML(state.title.empty() ? "NoStream" : state.title);
         if (el_msg) {
             el_msg->SetInnerRML(state.message);
             el_msg->SetProperty("display", state.message.empty() ? "none" : "block");

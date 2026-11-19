@@ -351,7 +351,7 @@ typedef struct {
 } evo_rmlui_launch_tile_t;
 
 typedef struct {
-    const char* app_name;      /* "EVO PLAYER" */
+    const char* app_name;      /* "NoStream" */
     const char* version;       /* "VERSION 0.7.0", or NULL */
     const char* clock;         /* "04:55", or NULL */
     const char* theme_name;
@@ -984,7 +984,7 @@ void evo_rmlui_set_active(int active);
 /* Called after a successful present: clears the UI-dirty flag. */
 void evo_rmlui_end_frame(void);
 /* 1 = CPU rasterise + GL blit (default), 0 = RmlUi renders itself through GL3
- * (the /mnt/usb0/evo_gl_rmlui path). Decides the main.c present step. */
+ * (the /mnt/usb0/nostream_gl_rmlui path). Decides the main.c present step. */
 int  evo_rmlui_blit_mode(void);
 
 /* Playback OSD API */
@@ -1117,7 +1117,7 @@ void evo_rmlui_render_settings(uint32_t* framebuffer, int width, int height);
 
 /* About & Support Screen API */
 typedef struct {
-    const char* app_name;        /* "EVO PLAYER PRO" */
+    const char* app_name;        /* "NoStream" */
     const char* version;         /* "v0.13.0" */
     const char* build_tag;       /* "PS5 HOMEBREW" */
     const char* tagline;         /* "CINEMATIC MEDIA PLAYER FOR PLAYSTATION 5 HOMEBREW" */

@@ -11,14 +11,14 @@
 # Uploads output/app/<TITLE_ID>/ to ftp://<host>:2121/data/homebrew/<TITLE_ID>/.
 # Files go up under a temporary name and are renamed into place; eboot.bin and
 # sce_sys/param.json are uploaded LAST so a half-finished folder is never
-# mountable. After this, mount + launch from the Games row with ShadowMountPlus.
+# mountable. After this, mount + launch from the Media tab with ShadowMountPlus.
 #
 # The --ffpfsc image goes up as <TID>.ffpfsc.upload, is read back and
 # sha256-compared with the local file, and is renamed into place only on a
 # match. A mismatch deletes the upload, so ShadowMount+ never sees bad bytes.
 #
-# The --ffpfsc deploy also DELETEs /mnt/usb0/{evo.log, evo_status,
-# evo_report.txt}, so each launch starts with a fresh log.
+# The --ffpfsc deploy also DELETEs /mnt/usb0/{nostream.log, nostream_status,
+# nostream_report.txt}, so each launch starts with a fresh log.
 #
 # After an --ffpfsc deploy it restarts ShadowMount+ (evo-remote.sh smrestart):
 # every deploy leaves ShadowMount's launch hook dead, so the next launch would
@@ -92,13 +92,13 @@ FFPFSC_IMG="${OUTPUT_DIR}/app/${TITLE_ID}.ffpfsc"
 #
 # Two signals, because one was not enough.
 #
-# A deploy clears /mnt/usb0, so evo.log is absent until EVO next runs: its
+# A deploy clears /mnt/usb0, so nostream.log is absent until EVO next runs: its
 # presence means EVO has been launched since, and may still hold the slot.
 # That alone cannot tell "running now" from "ran and was closed", so it blocked
 # every deploy after the first and --force became reflex - which is exactly the
 # habit you do not want when the dangerous case comes along.
 #
-# evo_status carries a monotonic `t=`, rewritten every frame by a --usb-remote
+# nostream_status carries a monotonic `t=`, rewritten every frame by a --usb-remote
 # build. Sampling it twice says whether EVO is alive right now:
 #
 #   t advancing        RUNNING  - the panic case. Refused, and --force does not
@@ -107,7 +107,7 @@ FFPFSC_IMG="${OUTPUT_DIR}/app/${TITLE_ID}.ffpfsc"
 #   t frozen / absent  IDLE     - closed, or parked by QUIT with the slot still
 #                                 held. Indistinguishable from here, so this is
 #                                 where --force still applies.
-#   evo.log absent     FREE     - nothing has run since the last deploy.
+#   nostream.log absent     FREE     - nothing has run since the last deploy.
 #
 # The IDLE ambiguity is settled by ShadowMount+'s own lifecycle log
 # (tools/evo_lifecycle.py slot): "[LINK] runtime layers released: <TID>" after
@@ -128,21 +128,21 @@ def verdict(host, port):
     f.login()
     try:
         # EVO writes its log and heartbeat to the USB stick, or to
-        # /data/evoplayer when there is none. Looking only at /mnt/usb0 read
+        # /data/nostream when there is none. Looking only at /mnt/usb0 read
         # "never ran" on a console without a stick and let a deploy go over a
         # running EVO (2026-11-03).
         root = None
-        for d in ("/mnt/usb0", "/data/evoplayer"):
+        for d in ("/mnt/usb0", "/data/nostream"):
             lines = []
             try:
                 f.cwd(d)
                 f.retrlines("LIST", lines.append)
             except Exception:
                 continue
-            if any(" evo_status" in l or l.endswith("evo_status") for l in lines):
+            if any(" nostream_status" in l or l.endswith("nostream_status") for l in lines):
                 root = d
                 break
-            if root is None and any(" evo.log" in l or l.endswith("evo.log") for l in lines):
+            if root is None and any(" nostream.log" in l or l.endswith("nostream.log") for l in lines):
                 root = d
         if root is None:
             return "ABSENT"
@@ -150,7 +150,7 @@ def verdict(host, port):
         def stamp():
             buf = []
             try:
-                f.retrbinary("RETR " + root + "/evo_status", buf.append)
+                f.retrbinary("RETR " + root + "/nostream_status", buf.append)
             except Exception:
                 return None
             for tok in b"".join(buf).decode("utf-8", "replace").split():
@@ -241,7 +241,7 @@ if (( FFPFSC )) && [[ "${ACTION}" == "deploy" ]]; then
     require_ps5_host
     check_evo_not_resident
     if (( FRESH )); then
-        # A fresh install: every EVO file goes - the app, /data/evoplayer
+        # A fresh install: every EVO file goes - the app, /data/nostream
         # (settings, logins, playlists, calibration) and EVO's USB files -
         # AFTER the resident check above, never over a running EVO.
         begin "fresh install: wiping every EVO file on ${PS5_HOST}"
@@ -288,7 +288,7 @@ def rmtree(ftp, path):
 
 # The runtime files the app module writes - cleared on each deploy so a launch
 # always starts fresh (evo-remote.sh / evo-panel read these back).
-USB_LOGS = ["evo.log", "evo_status", "evo_report.txt"]
+USB_LOGS = ["nostream.log", "nostream_status", "nostream_report.txt"]
 
 with FTP() as ftp:
     ftp.connect(host, int(port), timeout=60)
@@ -302,9 +302,9 @@ with FTP() as ftp:
         try: ftp.sendcmd(f"DELE /mnt/usb0/{name}"); cleared += 1
         except error_perm: pass
     print(f"cleared {cleared} stale /mnt/usb0 log file(s)")
-    # evo_lifecycle.py reads /data/evoplayer/evo_status FIRST; a stale parked=1
+    # evo_lifecycle.py reads /data/nostream/nostream_status FIRST; a stale parked=1
     # left there by the last close blocked the next launch (2026-11-12).
-    try: ftp.sendcmd("DELE /data/evoplayer/evo_status"); print("cleared /data/evoplayer/evo_status")
+    try: ftp.sendcmd("DELE /data/nostream/nostream_status"); print("cleared /data/nostream/nostream_status")
     except error_perm: pass
     for path in (tmp, remote):
         try: ftp.sendcmd(f"DELE {path}")
@@ -335,9 +335,9 @@ PY
     # #60: the .ffpfsc is self-contained now - RmlUi's .rml/.rcss/.ttf/.png
     # assets are embedded in the binary (evo_rmlui_bundle_data.cpp) instead of
     # being read from disk at runtime, so the #44 out-of-band FTP push to
-    # /data/evoplayer/app/assets/ is no longer needed. This block used to wipe
+    # /data/nostream/app/assets/ is no longer needed. This block used to wipe
     # and re-upload that loose tree on every deploy; deleting
-    # /data/evoplayer/app/assets/ on the console now has zero effect on the UI.
+    # /data/nostream/app/assets/ on the console now has zero effect on the UI.
     ok "deploy complete"
 
     # Every deploy leaves ShadowMount's launch hook dead (launch -> 0x80940033)
@@ -468,4 +468,4 @@ with FTP() as ftp:
 PY
 
 ok "${ACTION} complete"
-[[ "${ACTION}" == deploy ]] && echo "   Mount + launch from the Games row (ShadowMountPlus). Never stack launches."
+[[ "${ACTION}" == deploy ]] && echo "   Mount + launch from the Media tab (ShadowMountPlus). Never stack launches."

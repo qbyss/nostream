@@ -1,6 +1,8 @@
-# EVO Player
+# NoStream
 
-**A native media player for jailbroken PlayStation 5.**
+**A native media player for PlayStation 5, forked from [EVO Player](https://github.com/sainsaji/EVO-PLAYER-PS5).**
+
+NoStream uses title ID `PPSA99273` and stores its settings in `/data/nostream`. The feature list and screenshots below describe the upstream baseline.
 
 Plays video from USB drives (exFAT, FAT32 and read-only NTFS), internal storage, network shares (SMB and FTP), Live TV (IPTV / M3U / Xtream), and media servers (Emby, Jellyfin, Plex, Stremio, Nuvio). Video decodes on the console's own hardware decoder at up to 4K with 10-bit HDR and Dolby Vision, the interface renders directly on the GPU via bare-metal `sceAgc`, and everything is built from the ground up for the DualSense controller and the big screen.
 
@@ -10,7 +12,7 @@ Plays video from USB drives (exFAT, FAT32 and read-only NTFS), internal storage,
 
 ![EVO Player home screen: Continue Watching, Jump back in and the library](docs/images/launch.png)
 
-**[Download the latest release](https://github.com/sainsaji/EVO-PLAYER-PS5/releases/latest)** · **[Install from ProsperoStore](https://github.com/blackbearreloaded/ProsperoStore)** · **[Join the Discord](https://discord.gg/47Nc8WtXh)**
+**[NoStream releases](https://github.com/qbyss/nostream/releases)**
 
 ---
 
@@ -63,7 +65,7 @@ Full notes: [CHANGELOG.md](CHANGELOG.md).
 - **Keyboard Caret Navigation:** L1 and R1 move a UTF-8 aware cursor to edit text in place without clearing the entire line.
 - **Home Screen Provider Media:** Provider media resumes directly from the Home screen with asynchronous backdrop and poster cover art decodes.
 - **Local Nuvio App:** Nuvio web app bundled directly in the package (`local:nuvio`) for offline use without requiring external hosts.
-- **Thai Subtitles & CJK Fallback:** Embedded Noto Sans Thai fonts for subtitle rendering, plus runtime CJK font loading from `/data/evoplayer/fonts/`.
+- **Thai Subtitles & CJK Fallback:** Embedded Noto Sans Thai fonts for subtitle rendering, plus runtime CJK font loading from `/data/nostream/fonts/`.
 
 Full notes: [CHANGELOG.md](CHANGELOG.md).
 
@@ -89,27 +91,22 @@ Full notes: [CHANGELOG.md](CHANGELOG.md).
 
 ## Installation
 
-EVO Player is a **game-category app module** (`PPSA99039`). It installs as a single `.ffpfsc` image and launches from the **Games** row, like any other title.
+NoStream is a **Media app** (`PPSA99273`). It installs as a single `.ffpfsc` image and launches from the **Media** tab, like any other title.
 
 ### Prerequisites
 
-- A jailbroken PS5 on firmware **13.60 or below**. Developed and tested on a PS5 Pro on 13.60 (earlier releases were measured on 12.70).
+- A jailbroken PS5 on firmware **13.60 or below**. Upstream EVO Player was tested on a PS5 Pro on 13.60 (earlier releases were measured on 12.70).
 - **ShadowMountPlus** on the console to mount and manage the app image.
 - An FTP server on the console (the usual jailbreak payloads provide one on port `2121`).
 - *(For USB playback)* a USB drive formatted **exFAT** or **FAT32**, or **NTFS** (read-only).
 
-### Easiest: install from ProsperoStore
+### Install over FTP
 
-**[ProsperoStore](https://github.com/blackbearreloaded/ProsperoStore)**, the native PS5 app store for the [homebrew.page](https://homebrew.page) catalog, installs and updates EVO Player from the console itself, with no PC and no FTP. Find EVO Player in the store, install it, and launch it from the **Games** row.
+1. Build the package below or download the matching `NoStream-*-PPSA99273.ffpfsc` asset from [NoStream releases](https://github.com/qbyss/nostream/releases).
+2. Copy it to `/data/homebrew/PPSA99273.ffpfsc` on the console.
+3. After ShadowMountPlus registers the title, launch **NoStream** from the **Media** tab.
 
-### Install Steps (manual)
-
-1. Download **`PPSA99039.ffpfsc`** from the latest **[GitHub Release](https://github.com/sainsaji/EVO-PLAYER-PS5/releases/latest)**.
-2. Copy it to `/data/homebrew/` on the console over FTP.
-3. ShadowMountPlus mounts and auto-launches it on file change. Otherwise launch **EVO Player** from the **Games** row.
-
-> [!IMPORTANT]
-> **Close EVO before installing a new version.** The app slot stays resident, and replacing the image underneath a running instance — or stacking a second launch on top of one — can panic the console. Use **QUIT EVO** (from the nav rail or **Settings → System & Diagnostics**) to release the decoders and GPU, then close it from the switcher.
+Close NoStream from the PS5 switcher before replacing an installed image.
 
 ---
 
@@ -315,31 +312,34 @@ The entire user interface is rendered on the GPU through bare-metal `sceAgc` at 
 | **L1 / R1** | Page up / Page down | Previous / next chapter (±30 s without chapters) | Move the text cursor left / right |
 | **L2 / R2** | Jump alphabetically (A–Z) | **L2:** Subtitle sync ±50ms<br>**R2:** Live stream quality & audio picker | **L2:** Shift (press again: Caps Lock)<br>**R2:** Done |
 | **Trackpad Swipe** | — | Live subtitle sync offset nudge | — |
-| **L3 / R3** | Take screenshot (to `/mnt/usb0`, or `/data/evoplayer` with no stick) | **L3:** screenshot<br>**R3:** chapter list (a file with chapters) | — |
+| **L3 / R3** | Take screenshot (to `/mnt/usb0`, or `/data/nostream` with no stick) | **L3:** screenshot<br>**R3:** chapter list (a file with chapters) | — |
 
 ---
 
 ## Building from Source
 
-Builds inside a pinned Docker toolchain:
+Builds inside a pinned Docker toolchain. On Apple Silicon, run `export DOCKER_DEFAULT_PLATFORM=linux/amd64` first.
 
 ```bash
-git clone --recursive https://github.com/sainsaji/EVO-PLAYER-PS5
-cd EVO-PLAYER-PS5
-echo "PS5_HOST=192.168.0.10" > .env      # your console's IP
+git clone --recursive https://github.com/qbyss/nostream.git
+cd nostream
 
 docker compose build
 ```
 
-Package and deploy the app module:
+Build FFmpeg and package the app module:
 
 ```bash
 docker compose run --rm ps5-dev bash -lc '
-  ./scripts/package-app.sh --ffpfsc
-  ./scripts/deploy-app.sh --ffpfsc'
+  ./scripts/build-ffmpeg.sh --profile minimal --install &&
+  ./scripts/package-app.sh --ffpfsc'
 ```
 
-*Note: `deploy-app.sh` requires EVO to be closed before updating. Use `--force` if the app slot is already cleared.*
+With NoStream closed on the console, upload the packaged title over FTP:
+
+```bash
+PS5_HOST=192.168.1.50 ./scripts/deploy-app.sh --ffpfsc
+```
 
 Render UI screens on PC without hardware:
 

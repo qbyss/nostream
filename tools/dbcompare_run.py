@@ -7,7 +7,7 @@ video playing on a --usb-remote build it:
 
   1. sends `dbcompare`: EVO pauses, redraws the SAME held frame with Deep Blacks
      Off, Low and High (OSD suppressed), saving the scanout after each to
-     /mnt/usb0/evo_db_{off,low,high}.bmp, then restores Settings and pause;
+     /mnt/usb0/nostream_db_{off,low,high}.bmp, then restores Settings and pause;
   2. pulls the BMPs into output/dbcompare/;
   3. where Pillow is available writes PNGs, compare.png (the three frames side
      by side) and shadows.png (the same three with the darks lifted 6x, so a
@@ -37,10 +37,10 @@ def capture(timeout_s: float) -> int:
     with ftp() as f:
         for m in MODES:          # a stale capture must not pass for a new one
             try:
-                f.sendcmd(f"DELE /mnt/usb0/evo_db_{m}.bmp")
+                f.sendcmd(f"DELE /mnt/usb0/nostream_db_{m}.bmp")
             except error_perm:
                 pass
-        f.storbinary("STOR /mnt/usb0/evo_cmd", io.BytesIO(b"dbcompare\n"))
+        f.storbinary("STOR /mnt/usb0/nostream_cmd", io.BytesIO(b"dbcompare\n"))
     print("sent: dbcompare - waiting for the three captures...")
 
     deadline = time.time() + timeout_s
@@ -59,7 +59,7 @@ def capture(timeout_s: float) -> int:
 
     OUT.mkdir(parents=True, exist_ok=True)
     for m in MODES:
-        data = fetch(f"/mnt/usb0/evo_db_{m}.bmp")
+        data = fetch(f"/mnt/usb0/nostream_db_{m}.bmp")
         if not data:
             print(f"missing capture: evo_db_{m}.bmp")
             return 1

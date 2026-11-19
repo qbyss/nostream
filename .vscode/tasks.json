@@ -44,7 +44,7 @@
     },
     {
       "label": "EVO: deploy app module (.ffpfsc) to PS5",
-      "detail": "package-app.sh --ffpfsc + deploy-app.sh --ffpfsc; needs PS5_HOST in .env. Then launch PPSA99039 from the Games row.",
+      "detail": "package-app.sh --ffpfsc + deploy-app.sh --ffpfsc; needs PS5_HOST in .env. Then launch PPSA99273 from the Media tab.",
       "type": "shell",
       "command": "bash ./scripts/package-app.sh --ffpfsc && bash ./scripts/deploy-app.sh --ffpfsc",
       "problemMatcher": [],

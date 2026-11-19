@@ -15,7 +15,7 @@
 
 #define PLEX_CLIENT_ID "evo-player-ps5"
 #define PLEX_HEADERS "X-Plex-Client-Identifier: " PLEX_CLIENT_ID
-#define PLEX_PRODUCT "X-Plex-Product: EVO Player"
+#define PLEX_PRODUCT "X-Plex-Product: NoStream"
 #define PLEX_ACCEPT "Accept: application/json"
 static const char *headers[] = { PLEX_HEADERS, PLEX_PRODUCT, PLEX_ACCEPT,
                                 "Content-Type: application/x-www-form-urlencoded" };

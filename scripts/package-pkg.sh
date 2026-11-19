@@ -224,7 +224,7 @@ FF FF 00 00 00 F0 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 \
 {
   "applicationCategoryType": 0,
   "titleId": "${TITLE_ID}",
-  "contentId": "IV0000-${TITLE_ID}_00-EVOPLAYER0000000",
+  "contentId": "IV0000-${TITLE_ID}_00-NOSTREAM00000000",
   "contentVersion": "01.00",
   "masterVersion": "01.00",
   "localizedParameters": {

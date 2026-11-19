@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-tools/wipe-evo.py - remove every EVO Player file from the console, for a
-fresh install. EVO ONLY: other homebrew, games and the rest of the USB stick
+tools/wipe-evo.py - remove every NoStream file from the console, for a
+fresh install. NOSTREAM ONLY: other homebrew, games and the rest of the USB stick
 are never touched.
 
     python3 tools/wipe-evo.py <host>            # dry run: list what would go
@@ -10,10 +10,10 @@ are never touched.
 
 What goes:
   /data/homebrew/<TITLE_ID>.ffpfsc and /data/homebrew/<TITLE_ID>/   the app
-  /data/evoplayer/          settings, recent, favourites, resume points,
+  /data/nostream/          settings, recent, favourites, resume points,
                             provider logins + playlists, web sessions,
                             speaker calibration
-  /mnt/usb0/evo*, /mnt/usb0/pp_4k_stage*   logs, screenshots, dev-remote files
+  /mnt/usb0/nostream*   logs, screenshots, dev-remote files
 
 Two quirks of the console's FTP server, both found the hard way:
   * MLSD ignores its path argument and lists the current directory, so every
@@ -25,8 +25,8 @@ Never run this against a running EVO: deploy-app.sh --fresh checks first.
 import ftplib
 import sys
 
-TITLE_ID = "PPSA99039"
-DATA_DIR = "/data/evoplayer"
+TITLE_ID = "PPSA99273"
+DATA_DIR = "/data/nostream"
 USB = "/mnt/usb0"
 
 
@@ -93,7 +93,7 @@ def main() -> int:
         usb = []
         print(f"  ({USB} not mounted - skipped)")
     for name, kind, size in usb:
-        if name.startswith("evo") or name.startswith("pp_4k_stage"):
+        if name.startswith(("nostream_", "nostream.")):
             full = f"{USB}/{name}"
             rm_tree(full) if kind == "dir" else rm_file(full, size)
 

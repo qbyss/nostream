@@ -174,7 +174,7 @@ static evo_input evo_pad_state;
  *
  * av_log's default callback ends in fputs(str, stderr) - libavutil/log.c,
  * colored_fputs(). Nothing in this binary has ever written to stderr: the boot
- * log opens /mnt/usb0/evo.log itself and klog goes through
+ * log opens /mnt/usb0/nostream.log itself and klog goes through
  * sceKernelDebugOutText, so on the native-app CRT stderr had never once been
  * touched, and touching it dereferences null. SIGSEGV, addr=0, no diagnostic.
  *
@@ -392,7 +392,7 @@ bool Application::initHardware() {
      * take, measured after the GPU runtime and resident decoders hold theirs.
      * The trigger file's content is the ceiling in MB (default 8192). */
     {
-        FILE *pf = std::fopen("/mnt/usb0/evo_dm_probe", "r");
+        FILE *pf = std::fopen("/mnt/usb0/nostream_dm_probe", "r");
         if (pf) {
             long max_mb = 0;
             if (std::fscanf(pf, "%ld", &max_mb) != 1 || max_mb <= 0)
@@ -488,7 +488,7 @@ bool Application::initServices() {
     m_fileSystemBrowser->setSortFoldersFirst(m_settingsService->isSortFoldersFirst());
     m_fileSystemBrowser->loadLastFolder();
 
-    toast("EVO Player", (EVO_PLAYER_VERSION[0] == 'v' || EVO_PLAYER_VERSION[0] == 'V')
+    toast("NoStream", (EVO_PLAYER_VERSION[0] == 'v' || EVO_PLAYER_VERSION[0] == 'V')
                          ? EVO_PLAYER_VERSION
                          : ("v" EVO_PLAYER_VERSION));
     return true;
@@ -733,7 +733,7 @@ void web_report(const char* what, double pos) {
      * MediaBrowser Authorization header (Jellyfin has no /emby prefix). */
     std::string hdr = g_web_rep.emby
         ? "X-Emby-Token: " + g_web_rep.key
-        : std::string("Authorization: MediaBrowser Client=\"EVO Player\", Device=\"PlayStation 5\", "
+        : std::string("Authorization: MediaBrowser Client=\"NoStream\", Device=\"PlayStation 5\", "
                       "DeviceId=\"evo-ps5-web\", Version=\"") + EVO_PLAYER_VERSION + "\", Token=\"" + g_web_rep.key + "\"";
     const char* headers[1] = { hdr.c_str() };
     evo_net_request_async("POST", url.c_str(), body, headers, 1, web_report_cb,
@@ -917,7 +917,7 @@ bool evo_capture_screenshot(std::string& outPath) {
     char path[256];
     int slot = 0;
     for (; slot < 1000; ++slot) {
-        std::snprintf(path, sizeof(path), "/mnt/usb0/evo_shot_%03d.bmp", slot);
+        std::snprintf(path, sizeof(path), "/mnt/usb0/nostream_shot_%03d.bmp", slot);
         FILE* probe = std::fopen(path, "rb");
         if (!probe) break;
         std::fclose(probe);
@@ -1213,7 +1213,7 @@ int Application::run() {
                      * LoadExec "exit" did not: it left the old image mounted, and an
                      * updated .ffpfsc was never picked up on the next launch (#120).
                      * Both return only if refused; then we stay parked. */
-                    const int appId = sceSystemServiceGetAppId("PPSA99039");
+                    const int appId = sceSystemServiceGetAppId("PPSA99273");
                     if (appId > 0)
                         sceSystemServiceKillApp(appId, -1, 0, 0);
                     const int refused = sceSystemServiceLoadExec("exit", nullptr);
@@ -1587,7 +1587,7 @@ int Application::run() {
             if (evo_webui_active()) {
                 /* #101: the system browser is up and owns the controller.
                  * If the user presses Options or Triangle, allow closing the browser
-                 * dialog so they can return to EVO Player UI without closing the app. */
+                 * dialog so they can return to NoStream UI without closing the app. */
                 if (pressed & (PadButtons::Options | PadButtons::Triangle)) {
                     EVO_LOGI("webui", "User dismissed WebUI browser via controller");
                     evo_webui_close();
@@ -1871,7 +1871,7 @@ int Application::run() {
                     char path[96];
                     const char* stepName = s_upcmp.kind ? kDbcmpNames[s_upcmp.step]
                                                         : kUpcmpNames[s_upcmp.step];
-                    std::snprintf(path, sizeof path, "/mnt/usb0/evo_%s_%s.bmp",
+                    std::snprintf(path, sizeof path, "/mnt/usb0/nostream_%s_%s.bmp",
                                   s_upcmp.kind ? "db" : "up", stepName);
                     FILE* fp = std::fopen(path, "wb");
                     const bool ok = fp != nullptr && write_scanout_bmp(fp);

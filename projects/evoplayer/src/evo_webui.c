@@ -25,7 +25,7 @@
  * instead; EVO closes the dialog, plays the stream in its own player, and
  * reopens the site on the page the user was on once playback ends.
  *
- * Dev override: the trigger file /mnt/usb0/evo_web_probe, read once at boot,
+ * Dev override: the trigger file /mnt/usb0/nostream_web_probe, read once at boot,
  * opens a session without going through a provider. One key=value per line:
  *
  *   url=/web/index.html          page to open. A path is taken relative to the
@@ -334,7 +334,7 @@ static int parse_upstream(const char *v)
 
 static int read_trigger(void)
 {
-    FILE *f = fopen("/mnt/usb0/evo_web_probe", "r");
+    FILE *f = fopen("/mnt/usb0/nostream_web_probe", "r");
     if (!f) return 0;
     char line[1024];
     int first = 1;

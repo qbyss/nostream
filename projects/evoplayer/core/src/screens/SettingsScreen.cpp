@@ -193,9 +193,9 @@ const PreviewSpec kPreviews[] = {
     {SettingKey::PhonePort, EVO_RMLUI_PREVIEW_PORT,
      "EVO checks the port is free before it saves it. If it is busy at start-up, EVO tries the next nine and shows the one it got."},
     {SettingKey::PhoneCast, EVO_RMLUI_PREVIEW_PHONE_CAST,
-     "Allows casting YouTube from your phone directly to EVO Player (DIAL receiver on port 8765)."},
+     "Allows casting YouTube from your phone directly to NoStream (DIAL receiver on port 8765)."},
     {SettingKey::CastNativePlayer, EVO_RMLUI_PREVIEW_CAST_PLAYER,
-     "Plays YouTube casts in EVO Player, full length up to 1080p60, instead of the 720p WebKit browser."},
+     "Plays YouTube casts in NoStream, full length up to 1080p60, instead of the 720p WebKit browser."},
     {SettingKey::YouTubeLink, EVO_RMLUI_PREVIEW_YT_LINK,
      "Paste or type a YouTube link (or use the phone page) and EVO plays the whole video, up to 1080p60."},
     {SettingKey::AskStream, EVO_RMLUI_PREVIEW_ASK_STREAM,
@@ -676,7 +676,7 @@ SettingDef makeDef(SettingKey key, ISettingsService* settings) {
         break;
 
     case SettingKey::CastNativePlayer:
-        d = toggleDef(key, "CAST TO EVO PLAYER", "PLAY CAST IN NATIVE PLAYER (UP TO 1080P)",
+        d = toggleDef(key, "CAST TO NoStream", "PLAY CAST IN NATIVE PLAYER (UP TO 1080P)",
                       "../icons/icon_monitor_play.png", settings->isCastNativePlayerEnabled());
         break;
 
@@ -973,7 +973,7 @@ void toggleSetting(SettingKey key) {
         break;
     case SettingKey::CastNativePlayer:
         st->setCastNativePlayerEnabled(!st->isCastNativePlayerEnabled());
-        toast("CAST PLAYER", st->isCastNativePlayerEnabled() ? "EVO Player (up to 1080p60)" : "System WebKit (720p)");
+        toast("CAST PLAYER", st->isCastNativePlayerEnabled() ? "NoStream (up to 1080p60)" : "System WebKit (720p)");
         break;
     case SettingKey::AskStream:        st->setAskStreamEnabled(!st->isAskStreamEnabled()); break;
     case SettingKey::AddonAutoPick:    st->setAddonAutoPickEnabled(!st->isAddonAutoPickEnabled()); break;
@@ -1273,7 +1273,7 @@ bool runAction(const SettingDef& def) {
         char path[160];
         if (evo_report_save(path, sizeof path)) {
             toast("REPORT SAVED", std::strncmp(path, "/mnt/usb0/", 10) == 0
-                                      ? "evo_report.txt on the USB stick" : path);
+                                      ? "nostream_report.txt on the USB stick" : path);
             evo_feedback(EVO_FB_CONFIRM);
         } else {
             toast("REPORT", "Could not save. Use the phone link instead");
@@ -1608,12 +1608,12 @@ void SettingsSectionScreen::update(double deltaMs) {
 // Dev remote (#201): `set <setting> <value>`, `set --list`, `focus <row>`.
 // A setting is named by its row title in lower case with dashes, so the name is
 // whatever the screen shows ("AUDIO DELAY" -> audio-delay). The answer goes to
-// /mnt/usb0/evo_set.txt, which evo-remote.sh reads back.
+// /mnt/usb0/nostream_set.txt, which evo-remote.sh reads back.
 // =============================================================================
 
 namespace {
 
-constexpr const char* kSetResultPath = "/mnt/usb0/evo_set.txt";
+constexpr const char* kSetResultPath = "/mnt/usb0/nostream_set.txt";
 
 /* "AUDIO DELAY" -> "audio-delay"; any run of non-alphanumerics becomes one dash. */
 void slugOf(const char* title, char* out, std::size_t n) {
@@ -1652,7 +1652,7 @@ void writeSetResult(const char* text) {
         std::fputs(text, fp);
         std::fputc('\n', fp);
         std::fclose(fp);
-    } else if (FILE* fp2 = std::fopen("/data/evoplayer/evo_set.txt", "w")) {
+    } else if (FILE* fp2 = std::fopen("/data/nostream/nostream_set.txt", "w")) {
         std::fputs(text, fp2);
         std::fputc('\n', fp2);
         std::fclose(fp2);

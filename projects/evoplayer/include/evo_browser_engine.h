@@ -9,7 +9,7 @@
  * child and exits when the connection closes, so closing it is the stop, and
  * a killed EVO (PS button, `evo-remote.sh close`) stops it the same way.
  *
- * Dev trigger for the spike: /mnt/usb0/evo_browser_spike. Its first line may
+ * Dev trigger for the spike: /mnt/usb0/nostream_browser_spike. Its first line may
  * name the broker ELF (default /mnt/usb0/prosperoweb-broker.elf).
  */
 #ifndef EVO_BROWSER_ENGINE_H
@@ -22,7 +22,7 @@ extern "C" {
 #define EVO_BROWSER_BROKER_PORT 17771
 /* Where the engine's two ELFs are looked for, in order (until they are
  * bundled in the .ffpfsc). */
-#define EVO_BROWSER_ELF_DIRS { "/mnt/usb0", "/data/evoplayer/browser" }
+#define EVO_BROWSER_ELF_DIRS { "/mnt/usb0", "/data/nostream/browser" }
 
 /* At boot: starts the engine in the background when the spike trigger file
  * exists. Never blocks. */

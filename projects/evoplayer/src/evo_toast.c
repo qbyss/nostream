@@ -112,7 +112,7 @@ static int prospero_toast_is_error(const char *title, const char *message)
 
 void toast(const char *title, const char *msg)
 {
-    if (!title) title = "EVO PLAYER";
+    if (!title) title = "NoStream";
     if (!msg)   msg   = "";
 
     int technical   = prospero_toast_is_technical(title, msg);
@@ -154,7 +154,7 @@ void toast(const char *title, const char *msg)
 
 void toast_sticky(const char *title, const char *msg)
 {
-    snprintf(prospero_toast_title,   sizeof(prospero_toast_title),   "%s", title ? title : "EVO PLAYER");
+    snprintf(prospero_toast_title,   sizeof(prospero_toast_title),   "%s", title ? title : "NoStream");
     snprintf(prospero_toast_message, sizeof(prospero_toast_message), "%s", msg ? msg : "");
     prospero_toast_started_ms = now_ms();
     prospero_toast_active     = 1;

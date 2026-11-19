@@ -26,14 +26,14 @@
 #define EVO_BUILD_ID "unknown"
 #endif
 
-#define CMD_PATH        "/mnt/usb0/evo_cmd"
-#define CMD_FALLBACK    "/data/evoplayer/evo_cmd"
-#define STATUS_PATH     "/mnt/usb0/evo_status"
-#define STATUS_FALLBACK "/data/evoplayer/evo_status"
-#define UI_PATH         "/mnt/usb0/evo_ui.json"
-#define UI_TMP_PATH     "/mnt/usb0/evo_ui.json.tmp"
-#define UI_FALLBACK     "/data/evoplayer/evo_ui.json"
-#define UI_TMP_FALLBACK "/data/evoplayer/evo_ui.json.tmp"
+#define CMD_PATH        "/mnt/usb0/nostream_cmd"
+#define CMD_FALLBACK    "/data/nostream/nostream_cmd"
+#define STATUS_PATH     "/mnt/usb0/nostream_status"
+#define STATUS_FALLBACK "/data/nostream/nostream_status"
+#define UI_PATH         "/mnt/usb0/nostream_ui.json"
+#define UI_TMP_PATH     "/mnt/usb0/nostream_ui.json.tmp"
+#define UI_FALLBACK     "/data/nostream/nostream_ui.json"
+#define UI_TMP_FALLBACK "/data/nostream/nostream_ui.json.tmp"
 
 extern int    screen;   /* main.c */
 extern void   evo_iobench_run(const char *spec);   /* evo_iobench.c */

@@ -3,7 +3,7 @@
 #
 # 1080p24 H.264 + stereo AAC + one English subtitle track, about 3 MB, written
 # to output/sample/evo_sample.mkv. `evo-remote.sh sample-install` copies it to
-# /data/evoplayer/test/ on the console, where EVO can always read it (the app
+# /data/nostream/test/ on the console, where EVO can always read it (the app
 # sandbox cannot see /data/Media), and `evo-remote.sh play --sample` plays it.
 # So a playback check needs no USB stick and no SMB server.
 set -euo pipefail

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-tools/evo_lifecycle.py - where PPSA99039 is in its lifecycle, from evidence.
+tools/evo_lifecycle.py - where PPSA99273 is in its lifecycle, from evidence.
 
 Used by tools/evo-remote.sh (launch/quit/close/cycle) and scripts/deploy-app.sh.
 Two sources, both read over FTP:
@@ -15,7 +15,7 @@ Two sources, both read over FTP:
                                                      and does NOT auto-launch)
         [GAME] started: <TID>                        launched
         [LINK] runtime layers released: <TID>        process gone, slot free
-  /mnt/usb0/evo_status          EVO's own heartbeat (--usb-remote builds):
+  /mnt/usb0/nostream_status          EVO's own heartbeat (--usb-remote builds):
         t=<s> advancing                              running right now
         parked=1                                     soft-closed, GPU drained
 
@@ -36,7 +36,7 @@ Subcommands (print one word / line, exit 0 unless the FTP read failed):
   wait-quiet  Q MAX        QUIET | TIMEOUT   (debug.log grew by nothing for Q s)
   smslice BASE            the debug.log lines after BASE that mention the title
 
-Env: PS5_HOST, FTP_PORT (2121), TITLE_ID (PPSA99039).
+Env: PS5_HOST, FTP_PORT (2121), TITLE_ID (PPSA99273).
 """
 import os
 import re
@@ -46,10 +46,10 @@ from ftplib import FTP, error_perm
 
 HOST = os.environ["PS5_HOST"]
 PORT = int(os.environ.get("FTP_PORT", "2121"))
-TID = os.environ.get("TITLE_ID", "PPSA99039")
+TID = os.environ.get("TITLE_ID", "PPSA99273")
 SM_LOG = "/data/shadowmount/debug.log"
 SM_LOG_OLD = SM_LOG + ".1"      # ShadowMount rotates at ~16 KB
-STATUS = "/mnt/usb0/evo_status"
+STATUS = "/mnt/usb0/nostream_status"
 
 STARTED = f"[GAME] started: {TID}"
 RELEASED = f"[LINK] runtime layers released: {TID}"
@@ -183,7 +183,7 @@ def foreign(text):
 
 
 def status_fields():
-    t = fetch("/data/evoplayer/evo_status")
+    t = fetch("/data/nostream/nostream_status")
     if not t:
         t = fetch(STATUS)
     if not t:

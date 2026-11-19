@@ -19,7 +19,7 @@
             </div>
         </div>
 
-        <div id="closed-eyebrow">EVO PLAYER</div>
+        <div id="closed-eyebrow">NoStream</div>
         <div id="closed-title">Safe to close</div>
         <div id="closed-accent"></div>
         <div id="closed-message">Playback, decoders and the GPU have all been released. EVO is idle now and no longer responds to the controller.</div>
@@ -40,6 +40,6 @@
         </div>
     </div>
 
-    <div id="closed-footer">EVO PLAYER</div>
+    <div id="closed-footer">NoStream</div>
 </body>
 </rml>

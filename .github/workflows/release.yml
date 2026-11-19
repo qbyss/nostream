@@ -1,8 +1,8 @@
 # =============================================================================
-# EVO Player release
+# NoStream release
 #
 # Builds the app module in the same pinned Docker environment developers use
-# locally, PFS-packs it into a single PPSA99039.ffpfsc image
+# locally, PFS-packs it into a single PPSA99273.ffpfsc image
 # (scripts/package-app.sh --ffpfsc), and publishes that as a GitHub release.
 # This is the ONLY hardware path (see CLAUDE.md / docs/build/tooling.md) — the old
 # ELF/Media-tile/hbldr release route reached none of EVO's headline features
@@ -32,7 +32,7 @@ permissions:
   contents: write
 
 env:
-  TITLE_ID: PPSA99039
+  TITLE_ID: PPSA99273
 
 jobs:
   release:
@@ -192,9 +192,9 @@ jobs:
         run: |
           mkdir -p dist
           T="${{ steps.ver.outputs.tag }}"
-          cp "output/app/${TITLE_ID}.ffpfsc" "dist/EVOPlayer-${T}-${TITLE_ID}.ffpfsc"
-          cp "output/pro/pro.ffpfsc" "dist/EVOPlayer-${T}-${TITLE_ID}-pro.ffpfsc"
-          cp "output/app/${TITLE_ID}.zip" "dist/EVOPlayer-${T}-${TITLE_ID}.zip"
+          cp "output/app/${TITLE_ID}.ffpfsc" "dist/NoStream-${T}-${TITLE_ID}.ffpfsc"
+          cp "output/pro/pro.ffpfsc" "dist/NoStream-${T}-${TITLE_ID}-pro.ffpfsc"
+          cp "output/app/${TITLE_ID}.zip" "dist/NoStream-${T}-${TITLE_ID}.zip"
           ( cd dist && sha256sum * > SHA256SUMS.txt )
           ls -la dist
 
@@ -231,25 +231,25 @@ jobs:
 
           ### Option A: PFS Image (`.ffpfsc`)
 
-          **Download `EVOPlayer-*-PPSA99039.ffpfsc`.** That is the whole app
+          **Download `NoStream-*-PPSA99273.ffpfsc`.** That is the whole app
           module, PFS-packed and ready to mount — no loose files, no second
           download.
 
           1. Jailbreak the console (any firmware below 13.60) and run a jailbreak
              daemon (PS5-Lapy-JB-Daemon or etaHEN) — re-run it after every
              reboot.
-          2. Copy the `.ffpfsc` to `/data/homebrew/PPSA99039.ffpfsc` on the
+          2. Copy the `.ffpfsc` to `/data/homebrew/PPSA99273.ffpfsc` on the
              console (FTP, or `PS5_HOST=<ip> ./scripts/deploy-app.sh --ffpfsc`
              from a checkout).
           3. **ShadowMountPlus** auto-mounts + registers it on the `.ffpfsc`
              change and can auto-launch it; otherwise mount it and launch
-             **EVO Player from the Games row**.
+             **NoStream from the Media tab**.
 
           ### Standard or Pro memory build
 
-          * **`EVOPlayer-*-PPSA99039.ffpfsc`** is the standard build. Use it on a
+          * **`NoStream-*-PPSA99273.ffpfsc`** is the standard build. Use it on a
             base PS5. It is the only build tested there.
-          * **`EVOPlayer-*-PPSA99039-pro.ffpfsc`** is for a **PS5 Pro**. It asks
+          * **`NoStream-*-PPSA99273-pro.ffpfsc`** is for a **PS5 Pro**. It asks
             for the Pro memory mode: about 1.2 GiB more GPU memory (12.6 GiB
             instead of 11.4 GiB). Tested on a PS5 Pro only. On a base PS5 it is
             untested, so use the standard build there.
@@ -259,13 +259,13 @@ jobs:
 
           ### Option B: Folder Title Archive (`.zip`)
 
-          **Download `EVOPlayer-*-PPSA99039.zip`.** Standard homebrew folder title
+          **Download `NoStream-*-PPSA99273.zip`.** Standard homebrew folder title
           layout (identical layout to Kodi PS5).
 
           1. Extract the zip into `/data/homebrew/` on the console over FTP
-             (creates `/data/homebrew/PPSA99039/`).
+             (creates `/data/homebrew/PPSA99273/`).
           2. Register the title with **ShadowMountPlus** (or your preferred
-             homebrew launcher) and launch **EVO Player from the Games row**.
+             homebrew launcher) and launch **NoStream from the Media tab**.
 
           Never stack launches — PS button to close a running EVO before
           relaunching (deploying/launching over a live instance risks a
@@ -305,10 +305,10 @@ jobs:
       - name: Upload the release files as a run artifact
         uses: actions/upload-artifact@v4
         with:
-          name: EVOPlayer-${{ steps.ver.outputs.tag }}
+          name: NoStream-${{ steps.ver.outputs.tag }}
           path: |
-            dist/EVOPlayer-*.ffpfsc
-            dist/EVOPlayer-*.zip
+            dist/NoStream-*.ffpfsc
+            dist/NoStream-*.zip
             dist/SHA256SUMS.txt
             dist/NOTES.md
           if-no-files-found: error
@@ -318,12 +318,12 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         with:
           tag_name: ${{ steps.ver.outputs.tag }}
-          name: EVO Player ${{ steps.ver.outputs.tag }}
+          name: NoStream ${{ steps.ver.outputs.tag }}
           body_path: dist/NOTES.md
           draft: false
           prerelease: false
           make_latest: true
           files: |
-            dist/EVOPlayer-*.ffpfsc
-            dist/EVOPlayer-*.zip
+            dist/NoStream-*.ffpfsc
+            dist/NoStream-*.zip
             dist/SHA256SUMS.txt

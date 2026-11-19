@@ -193,7 +193,7 @@ private:
     PreferredLanguage m_subtitleLanguage = PreferredLanguage::Auto;
     bool m_castReceiverEnabled = true;
     int m_castPort = 8765;
-    std::string m_castDeviceName = "EVO Player";
+    std::string m_castDeviceName = "NoStream";
     bool m_castNativePlayerEnabled = true;
 };
 

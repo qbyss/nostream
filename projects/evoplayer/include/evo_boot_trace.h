@@ -2,7 +2,7 @@
  * evo_boot_trace.h - Phase 1b app-module bring-up breadcrumbs.
  *
  * #51: evo_bt("...") writes to three places whenever EVO_APP_MODULE is defined:
- *   - the single diagnostic log /mnt/usb0/evo.log (via evo_boot_log) — durable,
+ *   - the single diagnostic log /mnt/usb0/nostream.log (via evo_boot_log) — durable,
  *     the place to look after the fact;
  *   - the kernel log (tools/klog.sh) — visible live before VideoOut is up and
  *     without a USB stick;
@@ -20,7 +20,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "evo_boot_log.h"   /* evo_bt lines also land in /mnt/usb0/evo.log */
+#include "evo_boot_log.h"   /* evo_bt lines also land in /mnt/usb0/nostream.log */
 
 #ifdef __cplusplus
 extern "C" {

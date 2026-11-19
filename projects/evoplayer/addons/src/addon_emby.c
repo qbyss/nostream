@@ -260,7 +260,7 @@ static void ms_auth_header(ms_client_t *c, int with_token, char *out, size_t cap
         return;
     }
     int n = snprintf(out, cap,
-                     "%s: MediaBrowser Client=\"EVO Player\", Device=\"PlayStation 5\", "
+                     "%s: MediaBrowser Client=\"NoStream\", Device=\"PlayStation 5\", "
                      "DeviceId=\"%s\", Version=\"%s\"",
                      c->kind == MS_EMBY ? "X-Emby-Authorization" : "Authorization",
                      c->cfg.device_id[0] ? c->cfg.device_id : MS_DEVICE_ID, EVO_PLAYER_VERSION);

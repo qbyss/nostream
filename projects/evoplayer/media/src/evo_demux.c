@@ -338,7 +338,7 @@ packet_queue_clear(
         snprintf(d, sizeof d, "rc=%d ts=%lld strm=%d target=%.3f ms=%lld",
                  result, (long long)seek_timestamp, seek_stream, target_seconds,
                  (long long)((av_gettime_relative() - seek_t0) / 1000));
-        pp_stage_bc("SEEK_AVFRAME", d);   /* #32 diagnostics -> /mnt/usb0/evo.log */
+        pp_stage_bc("SEEK_AVFRAME", d);   /* #32 diagnostics -> /mnt/usb0/nostream.log */
     }
 
     if (result >= 0) {

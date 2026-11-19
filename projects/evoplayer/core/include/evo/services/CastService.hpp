@@ -43,7 +43,7 @@ private:
 
     bool m_enabled = true;
     int m_port = 8765;
-    std::string m_deviceName = "EVO Player";
+    std::string m_deviceName = "NoStream";
 
     std::mutex m_mutex;
     bool m_pendingLaunch = false;

@@ -1,6 +1,6 @@
-# The app module (`PPSA99039`)
+# The app module (`PPSA99273`)
 
-EVO ships as a fake-signed, game-category **app module**: its own title id,
+NoStream ships as a fake-signed, Media-category **app module**: its own title id,
 `param.json`, sandbox and user session, mounted by ShadowMountPlus from a PFS
 image. That is the only context where `sceVideodec2` hardware decode and `sceAgc`
 GPU rendering work. A payload loaded through elfldr or hbldr gets a borrowed
@@ -18,10 +18,10 @@ build.
 
 | Field | Value | Why |
 |---|---|---|
-| `titleId` | `PPSA99039` | `PPSA99xxx` is the homebrew-safe range. `PPSA22xxx` is inside Sony's retail allocation and a collision corrupts the Shell DB |
-| `contentId` | `UP9000-PPSA99039_00-EVOPLAYER0000000` | the suffix must be 16 characters |
-| `applicationCategoryType` / `contentBadgeType` | `0` / `1` | game category; the validator requires this pair |
-| `gameIntent.permittedIntents` | `launchActivity` | required for category 0 |
+| `titleId` | `PPSA99273` | `PPSA99xxx` is the homebrew-safe range. `PPSA22xxx` is inside Sony's retail allocation and a collision corrupts the Shell DB |
+| `contentId` | `UP9000-PPSA99273_00-NOSTREAM00000000` | the suffix must be 16 characters |
+| `applicationCategoryType` / `contentBadgeType` | `65536` / `2` | Places the title in the PS5 Media tab |
+| `gameIntent` | Omitted | Media titles omit the Games launch intent |
 | `attribute` | `1644167168` (`0x62000000`) | required for the HDR-capable VideoOut profile |
 | `attribute3` | `524352` (`0x80040`) | standard memory. `--pro-memory` sets bit 22 in the *packaged* copy only |
 | `kernel.flexibleMemorySize` | `1073741824` | 1 GiB, the most the console accepts. Default is 448 MB ([hardware/memory-budget.md](../hardware/memory-budget.md)) |
@@ -98,8 +98,8 @@ storage stay empty and EVO logs the warning after about 300 frames.
 
 What follows from it:
 
-- **`evo_data_path()`** picks the data root at run time: `/data/evoplayer` once the
-  sandbox is open, `/download0/evoplayer` before that. The fallback does **not**
+- **`evo_data_path()`** picks the data root at run time: `/data/nostream` once the
+  sandbox is open, `/download0/nostream` before that. The fallback does **not**
   survive a relaunch, so settings written in that window are re-bound once the
   unjail lands (`evo_data_path_rebind()`).
 - **`evo_readdir` / `evo_mkdir`** replace `opendir` and `mkdir` (`getdents` and

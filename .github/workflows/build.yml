@@ -194,8 +194,8 @@ jobs:
           docker run --rm -v "$PWD:/workspace" -w /workspace \
             evo-player/ps5-dev:ci bash -lc '
               set -e
-              APPDIR="output/app/PPSA99039"
-              IMG="output/app/PPSA99039.ffpfsc"
+              APPDIR="output/app/PPSA99273"
+              IMG="output/app/PPSA99273.ffpfsc"
 
               [ -f "$IMG" ] || { echo "missing $IMG - MkPFS pack failed"; exit 1; }
 
@@ -226,8 +226,8 @@ jobs:
         with:
           name: evoplayer-app-module
           path: |
-            output/app/PPSA99039.ffpfsc
-            output/app/PPSA99039/
+            output/app/PPSA99273.ffpfsc
+            output/app/PPSA99273/
           if-no-files-found: error
           retention-days: 14
 

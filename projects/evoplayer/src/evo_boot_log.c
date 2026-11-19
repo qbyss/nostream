@@ -148,7 +148,7 @@ struct bl_note { char pad[45]; char msg[3075]; };
 extern int sceKernelSendNotificationRequest(int, void *, unsigned long, int);
 #endif
 
-#define EVO_LOG_PATH "/mnt/usb0/evo.log"
+#define EVO_LOG_PATH "/mnt/usb0/nostream.log"
 
 /*
  * Two phases:
@@ -304,7 +304,7 @@ static size_t bl_drain(int do_sync)
             if (fresh) {
                 g_fp = fresh;
                 g_written = 0;
-                bl_session_header(g_fp, "rotated (previous file is evo.log.1)");
+                bl_session_header(g_fp, "rotated (previous file is nostream.log.1)");
                 fflush(g_fp);
             }
         }
@@ -551,12 +551,12 @@ void evo_boot_log_flush(void)
         if (fp) {
             g_log_path = EVO_LOG_PATH;
         } else {
-            fp = fopen("/data/evoplayer/evo.log", "a");
+            fp = fopen("/data/nostream/nostream.log", "a");
             if (fp)
-                g_log_path = "/data/evoplayer/evo.log";
+                g_log_path = "/data/nostream/nostream.log";
         }
         if (!fp)
-            return;   /* /mnt/usb0 and /data/evoplayer not reachable yet — try again next call */
+            return;   /* /mnt/usb0 and /data/nostream not reachable yet — try again next call */
         pthread_mutex_lock(&g_io_lock);
         fseek(fp, 0, SEEK_END);
         g_written = ftell(fp);

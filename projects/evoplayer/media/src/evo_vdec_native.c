@@ -351,7 +351,7 @@ static const nat_codec_desc *codec_desc_for(int codec_id, int profile, int bit_d
     return NULL;
 }
 
-/* Decoder notes go to /mnt/usb0/evo.log (via evo_boot_log — one file, shared
+/* Decoder notes go to /mnt/usb0/nostream.log (via evo_boot_log — one file, shared
  * with the boot trace + breadcrumbs). They are already gated at the call sites
  * (first 3 decodes, first error, a 300-decode heartbeat) so they never spam.
  * The notification popup shares evo_bt()'s EVO_BOOT_TRACE_POPUP opt-in
@@ -477,13 +477,13 @@ static inline void nwd_enter(const char *what, int limit_ms)
 }
 static inline void nwd_leave(void) { nwd_start_ms = 0; }
 
-/* Test hook: /mnt/usb0/evo_vdec_hang makes the 100th Decode block forever, to
+/* Test hook: /mnt/usb0/nostream_vdec_hang makes the 100th Decode block forever, to
  * prove on hardware that a hang ends the session instead of freezing the app. */
 static void nwd_test_hang(unsigned dec_calls)
 {
     static int armed = -1;
     if (armed < 0)
-        armed = (access("/mnt/usb0/evo_vdec_hang", F_OK) == 0);
+        armed = (access("/mnt/usb0/nostream_vdec_hang", F_OK) == 0);
     if (armed && dec_calls == 100) {
         armed = 0;
         note("EVO vdec native: TEST HOOK - blocking in Decode (evo_vdec_hang)");

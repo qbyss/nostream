@@ -21,7 +21,7 @@ So a provider is two halves with a hard line between them:
 | Layer | Owner | Delivery |
 |---|---|---|
 | Auth, catalog, search, link resolution, progress reporting | in-binary C behind `evo_provider_t` | compiled into the app module |
-| Screens, layout, navigation | a data-bound document over the provider's data model | an **embedded** document EVO ships for its own providers (`mediaserver`, `iptv`, `xtream`, the fallback skin), or a **bundle fetched over HTTP at run time**, cached under `/data/evoplayer/providers/<id>/` |
+| Screens, layout, navigation | a data-bound document over the provider's data model | an **embedded** document EVO ships for its own providers (`mediaserver`, `iptv`, `xtream`, the fallback skin), or a **bundle fetched over HTTP at run time**, cached under `/data/nostream/providers/<id>/` |
 
 The C half publishes a **data model**; the markup binds to it by name and never
 references an EVO element id. There is no per-provider C++ screen: every provider shares
@@ -58,7 +58,7 @@ console.
 
 ## 3. Runtime constraints (app module, not payload)
 
-EVO is the `PPSA99039` app module. There is no payload heap and no 3.5 GB.
+EVO is the `PPSA99273` app module. There is no payload heap and no 3.5 GB.
 
 | Capability | Status on the app module |
 |---|---|
@@ -67,7 +67,7 @@ EVO is the `PPSA99039` app module. There is no payload heap and no 3.5 GB.
 | FFmpeg network | **on since #90** — `--enable-network --enable-openssl`, protocols `http,https,tcp,tls,crypto`, demuxers `hls` and `dash` |
 | JSON | `cJSON`, compiled unconditionally |
 | Memory | three pools, none of them 3.5 GB; see [../hardware/memory-budget.md](../hardware/memory-budget.md). A bundle's whole cache is capped at 8 MiB and its decoded artwork at 24 MiB, both smaller than one 4K frame |
-| Writable storage | `/data/evoplayer` once `evo_jailbreak_self()` lands; `/download0/evoplayer` before that and it does **not** survive a relaunch (#46) |
+| Writable storage | `/data/nostream` once `evo_jailbreak_self()` lands; `/download0/nostream` before that and it does **not** survive a relaunch (#46) |
 
 Three consequences that are easy to get wrong:
 
@@ -554,7 +554,7 @@ hook use it, so IPTV still plays straight away. What the page reads:
 
 ## 10. Known gaps
 
-- Credentials in `/data/evoplayer` are plaintext.
+- Credentials in `/data/nostream` are plaintext.
 - A bundle's `backdrop-filter` blur looks wrong in the host preview and right on the
   console (section 6.4).
 - Live TV search and recordings (#179), per-stream headers (#92) and a malformed playlist

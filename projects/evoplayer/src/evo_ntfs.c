@@ -1309,7 +1309,7 @@ static void refresh_locked(void)
     static int s_img_tried;
     if (!s_img_tried) {
         s_img_tried = 1;
-        add_device_disk("/data/evoplayer/test/ntfs.img", "img0", MAX_DISKS, 0);
+        add_device_disk("/data/nostream/test/ntfs.img", "img0", MAX_DISKS, 0);
     }
 #endif
 }

@@ -10,7 +10,7 @@ a player can be perfectly in sync before a seek and wrong after, so "play",
 "seek forward", "seek back" and "play through the seek point" each get their own
 stretch that tools/subsync_report.py can judge on its own.
 
-Requires the build to carry the subsync trace and /mnt/usb0/evo_subsync to
+Requires the build to carry the subsync trace and /mnt/usb0/nostream_subsync to
 exist; without both, the log has nothing to report on.
 """
 
@@ -37,14 +37,14 @@ def connect():
 
 def put_cmd(line):
     with connect() as f:
-        f.storbinary("STOR /mnt/usb0/evo_cmd", io.BytesIO((line + "\n").encode()))
+        f.storbinary("STOR /mnt/usb0/nostream_cmd", io.BytesIO((line + "\n").encode()))
 
 
 def status():
     try:
         with connect() as f:
             b = []
-            try: f.retrbinary("RETR /mnt/usb0/evo_status", b.append)
+            try: f.retrbinary("RETR /mnt/usb0/nostream_status", b.append)
             except error_perm: return {}
             out = {}
             for tok in b and b"".join(b).decode("utf-8", "replace").split() or []:

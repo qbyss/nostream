@@ -24,7 +24,7 @@ Logs, screenshots, the dashboard and the debug switches:
 
 | Script | What it does |
 |---|---|
-| `package-app.sh` | **The real build.** Compile, link, convert, sign, assemble `output/app/PPSA99039/`; `--ffpfsc` packs the image ([packaging.md](packaging.md)) |
+| `package-app.sh` | **The real build.** Compile, link, convert, sign, assemble `output/app/PPSA99273/`; `--ffpfsc` packs the image ([packaging.md](packaging.md)) |
 | `deploy-app.sh` | Upload the image or folder over FTP, sha256-verified, with the resident-EVO interlock ([packaging.md](packaging.md#deploy-appsh)) |
 | `build-evoplayer.sh` | **Host compile check only.** Builds `output/elf/EVOPlayer.elf` so the non-app-module code path stays green; it cannot deploy and errors on `--run` |
 | `build-ffmpeg.sh`, `build-dav1d.sh` | FFmpeg 7.1.1 (profiles `minimal` / `baseline` / `full`) and libdav1d ([building.md](building.md#ffmpeg)) |
@@ -40,8 +40,8 @@ Logs, screenshots, the dashboard and the debug switches:
 |---|---|
 | `evo-remote.sh` | The dev remote: lifecycle, keys, `ui`, `go`, `set`, sweeps, comparisons ([remote-control.md](../console/remote-control.md)); `logs` honours `PS5_LOG_PORT` (default 9780) |
 | `evo_ui.py`, `evo_lifecycle.py` | Its helpers: the UI state reader and ShadowMount lifecycle evidence (`foreign`: another game still running, checked before every `launch`) |
-| `make_ntfs_image.sh` (host, Docker) | NTFS test images (whole disk, MBR, GPT; a file in ~2300 pieces) for `tests/test_ntfs.cpp` and the console's `/data/evoplayer/test/ntfs.img` ([../hardware/ntfs.md](../hardware/ntfs.md)) |
-| `make_sample.sh` (host, ffmpeg) + `evo-remote.sh sample-install` / `play --sample` | A 20 s 1080p H.264 + AAC + subtitle test clip in `/data/evoplayer/test/`, which EVO can always read: a playback check with no USB stick or SMB server |
+| `make_ntfs_image.sh` (host, Docker) | NTFS test images (whole disk, MBR, GPT; a file in ~2300 pieces) for `tests/test_ntfs.cpp` and the console's `/data/nostream/test/ntfs.img` ([../hardware/ntfs.md](../hardware/ntfs.md)) |
+| `make_sample.sh` (host, ffmpeg) + `evo-remote.sh sample-install` / `play --sample` | A 20 s 1080p H.264 + AAC + subtitle test clip in `/data/nostream/test/`, which EVO can always read: a playback check with no USB stick or SMB server |
 | `evo-remote.sh play --share <id> <path>` | Play a file on a saved SMB/FTP server through the URL Browse builds (`play --share ps5_local /data/Media/x.mkv`) |
 | `evo-remote.sh logq <text> [n]` | `evo.log` lines containing `<text>` from the log server (`:9780/snapshot`), FTP only when EVO is not answering |
 | `testenv.py up` / `down` / `status` | Swap in the test configs (a dead IPTV playlist, a dead FTP server) and always put the real ones back; backups in git-ignored `output/testenv/` |

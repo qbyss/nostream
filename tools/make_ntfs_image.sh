@@ -9,7 +9,7 @@
 # a folder with 300 files (index blocks), a fragmented file (many data runs),
 # a tiny file (resident data), unicode names, an empty folder and nested dirs.
 # The host tests read them (tests/test_ntfs.cpp); copy one to
-# /data/evoplayer/test/ntfs.img on the console and a --usb-remote build mounts it.
+# /data/nostream/test/ntfs.img on the console and a --usb-remote build mounts it.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 OUT="${1:-output/ntfs}"

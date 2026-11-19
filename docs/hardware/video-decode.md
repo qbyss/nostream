@@ -6,7 +6,7 @@ where it can, FFmpeg where it must. What is supported is in
 
 ## Why it works at all
 
-Hardware decode works only from the app module (`PPSA99039`): a registered title
+Hardware decode works only from the app module (`PPSA99273`): a registered title
 with its own `param.json`, sandbox and user session. The same calls from an elfldr
 payload or an hbldr slot got as far as `CreateDecoder` and then failed at the
 decode ioctl with errno 5200, whatever the credentials. It was a process-context
@@ -88,7 +88,7 @@ resetting it:
 - Input ring: four 8 MiB access-unit slots per decoder (about fifty times the
   largest 4K IDR ever observed). Output ring: eight slots of one frame.
 - A decode call that never returns would wedge the app slot; the watchdog test hook
-  is `/mnt/usb0/evo_vdec_hang` ([../console/diagnostics.md](../console/diagnostics.md#switches)).
+  is `/mnt/usb0/nostream_vdec_hang` ([../console/diagnostics.md](../console/diagnostics.md#switches)).
 
 ## Fallback and 4K software decode
 
@@ -97,7 +97,7 @@ failed to come up, a mid-stream fatal) the play loop reopens on FFmpeg. **Softwa
 decode above 1080p is allowed by default** since #95: the malloc shim serves large
 blocks from direct memory, and 4K 10-bit AV1 plays in real time. What is left is
 speed; a codec the CPU cannot decode in real time at 4K plays slowly.
-`/mnt/usb0/evo_no_sw_4k` switches it back off and shows an "UNSUPPORTED" toast.
+`/mnt/usb0/nostream_no_sw_4k` switches it back off and shows an "UNSUPPORTED" toast.
 Memory facts: [memory-budget.md](memory-budget.md).
 
 FFmpeg itself is 7.1.1 (`minimal` profile). AV1 is libdav1d only; FFmpeg's own `av1`

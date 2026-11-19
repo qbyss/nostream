@@ -27,7 +27,7 @@
 #include <sys/time.h>
 #include <sys/uio.h>
 
-#define SPIKE_TRIGGER     "/mnt/usb0/evo_browser_spike"
+#define SPIKE_TRIGGER     "/mnt/usb0/nostream_browser_spike"
 #define SPIKE_DEFAULT_ELF "/mnt/usb0/prosperoweb-broker.elf"
 #define SPIKE_DEFAULT_URL "https://example.com/"
 #define BROKER_MAX_ELF    (64u << 20)
@@ -266,7 +266,7 @@ out:
 
 /* ---- spike S2b: frames from a test host (helpers/frame_test.c) ----
  *
- * When /mnt/usb0/evo_frame_test.elf exists, the broker spawns it with EVO's
+ * When /mnt/usb0/nostream_frame_test.elf exists, the broker spawns it with EVO's
  * end of a new socketpair at fd 3 (src_pid + src_fds, the same rdup route as
  * S2a and as the real engine host later). A thread here receives HELLO and
  * FRAME; the UI takes frames on the main thread (evo_browser_frame_*) and
@@ -279,7 +279,7 @@ out:
  * closing its end ends the host, and the broker follows. After HELLO, EVO
  * sends LOAD with the trigger file's second line (default example.com),
  * logs the page events, and scrolls once when the first load finishes. */
-#define FRAME_TEST_ELF  "/mnt/usb0/evo_frame_test.elf"
+#define FRAME_TEST_ELF  "/mnt/usb0/nostream_frame_test.elf"
 #define ENGINE_HOST_ELF "/mnt/usb0/prosperoweb.elf"
 #define FRAME_RECV_MS   250        /* the receive thread checks the stop this often */
 
@@ -618,12 +618,12 @@ static int file_exists(const char *path)
     return 1;
 }
 
-/* #237 GPU broker spike: with /mnt/usb0/evo_gpu_broker present, the spike
+/* #237 GPU broker spike: with /mnt/usb0/nostream_gpu_broker present, the spike
  * spawns this client instead. It gets a GPU broker endpoint as the first
  * message on its fd 3, draws with Mesa (EGL/GLES over Zink/RADV, submitted by
  * EVO) and sends frames over the normal wire. */
-#define GPU_TRIGGER    "/mnt/usb0/evo_gpu_broker"
-#define GPU_CLIENT_ELF "/mnt/usb0/evo_gpu_client.elf"
+#define GPU_TRIGGER    "/mnt/usb0/nostream_gpu_broker"
+#define GPU_CLIENT_ELF "/mnt/usb0/nostream_gpu_client.elf"
 #define GPU_BROKER_UP_MS 20000
 
 /* After the client is spawned: an endpoint for it, sent on our socket end. */

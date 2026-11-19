@@ -245,7 +245,7 @@ bool MediaMetadataService::exportCompatibilityReport(const std::string& outputPa
     std::string durationStr = formatDuration(metadata.durationSeconds);
     std::string positionStr = formatDuration(playbackPosition);
 
-    std::fprintf(file, "EVO Player Compatibility Report\n");
+    std::fprintf(file, "NoStream Compatibility Report\n");
     std::fprintf(file, "====================================\n\n");
     std::fprintf(file, "Build\nVERSION %s\n\n", EVO_PLAYER_VERSION);
     std::fprintf(file, "File\n%s\n\n", metadata.filePath.c_str());
@@ -261,7 +261,7 @@ bool MediaMetadataService::exportCompatibilityReport(const std::string& outputPa
     std::fprintf(file, "Recent DB Entries\n%d\n\n", recentCount);
     std::fprintf(file, "Favorites Entries\n%d\n\n", favoriteCount);
     std::fprintf(file, "Playback State\n%s\n\n", isPlaying ? "Playing Screen" : "Not On Player Screen");
-    std::fprintf(file, "Notes\nGenerated locally from EVO Player metadata and playback state.\n");
+    std::fprintf(file, "Notes\nGenerated locally from NoStream metadata and playback state.\n");
 
     std::fclose(file);
     toast("REPORT", "Saved to USB");

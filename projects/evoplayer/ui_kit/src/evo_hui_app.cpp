@@ -170,7 +170,7 @@ struct WebFrame
         evo_browser_frame_t f;
         if (!evo_browser_frame_acquire(&f))
             return;
-        /* #237 diagnostic: /data/evoplayer/web_freeze keeps the engine running (GPU as busy as
+        /* #237 diagnostic: /data/nostream/web_freeze keeps the engine running (GPU as busy as
          * ever) but draws the last texture, to tell GPU sharing from EVO's own frame handling.
          * The first frame after a size change still goes through, so a texture exists. */
         static int s_freeze = 0;
@@ -178,7 +178,7 @@ struct WebFrame
         if ((s_freeze_tick++ % 30) == 0)
         {
             int a = 0, b = 0;
-            if (FILE *fa = fopen("/data/evoplayer/web_freeze", "r")) { a = 1; fclose(fa); }
+            if (FILE *fa = fopen("/data/nostream/web_freeze", "r")) { a = 1; fclose(fa); }
             if (FILE *fb = fopen("/mnt/usb0/web_freeze", "r")) { b = 1; fclose(fb); }
             const int now = (a || b) ? 1 : 0;
             if (now != s_freeze)
@@ -424,9 +424,9 @@ struct Kit
         state = failed;
         for (unsigned &s : overlay_serial)
             s = 0x80000000u;
-        if (access("/mnt/usb0/evo_no_hui", F_OK) == 0)
+        if (access("/mnt/usb0/nostream_no_hui", F_OK) == 0)
         {
-            evo_boot_log("hui: /mnt/usb0/evo_no_hui present, kit screens off");
+            evo_boot_log("hui: /mnt/usb0/nostream_no_hui present, kit screens off");
             return false;
         }
         if (!evo_agc_runtime_is_active() || !batch.init())

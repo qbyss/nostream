@@ -71,7 +71,7 @@ void AboutSupportScreen::render(uint32_t* framebuffer, int width, int height) {
         railFocused = sm->isRailFocused();
     }
 
-    params.app_name = "EVO PLAYER PRO";
+    params.app_name = "NoStream";
     params.version = (EVO_PLAYER_VERSION[0] == 'v' || EVO_PLAYER_VERSION[0] == 'V')
                      ? EVO_PLAYER_VERSION
                      : ("v" EVO_PLAYER_VERSION);

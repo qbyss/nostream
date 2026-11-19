@@ -1,8 +1,8 @@
 # The dev remote: `evo-remote.sh`
 
 A build made with `package-app.sh --usb-remote` can be driven over FTP with no
-controller and no rebuild between tests. EVO polls `/mnt/usb0/evo_cmd` for one-line
-commands and writes `/mnt/usb0/evo_status` once a second and `/mnt/usb0/evo_ui.json`
+controller and no rebuild between tests. EVO polls `/mnt/usb0/nostream_cmd` for one-line
+commands and writes `/mnt/usb0/nostream_status` once a second and `/mnt/usb0/nostream_ui.json`
 whenever the UI changes. `tools/evo-remote.sh` is the host side. The code is
 `src/evo_usb_remote.c`; release builds compile all of it out.
 
@@ -38,7 +38,7 @@ commands (`launch`, `quit`, `close`, `cycle`, `verify`, `kill`) are described in
 | `dbcompare`, `upcompare [--crop x,y,w,h]` | capture one held frame under each Deep Blacks / upscaler mode |
 | `sweep [--dir p] [--secs n] [--max n] [--skip s]...`, `report` | the codec sweep ([../build/validation.md](../build/validation.md#the-codec-sweep)) |
 | `status` | print `evo_status` once |
-| `log` | pull `/mnt/usb0/evo.log` to `output/logs/` |
+| `log` | pull `/mnt/usb0/nostream.log` to `output/logs/` |
 | `logs [now] [problems|<text>]` | stream live logs from EVO's HTTP log server (honours `PS5_LOG_PORT`, default 9780) |
 | `watch [s]` | stream `evo_status` and new `evo.log` lines |
 | `clear` | delete `evo.log` and `evo_status` |
@@ -92,7 +92,7 @@ plus `tools/shot.sh grab` for pixels.
   settings-audio settings-experimental about changelog themes surround devtools`, a
   provider id, or a `ScreenId` number. It works from any screen, with no key walk.
 - `set` names are the row title in lower case with dashes (`audio-delay`,
-  `volume-boost`, `network-buffer`). The answer file is `/mnt/usb0/evo_set.txt`; a
+  `volume-boost`, `network-buffer`). The answer file is `/mnt/usb0/nostream_set.txt`; a
   failure prints `ERR ...` and exits 1.
 - **Typing text.** `type` needs Settings → Interface & Storage → `KEYBOARD INPUT` =
   `VIRTUAL KEYBOARD`: the native PS5 IME is a system dialog and nothing EVO injects

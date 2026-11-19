@@ -15,7 +15,7 @@
                 </div>
                 <div id="header-titles">
                     <div id="header-title-row">
-                        <span id="about-title">EVO PLAYER PRO</span>
+                        <span id="about-title">NoStream</span>
                         <span id="about-version-pill" class="badge-pill">v0.11.0</span>
                         <span id="about-build-tag" class="badge-tag">PS5 HOMEBREW</span>
                     </div>
@@ -58,14 +58,14 @@
             <div class="fact">
                 <div class="fact-key">TARGET</div>
                 <div class="fact-value">Firmware 13.60</div>
-                <div class="fact-note">PPSA99039 app module on the PS5 Payload SDK</div>
+                <div class="fact-note">PPSA99273 app module on the PS5 Payload SDK</div>
             </div>
         </div>
 
         <div id="about-links">
             <div class="link-row">
                 <span class="link-key">PROJECT</span>
-                <span class="link-value">github.com/sainsaji/EVO-PLAYER-PS5</span>
+                <span class="link-value">github.com/qbyss/nostream</span>
             </div>
             <div class="link-row">
                 <span class="link-key">THEMES</span>
@@ -90,7 +90,7 @@
                 <div class="glyph-badge"><img src="../icons/btn_dpad.png" class="glyph-badge-img"/></div>
                 <span class="footer-text">SIDEBAR MENU (LEFT)</span>
             </div>
-            <div id="footer-build-meta">EVO PLAYER PRO • PLAYSTATION 5 HOMEBREW</div>
+            <div id="footer-build-meta">NoStream • PLAYSTATION 5 HOMEBREW</div>
         </div>
     </div>
 </body>

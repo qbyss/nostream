@@ -1,7 +1,7 @@
 #!/bin/bash
 # tools/build_frame_test.sh - build the S2b test engine host (#237) as
 # output/evo_frame_test.elf. Not embedded in EVO: for the spike it is copied
-# to /mnt/usb0/evo_frame_test.elf, and the broker spawns it from there.
+# to /mnt/usb0/nostream_frame_test.elf, and the broker spawns it from there.
 # Runs inside the container (docker compose run --rm ps5-dev ./tools/build_frame_test.sh).
 set -euo pipefail
 cd "$(dirname "$0")/.."

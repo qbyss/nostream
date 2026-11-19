@@ -1,7 +1,7 @@
 # EVO Player documentation
 
 EVO Player is a native media player for a jailbroken PS5 (FW 13.60), built against the
-PS5 Payload SDK and shipped as an app module (`.ffpfsc`, title `PPSA99039`). The UI is
+PS5 Payload SDK and shipped as an app module (`.ffpfsc`, title `PPSA99273`). The UI is
 the ps5-homebrew-ui kit and RmlUi on bare-metal `sceAgc`; video decodes on
 `sceVideodec2` with an FFmpeg fallback.
 
@@ -15,7 +15,7 @@ ones expensive to relearn on real hardware) are in the root [CLAUDE.md](../CLAUD
 |---|---|
 | [architecture.md](architecture/architecture.md) | The layers, a frame's path, the decode strategy, the repository layout |
 | [core.md](architecture/core.md) | The C++ core: Application, services, screens, state machines, rules for code in it |
-| [app-module.md](architecture/app-module.md) | What `PPSA99039` is: `param.json`, the build tail, the sandbox and self-unjail, the traps |
+| [app-module.md](architecture/app-module.md) | What `PPSA99273` is: `param.json`, the build tail, the sandbox and self-unjail, the traps |
 
 ## [build/](build/): getting it built, shipped and proven
 

@@ -31,10 +31,10 @@ MAX_FILES = int(os.environ.get("SWEEP_MAX", "0"))
 SKIP = [s.strip().lower()
         for s in os.environ.get("SWEEP_SKIP", "").split(",") if s.strip()]
 
-CMD_PATH = "/mnt/usb0/evo_cmd"
-STATUS_PATH = "/mnt/usb0/evo_status"
-CMD_FALLBACK = "/data/evoplayer/evo_cmd"
-STATUS_FALLBACK = "/data/evoplayer/evo_status"
+CMD_PATH = "/mnt/usb0/nostream_cmd"
+STATUS_PATH = "/mnt/usb0/nostream_status"
+CMD_FALLBACK = "/data/nostream/evo_cmd"
+STATUS_FALLBACK = "/data/nostream/evo_status"
 
 MEDIA_EXT = (
     ".mp4", ".mkv", ".m4v", ".mov", ".avi", ".webm", ".ts", ".m2ts",

@@ -13,5 +13,5 @@ Build one out-of-tree so the SDK volume stays clean:
 cp -r $PS5_PAYLOAD_SDK/samples/hello_stdio /tmp/x && make -C /tmp/x
 ```
 
-EVO itself is the `PPSA99039` app module, not an SDK payload; see
+EVO itself is the `PPSA99273` app module, not an SDK payload; see
 [`../docs/architecture/app-module.md`](../docs/architecture/app-module.md).

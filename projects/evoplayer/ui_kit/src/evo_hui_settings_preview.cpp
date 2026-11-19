@@ -2172,7 +2172,7 @@ void phone_with_cast_list(DrawList &list, const Context &ctx, const Rect &ph, bo
     {
         list.rounded_rect(item, 8, ctx.palette.accent.with_alpha(0.25f));
         list.bordered_rect(item, 8, Color::rgb(0, 0), 1.5f, ctx.palette.accent);
-        ui::text(list, fonts.semibold, "EVO Player", item.x + 12.0f, item.cy() + 6.0f, 16, kWhite);
+        ui::text(list, fonts.semibold, "NoStream", item.x + 12.0f, item.cy() + 6.0f, 16, kWhite);
     }
     else
         ui::text(list, fonts.regular, "No devices", item.x + 12.0f, item.cy() + 6.0f, 15, ctx.palette.text_faint);
@@ -2200,7 +2200,7 @@ void draw_phone_cast(DrawList &list, const Context &ctx, const Rect &box, const 
     Rect ph{a.x + 10.0f, a.top, 150.0f, 268.0f};
     phone_with_cast_list(list, ctx, ph, on);
     Rect tv{a.x + a.w - 250.0f, a.top + 70.0f, 250.0f, 150.0f};
-    tv_with_evo(list, ctx, tv, on, on ? "EVO PLAYER" : "NOT LISTED");
+    tv_with_evo(list, ctx, tv, on, on ? "NoStream" : "NOT LISTED");
     /* the cast hop: dotted arc from the phone's list to the TV */
     const float x0 = ph.x + ph.w + 14.0f, x1 = tv.x - 14.0f, y = tv.cy();
     for (float x = x0; x < x1; x += 14.0f)
@@ -2215,7 +2215,7 @@ void draw_phone_cast(DrawList &list, const Context &ctx, const Rect &box, const 
     benefit_fit(list, ctx, a, yc + 24.0f, pv.benefit);
 }
 
-/* ---- CAST TO EVO PLAYER: EVO's own player vs the system browser. ---- */
+/* ---- CAST TO NoStream: EVO's own player vs the system browser. ---- */
 void draw_cast_player(DrawList &list, const Context &ctx, const Rect &box, const SettingsPreview &pv)
 {
     Area a = begin_card(list, ctx, box, pv);
@@ -2223,7 +2223,7 @@ void draw_cast_player(DrawList &list, const Context &ctx, const Rect &box, const
     const ui::Fonts &fonts = ctx.fonts;
     const Palette &p = ctx.palette;
     struct Lane { bool lit; const char *dest; const char *what; float fill; const char *len; };
-    const Lane lanes[2] = {{on, "EVO PLAYER", "1080p60  ·  whole video", 1.0f, "10:34"},
+    const Lane lanes[2] = {{on, "NoStream", "1080p60  ·  whole video", 1.0f, "10:34"},
                            {!on, "WEB BROWSER", "720p  ·  YouTube TV page", 1.0f, "10:34"}};
     float y = a.top;
     for (const Lane &l : lanes)

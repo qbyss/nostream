@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# scripts/package-app.sh - build EVO Player as a game-category app module.
+# scripts/package-app.sh - build NoStream as a Media app module.
 #
 #   ./scripts/package-app.sh                  build the full FFmpeg-software
 #                                             player (Phase 1b task 4+)
@@ -11,7 +11,7 @@
 #   ./scripts/package-app.sh --zip            emit a folder-title ZIP archive,
 #                                             matching Kodi PS5's packaging
 #   ./scripts/package-app.sh --usb-remote     + the scriptable FTP dev remote
-#                                             (/mnt/usb0/evo_cmd + evo_status +
+#                                             (/mnt/usb0/nostream_cmd + nostream_status +
 #                                             verbose vdec log) — off in release
 #   ./scripts/package-app.sh --pro-memory     opt into PS5 Pro ~1.2 GiB direct memory mode (#143)
 #   ./scripts/package-app.sh --virtual-keyboard  debug only: always use
@@ -34,8 +34,8 @@
 # conversion + FSELF signing + dist assembly come from tools/native-app/
 # (vendored from ps5-native-app-boilerplate / ProsperoLight - see its README).
 #
-# Output: output/app/PPSA99039/{eboot.bin, sce_sys/param.json, sce_module/libc.prx}
-# Deploy: ./scripts/deploy-app.sh   (FTP -> /data/homebrew/PPSA99039/)
+# Output: output/app/PPSA99273/{eboot.bin, sce_sys/param.json, sce_module/libc.prx}
+# Deploy: ./scripts/deploy-app.sh   (FTP -> /data/homebrew/PPSA99273/)
 #
 # See docs/architecture/app-module.md.
 # =============================================================================
@@ -65,7 +65,7 @@ while (( $# )); do
         --rebuild-libc) REBUILD_LIBC=1 ;;
         --ffpfsc)       FFPFSC=1 ;;
         --zip)          ZIP=1 ;;
-        --usb-remote)   USB_REMOTE=1 ;;   # dev: /mnt/usb0/evo_cmd + evo_status + verbose vdec log
+        --usb-remote)   USB_REMOTE=1 ;;   # dev: /mnt/usb0/nostream_cmd + nostream_status + verbose vdec log
         --pro-memory)   PRO_MEMORY=1 ;;   # #143: set attribute3 bit 22 so a PS5 Pro gives the app ~1.2 GiB more direct memory
         --breadcrumbs)  BREADCRUMBS=1 ;;  # #51: bring back the on-screen boot-trace popups
         --virtual-keyboard) VIRTUAL_KB=1 ;;  # debug: EVO's keyboard instead of the PS5 IME
@@ -163,11 +163,10 @@ if not re.fullmatch(r"\d{2}\.\d{2}", v.get("masterVersion","")):          raise 
 s = v.get("downloadDataSize")
 if isinstance(s, bool) or not isinstance(s, int) or s <= 0:
     raise SystemExit("downloadDataSize must be a positive integer (so /download0 is writable)")
-if (v.get("applicationCategoryType"), v.get("contentBadgeType")) != (0, 1):
-    raise SystemExit("expected a game module: applicationCategoryType 0, contentBadgeType 1")
-intents = v.get("gameIntent", {}).get("permittedIntents", [])
-if not any(i.get("intentType") == "launchActivity" for i in intents):
-    raise SystemExit("game param.json must permit the launchActivity intent")
+if (v.get("applicationCategoryType"), v.get("contentBadgeType")) != (65536, 2):
+    raise SystemExit("expected a media module: applicationCategoryType 65536, contentBadgeType 2")
+if "gameIntent" in v:
+    raise SystemExit("media param.json must not contain gameIntent")
 # Flexible pool: the kernel default is 448 MiB; the console accepts 2 MiB..1 GiB
 # here, and the extra comes out of direct memory (docs/hardware/memory-budget.md).
 fm = v.get("kernel", {}).get("flexibleMemorySize")
@@ -279,11 +278,11 @@ if [[ "${MODE}" == "probe" ]]; then
         OBJS+=("${obj}")
     done
 else
-    APP_NAME="EVO Player (FFmpeg-software)"
+    APP_NAME="NoStream (FFmpeg-software)"
     begin "compiling ${APP_NAME} objects (${TCC} ${TFLAGS[*]})"
     # EVO's Makefile owns the source list, include paths and -D flags; we only
     # add the native-app link-tail flags via EXTRA_CFLAGS.
-    # EVO_APP_MODULE: routes data paths to /download0/evoplayer and directory
+    # EVO_APP_MODULE: routes data paths to /download0/nostream and directory
     # enumeration through getdents (opendir fails EPERM in the sandbox).
     # Build fingerprint — main()'s FIRST notification, so a stale ShadowMount /
     # cached mount is caught immediately instead of costing a console session.
@@ -317,9 +316,9 @@ else
     # already uses and the only one that round-trips.
     APP_DEFS+=" -DEVO_PLAYER_VERSION=\\\"${EVO_VER}\\\""
     # --usb-remote: the scriptable dev remote (evo_usb_remote.c) — the
-    # /mnt/usb0/evo_status snapshot + the evo_cmd command channel. Off by
+    # /mnt/usb0/nostream_status snapshot + the nostream_cmd command channel. Off by
     # default so a release eboot never touches the user's USB stick per frame.
-    # The diagnostic log (/mnt/usb0/evo.log) is written by every build.
+    # The diagnostic log (/mnt/usb0/nostream.log) is written by every build.
     (( USB_REMOTE )) && APP_DEFS+=" -DEVO_USB_REMOTE=1"
     # --breadcrumbs (#51): bring back the on-screen boot-trace notification
     # popups (evo_bt / evo_boot_log). Off by default - klog
@@ -752,5 +751,5 @@ find "${APPDIR}" -type f -printf '     %-42P  %s bytes\n' | sort
 echo ""
 echo "   Deploy + launch:"
 echo "     ./scripts/deploy-app.sh          # FTP -> /data/homebrew/${TITLE_ID}/"
-echo "     # then mount + launch from the Games row via ShadowMountPlus"
+echo "     # then mount + launch from the Media tab via ShadowMountPlus"
 echo "   Do NOT stack launches - PS button to close before rebuilding."

@@ -42,7 +42,7 @@
  * errors, falls back to the single-address StartNtoa the SDK itself uses - and
  * if StartNtoa then succeeds where the multi-record call did not, the multi-
  * record call is not tried again this run. It logs which path answered.
- * Creating /mnt/usb0/evo_dns_single turns it off without a rebuild.
+ * Creating /mnt/usb0/nostream_dns_single turns it off without a rebuild.
  *
  * A 0.0.0.0 answer is not an address. DNS filtering (an ad-blocking router, a
  * family-safe resolver, an ISP block list) answers a blocked name with 0.0.0.0,
@@ -87,7 +87,7 @@
 #define INADDR_LOOPBACK ((uint32_t)0x7f000001)
 #endif
 
-/* EVO's durable log (/mnt/usb0/evo.log). Weak, so this file also builds and
+/* EVO's durable log (/mnt/usb0/nostream.log). Weak, so this file also builds and
  * links without it: the host test supplies its own, and a build that lacks it
  * simply logs nothing. */
 extern void evo_boot_log(const char *fmt, ...) __attribute__((weak));
@@ -113,7 +113,7 @@ extern int sceNetResolverStartNtoaMultipleRecordsEx(int rid, const char *hostnam
 extern int sceNetResolverDestroy(int rid);
 
 #ifndef EVO_DNS_SINGLE_FLAG
-#define EVO_DNS_SINGLE_FLAG "/mnt/usb0/evo_dns_single"
+#define EVO_DNS_SINGLE_FLAG "/mnt/usb0/nostream_dns_single"
 #endif
 
 #define DNS_POOL_NAME  "evo_dns"

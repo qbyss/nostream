@@ -9,7 +9,7 @@
 -->
 <body data-model="iptv">
 
-    <!-- Wallpaper + scrim matching EVO Player's MIDNIGHT aesthetic -->
+    <!-- Wallpaper + scrim matching NoStream's MIDNIGHT aesthetic -->
     <div id="tv-wallpaper"></div>
     <div id="tv-scrim"></div>
 

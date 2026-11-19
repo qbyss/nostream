@@ -1,5 +1,5 @@
 /*
- * provider_xtream.c — Xtream Codes IPTV provider for EVO Player (#93).
+ * provider_xtream.c — Xtream Codes IPTV provider for NoStream (#93).
  *
  * Implements the Xtream Codes player API (player_api.php) behind the
  * evo_provider_t vtable. Supports Live TV, VOD (Movies), and Series with
@@ -149,7 +149,7 @@ int xtream_save_config(void)
     FILE *f = fopen(path, "w");
     if (!f) return -1;
 
-    fprintf(f, "# EVO Player - Xtream Codes Configuration\n");
+    fprintf(f, "# NoStream - Xtream Codes Configuration\n");
     fprintf(f, "host=%s\n", g_cfg.host);
     fprintf(f, "port=%d\n", g_cfg.port > 0 ? g_cfg.port : (g_cfg.use_https ? 443 : 80));
     fprintf(f, "username=%s\n", g_cfg.username);

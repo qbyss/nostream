@@ -1,7 +1,7 @@
 # projects/evoplayer
 
 The EVO Player source: a native media player for a jailbroken PS5, built as the
-`PPSA99039` app module. It began as a fork of ProsperoPlayer (see `NOTICE`); almost
+`PPSA99273` app module. It began as a fork of ProsperoPlayer (see `NOTICE`); almost
 nothing of the original remains.
 
 | Directory | What is in it |

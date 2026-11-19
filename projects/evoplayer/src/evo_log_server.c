@@ -1,7 +1,7 @@
 /*
  * evo_log_server.c - live log over HTTP, port EVO_LOG_SERVER_PORT (9780).
  *
- * Read-only view of what evo_boot_log() writes to /mnt/usb0/evo.log, without a
+ * Read-only view of what evo_boot_log() writes to /mnt/usb0/nostream.log, without a
  * USB stick pull or FTP. Every line is already credential-redacted before it
  * reaches the ring, so nothing here needs to filter.
  *
@@ -108,7 +108,7 @@ static const char k_input_page[] =
 "h2{font-size:18px;margin:28px 0 4px;padding-top:20px;border-top:1px solid var(--line)}.dim{color:var(--dim);margin:0 0 12px}"
 "input{width:100%;box-sizing:border-box;font:16px/1.4 ui-monospace,monospace;padding:12px 10px;"
 "border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--fg)}"
-"</style><main><h1>EVO Player</h1><p id=sub>Checking...</p>"
+"</style><main><h1>NoStream</h1><p id=sub>Checking...</p>"
 "<textarea id=t enterkeyhint=send autocapitalize=off autocorrect=off autocomplete=off spellcheck=false placeholder='Type or paste here'></textarea>"
 "<p id=cnt></p><button id=b disabled>Send to PS5</button><p id=msg></p>"
 "<h2>Play a YouTube link</h2><p class=dim>Plays the whole video in EVO, up to 1080p60.</p>"
@@ -224,7 +224,7 @@ static const char k_report_page[] =
 "pre{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:8px;font:12px/1.4 ui-monospace,monospace;"
 "white-space:pre-wrap;word-break:break-word;max-height:320px;overflow:auto}.E{color:var(--e)}.W{color:var(--w)}"
 "textarea{position:absolute;left:-9999px}"
-"</style><main><h1>EVO Player: report a problem</h1>"
+"</style><main><h1>NoStream: report a problem</h1>"
 "<p>This page gets EVO's log from your PS5, so you can send it with your bug report. No USB stick needed.</p>"
 "<ol><li>Tap <b>Download report</b> (or Share / Copy).</li>"
 "<li>Attach the file to your report on GitHub or Discord, and say what you did just before the problem.</li></ol>"
@@ -249,7 +249,7 @@ static const char k_report_page[] =
 "LA.textContent='';LA.className='';bad=bad.slice(-30);if(!bad.length)LA.textContent='None.';"
 "for(var j=0;j<bad.length;j++){var s=document.createElement('div');s.className=bad[j][0];s.textContent=bad[j][1];LA.appendChild(s)}"
 "try{var f=new File([t],name,{type:'text/plain'});if(navigator.canShare&&navigator.canShare({files:[f]})){SH.hidden=false;"
-"SH.onclick=function(){navigator.share({files:[f],title:'EVO Player report'}).catch(function(){})}}}catch(x){}"
+"SH.onclick=function(){navigator.share({files:[f],title:'NoStream report'}).catch(function(){})}}}catch(x){}"
 "}).catch(function(){S.textContent='Could not reach the PS5. Is EVO still open, and is this phone on the same network?'});"
 "document.getElementById('cp').onclick=function(){if(!txt){M.textContent='The report has not loaded yet.';return}"
 "function done(){M.textContent='Copied. Paste it into your report.'}"
@@ -668,7 +668,7 @@ long evo_report_write_run(evo_report_sink_fn sink, void *ud, int last_run)
     const evo_prev_run_t prev = evo_prev_run_state();
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC, &ts);
-    rp_printf(&r, "EVO Player problem report - %s\n", last_run ? "LAST run" : "this run");
+    rp_printf(&r, "NoStream problem report - %s\n", last_run ? "LAST run" : "this run");
     rp_printf(&r, "version %s, build %s, %s, up %lld s\n", EVO_PLAYER_VERSION, EVO_BUILD_ID,
               evo_hw_model_name(), (long long)ts.tv_sec);
     rp_printf(&r, "last run: %s\n", evo_prev_run_text(prev));
@@ -723,7 +723,7 @@ static int rp_file_sink(void *ud, const char *data, size_t n)
 
 int evo_report_save_run(char *out, size_t cap, int last_run)
 {
-    const char *name = last_run ? "evo_report_last_run.txt" : "evo_report.txt";
+    const char *name = last_run ? "nostream_report_last_run.txt" : "nostream_report.txt";
     char usb[64], data[192];
     snprintf(usb, sizeof usb, "/mnt/usb0/%s", name);
     /* A copy: evo_data_path() hands back one shared buffer, and writing the

@@ -4,7 +4,7 @@ tools/subsync_report.py — measure subtitle drift from evo.log.
 
     python3 tools/subsync_report.py output/logs/evo.log
 
-Reads the `subsync` lines EVO writes when /mnt/usb0/evo_subsync exists, and
+Reads the `subsync` lines EVO writes when /mnt/usb0/nostream_subsync exists, and
 reports how far each displayed cue was from where it should have been.
 
 This only works because the test clip is built for it
@@ -97,7 +97,7 @@ def segments(rows, gap=3.0):
 
 def report(rows):
     if not rows:
-        sys.exit("no `subsync` lines found — was /mnt/usb0/evo_subsync created, "
+        sys.exit("no `subsync` lines found — was /mnt/usb0/nostream_subsync created, "
                  "and is this a build with the trace in it?")
 
     print("%d subsync samples, mode=%s clock=%s delay=%dms"

@@ -7,7 +7,7 @@ video playing on a --usb-remote build it:
 
   1. sends `upcompare`: EVO pauses, then redraws the SAME held frame with the
      upscaler Off, Sharp, AI Standard and AI Large (OSD suppressed), saving the
-     scanout after each to /mnt/usb0/evo_up_{off,sharp,ai,ai_large}.bmp, and restores Settings/pause state;
+     scanout after each to /mnt/usb0/nostream_up_{off,sharp,ai,ai_large}.bmp, and restores Settings/pause state;
   2. waits for the last capture's line in evo.log;
   3. pulls the three BMPs into output/upcompare/ and, where Pillow is
      available, writes PNGs, a side-by-side 1:1 crop (compare.png) and
@@ -32,7 +32,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "output" / "upcompare"
 MODES = ("off", "sharp", "ai", "ai_large", "ai_max")
-LOG = "/mnt/usb0/evo.log"
+LOG = "/mnt/usb0/nostream.log"
 
 
 def ftp() -> FTP:
@@ -63,10 +63,10 @@ def capture(timeout_s: float) -> int:
     with ftp() as f:
         for m in MODES:          # a stale capture must not pass for a new one
             try:
-                f.sendcmd(f"DELE /mnt/usb0/evo_up_{m}.bmp")
+                f.sendcmd(f"DELE /mnt/usb0/nostream_up_{m}.bmp")
             except error_perm:
                 pass
-        f.storbinary("STOR /mnt/usb0/evo_cmd", io.BytesIO(b"upcompare\n"))
+        f.storbinary("STOR /mnt/usb0/nostream_cmd", io.BytesIO(b"upcompare\n"))
     print("sent: upcompare - waiting for the three captures...")
 
     deadline = time.time() + timeout_s
@@ -85,7 +85,7 @@ def capture(timeout_s: float) -> int:
 
     OUT.mkdir(parents=True, exist_ok=True)
     for m in MODES:
-        data = fetch(f"/mnt/usb0/evo_up_{m}.bmp")
+        data = fetch(f"/mnt/usb0/nostream_up_{m}.bmp")
         if not data:
             print(f"missing capture: evo_up_{m}.bmp")
             return 1

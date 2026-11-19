@@ -29,8 +29,8 @@ static const char *resolve_root(void)
 
 #ifdef EVO_APP_MODULE
     if (!evo_jailbreak_is_open())
-        return EVO_DATA_DIR;              /* "/download0/evoplayer" - transient */
-    g_root = "/data/evoplayer";
+        return EVO_DATA_DIR;              /* "/download0/nostream" - transient */
+    g_root = "/data/nostream";
 #else
     /*
      * #90: the host renderer needs a writable data root somewhere other than
@@ -48,7 +48,7 @@ static const char *resolve_root(void)
         g_root = buf;
         return g_root;
     }
-    g_root = EVO_DATA_DIR;                /* "/data/evoplayer" - always */
+    g_root = EVO_DATA_DIR;                /* "/data/nostream" - always */
 #endif
     return g_root;
 }
