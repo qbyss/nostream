@@ -61,7 +61,9 @@ private:
     };
 
     bool loadArtInto(const std::string& mediaPath, bool isDirectory,
-                     uint32_t* out, int w, int h);
+                     uint32_t* out, int w, int h, bool* decodedVideo = nullptr);
+    bool loadVideoArt(const std::string& path, uint32_t* out, int w, int h, bool* decodedVideo);
+    bool decodeVideoFrame(const std::string& path, uint32_t* out, int w, int h);
     bool loadNetArtInto(const NetArtRequest& req, uint32_t* out, int w, int h);   /* worker only */
     void startWorker();
     void workerMain();

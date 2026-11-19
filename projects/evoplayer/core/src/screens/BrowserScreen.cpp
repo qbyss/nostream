@@ -1376,6 +1376,9 @@ void BrowserScreen::refreshStorageSources() {
     const unsigned generation = evo_usb_volume_generation();
     const bool changed = mounts != m_storageMounts;
     if (!changed && generation == m_usbVolumeGeneration) return;
+    if (generation != m_usbVolumeGeneration) {
+        if (auto* cover = Application::getInstance().getCoverArtService()) cover->clearCache();
+    }
     m_usbVolumeGeneration = generation;
     m_storageMounts = std::move(mounts);
     m_storageLabels.clear();

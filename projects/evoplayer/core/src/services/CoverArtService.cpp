@@ -17,6 +17,7 @@ extern "C" {
 }
 
 #include "evo_data_path.h"
+#include "evo_ntfs.h"
 #include "evo_boot_trace.h"
 #include "evo_boot_log.h"
 #include "evo_crash_note.h"
@@ -26,6 +27,7 @@ extern "C" {
 #include <cstdio>
 #include <cstring>
 #include <algorithm>
+#include <sys/stat.h>
 
 namespace evo {
 
@@ -44,6 +46,49 @@ static bool pathReadable(const char* path) {
 
 static bool isNetworkPath(const std::string& path) {
     return path.rfind("smb://", 0) == 0 || path.rfind("ftp://", 0) == 0;
+}
+
+static std::string thumbnailKey(const std::string& path, const char* kind, int w, int h) {
+    if (path.empty() || path[0] != '/') return {};
+    struct stat st{};
+    if (stat(path.c_str(), &st) != 0 || !S_ISREG(st.st_mode)) return {};
+
+    std::string source;
+    char root[EVO_USB_VOLUME_ROOT_CAP];
+    if (evo_usb_volume_root(path.c_str(), root)) {
+        evo_usb_volume_info volume{};
+        char resolved[EVO_USB_VOLUME_ROOT_CAP];
+        if (!evo_usb_volume_get(root, &volume) ||
+            !evo_usb_volume_resolve(volume.id, resolved) || std::strcmp(root, resolved) != 0)
+            return {};
+        source = std::string(volume.id) + path.substr(std::strlen(root));
+    } else {
+        source = std::to_string(st.st_dev) + ":" + std::to_string(st.st_ino) + ":" + path;
+    }
+#if defined(__APPLE__)
+    const long mtimeNs = st.st_mtimespec.tv_nsec;
+#else
+    const long mtimeNs = st.st_mtim.tv_nsec;
+#endif
+    return std::string("v1:") + kind + ":" + std::to_string(w) + "x" + std::to_string(h) + ":" +
+           std::to_string(st.st_size) + ":" + std::to_string(st.st_mtime) + ":" +
+           std::to_string(mtimeNs) + ":" + source;
+}
+
+template <class Decode>
+static bool loadThumbnail(const std::string& path, const char* kind, uint32_t* out,
+                          int w, int h, Decode decode) {
+    const std::string key = thumbnailKey(path, kind, w, h);
+    if (key.empty()) return decode();
+
+    constexpr size_t CacheLimit = 256u * 1024u * 1024u;
+    NetArtCache cache(evo_data_path("thumbnails"), CacheLimit);
+    if (cache.get(key, out, w, h)) return true;
+    if (!decode()) return false;
+    // A file can change or a USB slot can be reassigned while decoding.
+    if (thumbnailKey(path, kind, w, h) == key)
+        cache.put(key, out, w, h);
+    return true;
 }
 
 /*
@@ -683,7 +728,21 @@ struct ExtractLock {
     ~ExtractLock() { pthread_mutex_unlock(&mutex()); }
 };
 
-bool CoverArtService::extractVideoFrame(const std::string& videoPath, uint32_t* outPixels, int targetWidth, int targetHeight) {
+bool CoverArtService::extractVideoFrame(const std::string& videoPath, uint32_t* outPixels,
+                                        int targetWidth, int targetHeight) {
+    return loadVideoArt(videoPath, outPixels, targetWidth, targetHeight, nullptr);
+}
+
+bool CoverArtService::loadVideoArt(const std::string& path, uint32_t* out, int w, int h,
+                                    bool* decodedVideo) {
+    return loadThumbnail(path, "frame", out, w, h, [&] {
+        if (decodedVideo) *decodedVideo = true;
+        return decodeVideoFrame(path, out, w, h);
+    });
+}
+
+bool CoverArtService::decodeVideoFrame(const std::string& videoPath, uint32_t* outPixels,
+                                       int targetWidth, int targetHeight) {
     ExtractLock extractLock;
     EVO_LOGI("cover", "extractVideoFrame: %s (%dx%d)", sanitizeUrl(videoPath).c_str(), targetWidth, targetHeight);
     evo_boot_log_flush();
@@ -1183,58 +1242,19 @@ const uint32_t* CoverArtService::getCoverArt(const std::string& mediaPath, bool 
 
     slot->pathKey = mediaPath;
     slot->tried = true;
-    slot->valid = false;
+    slot->valid = loadArtInto(mediaPath, isDirectory, slot->pixels.data(), PosterWidth, PosterHeight);
+    return slot->valid ? slot->pixels.data() : nullptr;
+}
 
-    if (!isNetworkPath(mediaPath) && !pathReadable(mediaPath.c_str())) {
-        EVO_LOGW("cover", "getCoverArt: access fail len=%zu -> cached as missing", mediaPath.length());
-        evo_boot_log_flush();
-        return nullptr;
-    }
-
-    std::string sidecar = resolveSidecarPath(mediaPath, isDirectory);
-    EVO_LOGI("cover", "getCoverArt: sidecar='%s'", sanitizeUrl(sidecar).c_str());
-    evo_boot_log_flush();
-    if (!sidecar.empty() && pathReadable(sidecar.c_str())) {
-        int w = 0, h = 0, ch = 0;
-        unsigned char* data = stbi_load(sidecar.c_str(), &w, &h, &ch, 4);
-        if (data && w >= 2 && h >= 2) {
-            boxFilterScaleRgba(data, w, h, slot->pixels.data(), PosterWidth, PosterHeight);
-            stbi_image_free(data);
-            slot->valid = true;
-            return slot->pixels.data();
-        }
-        if (data) stbi_image_free(data);
-    }
-
-    if (!isDirectory && !isNetworkPath(mediaPath) && isVideoFile(mediaPath)) {
-        EVO_LOGI("cover", "getCoverArt: isVideo, calling extractVideoFrame");
-        evo_boot_log_flush();
-        if (extractVideoFrame(mediaPath, slot->pixels.data(), PosterWidth, PosterHeight)) {
-            slot->valid = true;
-            return slot->pixels.data();
-        }
-    }
-
-    if (!isDirectory) {
-        size_t dot = mediaPath.find_last_of('.');
-        if (dot != std::string::npos) {
-            std::string ext = mediaPath.substr(dot);
-            std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
-            if (ext == ".jpg" || ext == ".jpeg" || ext == ".png" || ext == ".bmp" || ext == ".webp") {
-                int w = 0, h = 0, ch = 0;
-                unsigned char* data = stbi_load(mediaPath.c_str(), &w, &h, &ch, 4);
-                if (data && w >= 2 && h >= 2) {
-                    boxFilterScaleRgba(data, w, h, slot->pixels.data(), PosterWidth, PosterHeight);
-                    stbi_image_free(data);
-                    slot->valid = true;
-                    return slot->pixels.data();
-                }
-                if (data) stbi_image_free(data);
-            }
-        }
-    }
-
-    return nullptr;
+static bool loadImageArt(CoverArtService& service, const std::string& path, uint32_t* out, int w, int h) {
+    return loadThumbnail(path, "image", out, w, h, [&] {
+        int width = 0, height = 0, channels = 0;
+        unsigned char* pixels = stbi_load(path.c_str(), &width, &height, &channels, 4);
+        const bool valid = pixels && width >= 2 && height >= 2;
+        if (valid) service.boxFilterScaleRgba(pixels, width, height, out, w, h);
+        stbi_image_free(pixels);
+        return valid;
+    });
 }
 
 void CoverArtService::ensureHeroArt(const std::string& mediaPath) {
@@ -1262,18 +1282,9 @@ void CoverArtService::ensureHeroArt(const std::string& mediaPath) {
         }
     }
 
-    std::string sidecar = resolveSidecarPath(mediaPath, false);
-    if (!sidecar.empty() && pathReadable(sidecar.c_str())) {
-        int w = 0, h = 0, ch = 0;
-        unsigned char* data = stbi_load(sidecar.c_str(), &w, &h, &ch, 4);
-        if (data && w >= 2 && h >= 2) {
-            boxFilterScaleRgba(data, w, h, m_heroArtPixels.data(), HeroWidth, HeroHeight);
-            stbi_image_free(data);
-            m_heroArtValid = true;
-            return;
-        }
-        if (data) stbi_image_free(data);
-    }
+    const std::string sidecar = resolveSidecarPath(mediaPath, false);
+    if (!sidecar.empty())
+        m_heroArtValid = loadImageArt(*this, sidecar, m_heroArtPixels.data(), HeroWidth, HeroHeight);
 }
 
 void CoverArtService::ensureBrowserPreview(const std::string& mediaPath, bool isDirectory) {
@@ -1293,46 +1304,9 @@ void CoverArtService::ensureBrowserPreview(const std::string& mediaPath, bool is
     m_browserPreviewValid = false;
     m_browserPreviewFailed = false;
 
-    std::string sidecar = resolveSidecarPath(mediaPath, isDirectory);
-    if (!sidecar.empty()) {
-        int w = 0, h = 0, ch = 0;
-        unsigned char* data = stbi_load(sidecar.c_str(), &w, &h, &ch, 4);
-        if (data && w >= 2 && h >= 2) {
-            boxFilterScaleRgba(data, w, h, m_browserPreviewPixels.data(), PreviewWidth, PreviewHeight);
-            stbi_image_free(data);
-            m_browserPreviewValid = true;
-            return;
-        }
-        if (data) stbi_image_free(data);
-    }
-
-    if (!isDirectory && !isNetworkPath(mediaPath) && isVideoFile(mediaPath)) {
-        if (extractVideoFrame(mediaPath, m_browserPreviewPixels.data(), PreviewWidth, PreviewHeight)) {
-            m_browserPreviewValid = true;
-            return;
-        }
-    }
-
-    if (!isDirectory) {
-        size_t dot = mediaPath.find_last_of('.');
-        if (dot != std::string::npos) {
-            std::string ext = mediaPath.substr(dot);
-            std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
-            if (ext == ".jpg" || ext == ".jpeg" || ext == ".png" || ext == ".bmp" || ext == ".webp") {
-                int w = 0, h = 0, ch = 0;
-                unsigned char* data = stbi_load(mediaPath.c_str(), &w, &h, &ch, 4);
-                if (data && w >= 2 && h >= 2) {
-                    boxFilterScaleRgba(data, w, h, m_browserPreviewPixels.data(), PreviewWidth, PreviewHeight);
-                    stbi_image_free(data);
-                    m_browserPreviewValid = true;
-                    return;
-                }
-                if (data) stbi_image_free(data);
-            }
-        }
-    }
-
-    m_browserPreviewFailed = true;
+    m_browserPreviewValid = loadArtInto(mediaPath, isDirectory, m_browserPreviewPixels.data(),
+                                        PreviewWidth, PreviewHeight);
+    m_browserPreviewFailed = !m_browserPreviewValid;
 }
 
 const uint32_t* CoverArtService::getBrowserPreviewPixels() const {
@@ -1341,47 +1315,27 @@ const uint32_t* CoverArtService::getBrowserPreviewPixels() const {
 
 /* ---- Off-thread loading ------------------------------------------------ */
 
-/* Same order as getCoverArt: sidecar image, then a video frame, then the file
- * itself if it is an image. Touches no member state, so the worker can run it. */
+/* Prefer sidecars, then generate art from the media file itself. */
 bool CoverArtService::loadArtInto(const std::string& mediaPath, bool isDirectory,
-                                  uint32_t* out, int w, int h) {
-    if (!isNetworkPath(mediaPath) && !pathReadable(mediaPath.c_str()))
+                                   uint32_t* out, int w, int h, bool* decodedVideo) {
+    const bool network = isNetworkPath(mediaPath);
+    if (!network && !isDirectory && !pathReadable(mediaPath.c_str()))
         return false;
 
-    std::string sidecar = resolveSidecarPath(mediaPath, isDirectory);
-    if (!sidecar.empty()) {
-        int sw = 0, sh = 0, ch = 0;
-        unsigned char* data = stbi_load(sidecar.c_str(), &sw, &sh, &ch, 4);
-        if (data && sw >= 2 && sh >= 2) {
-            boxFilterScaleRgba(data, sw, sh, out, w, h);
-            stbi_image_free(data);
-            return true;
-        }
-        if (data) stbi_image_free(data);
-    }
+    const std::string sidecar = resolveSidecarPath(mediaPath, isDirectory);
+    if (!sidecar.empty() && loadImageArt(*this, sidecar, out, w, h))
+        return true;
 
-    if (!isDirectory && !isNetworkPath(mediaPath) && isVideoFile(mediaPath)) {
-        if (extractVideoFrame(mediaPath, out, w, h))
-            return true;
-    }
+    if (isDirectory) return false;
+    if (!network && isVideoFile(mediaPath))
+        return loadVideoArt(mediaPath, out, w, h, decodedVideo);
 
-    if (!isDirectory) {
-        size_t dot = mediaPath.find_last_of('.');
-        if (dot != std::string::npos) {
-            std::string ext = mediaPath.substr(dot);
-            std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
-            if (ext == ".jpg" || ext == ".jpeg" || ext == ".png" || ext == ".bmp" || ext == ".webp") {
-                int sw = 0, sh = 0, ch = 0;
-                unsigned char* data = stbi_load(mediaPath.c_str(), &sw, &sh, &ch, 4);
-                if (data && sw >= 2 && sh >= 2) {
-                    boxFilterScaleRgba(data, sw, sh, out, w, h);
-                    stbi_image_free(data);
-                    return true;
-                }
-                if (data) stbi_image_free(data);
-            }
-        }
-    }
+    const size_t dot = mediaPath.find_last_of('.');
+    if (dot == std::string::npos) return false;
+    std::string ext = mediaPath.substr(dot);
+    std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+    if (ext == ".jpg" || ext == ".jpeg" || ext == ".png" || ext == ".bmp" || ext == ".webp")
+        return loadImageArt(*this, mediaPath, out, w, h);
     return false;
 }
 
@@ -1519,8 +1473,9 @@ void CoverArtService::workerMain() {
         const int w = job.preview ? PreviewWidth : PosterWidth;
         const int h = job.preview ? PreviewHeight : PosterHeight;
         res.pixels.assign(static_cast<size_t>(w) * h, 0);
+        bool decodedVideo = false;
         res.ok = job.net ? loadNetArtInto(job.netReq, res.pixels.data(), w, h)
-                         : loadArtInto(job.path, job.isDir, res.pixels.data(), w, h);
+                         : loadArtInto(job.path, job.isDir, res.pixels.data(), w, h, &decodedVideo);
 
         pthread_mutex_lock(&m_jobMutex);
         m_results.push_back(std::move(res));
@@ -1530,7 +1485,7 @@ void CoverArtService::workerMain() {
 
         /* Back-to-back 4K decodes exhausted the heap before this was paced
          * (see the pre-flight in extractVideoFrame); leave the allocator a gap. */
-        if (!job.preview && !job.net)
+        if (!job.preview && decodedVideo)
             usleep(150 * 1000);
     }
 }

@@ -148,9 +148,7 @@ void NetArtCache::put(const std::string& key, const uint32_t* pixels, int w, int
         return;
     }
 
-    std::fclose(fp);
-
-    if (std::rename(tmpPath.c_str(), targetPath.c_str()) != 0) {
+    if (std::fclose(fp) != 0 || std::rename(tmpPath.c_str(), targetPath.c_str()) != 0) {
         unlink(tmpPath.c_str());
         return;
     }
