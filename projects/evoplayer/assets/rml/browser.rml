@@ -99,7 +99,7 @@
                 <div id="browser-empty-hint">No supported media files found</div>
             </div>
 
-            <!-- 2x4 Media Card Grid (8 items visible per page) -->
+            <!-- Media grid with three rows of four cards -->
             <div id="browser-grid">
                 <div id="brow-0" class="grid-card">
                     <div class="card-preview-box">
@@ -246,28 +246,82 @@
                     </div>
                 </div>
 
-                <!-- Hidden cards 8..11 to maintain 12-item buffer compatibility -->
-                <div id="brow-8" class="grid-card-hidden"></div>
-                <div id="brow-9" class="grid-card-hidden"></div>
-                <div id="brow-10" class="grid-card-hidden"></div>
-                <div id="brow-11" class="grid-card-hidden"></div>
+                <div id="brow-8" class="grid-card">
+                    <div class="card-preview-box">
+                        <div id="brow-art-8" class="card-preview-art"></div>
+                        <img id="brow-icon-8" class="card-preview-icon" src="../icons/icon_folder.png"/>
+                        <div id="brow-badge-8" class="card-badge"></div>
+                        <img id="brow-fav-8" class="card-fav" src="../icons/icon_favorites.png"/>
+                        <div id="brow-duration-8" class="card-duration"></div>
+                        <div id="brow-track-8" class="card-track"><div id="brow-fill-8" class="card-fill"></div></div>
+                    </div>
+                    <div class="card-meta">
+                        <div id="brow-name-8" class="card-title"></div>
+                        <div id="brow-detail-8" class="card-sub"></div>
+                    </div>
+                    <div class="card-action-bar">
+                        <div id="brow-kind-8" class="card-kind"></div>
+                        <div id="brow-ext-8" class="card-ext"></div>
+                    </div>
+                </div>
+                <div id="brow-9" class="grid-card">
+                    <div class="card-preview-box">
+                        <div id="brow-art-9" class="card-preview-art"></div>
+                        <img id="brow-icon-9" class="card-preview-icon" src="../icons/icon_folder.png"/>
+                        <div id="brow-badge-9" class="card-badge"></div>
+                        <img id="brow-fav-9" class="card-fav" src="../icons/icon_favorites.png"/>
+                        <div id="brow-duration-9" class="card-duration"></div>
+                        <div id="brow-track-9" class="card-track"><div id="brow-fill-9" class="card-fill"></div></div>
+                    </div>
+                    <div class="card-meta">
+                        <div id="brow-name-9" class="card-title"></div>
+                        <div id="brow-detail-9" class="card-sub"></div>
+                    </div>
+                    <div class="card-action-bar">
+                        <div id="brow-kind-9" class="card-kind"></div>
+                        <div id="brow-ext-9" class="card-ext"></div>
+                    </div>
+                </div>
+                <div id="brow-10" class="grid-card">
+                    <div class="card-preview-box">
+                        <div id="brow-art-10" class="card-preview-art"></div>
+                        <img id="brow-icon-10" class="card-preview-icon" src="../icons/icon_folder.png"/>
+                        <div id="brow-badge-10" class="card-badge"></div>
+                        <img id="brow-fav-10" class="card-fav" src="../icons/icon_favorites.png"/>
+                        <div id="brow-duration-10" class="card-duration"></div>
+                        <div id="brow-track-10" class="card-track"><div id="brow-fill-10" class="card-fill"></div></div>
+                    </div>
+                    <div class="card-meta">
+                        <div id="brow-name-10" class="card-title"></div>
+                        <div id="brow-detail-10" class="card-sub"></div>
+                    </div>
+                    <div class="card-action-bar">
+                        <div id="brow-kind-10" class="card-kind"></div>
+                        <div id="brow-ext-10" class="card-ext"></div>
+                    </div>
+                </div>
+                <div id="brow-11" class="grid-card">
+                    <div class="card-preview-box">
+                        <div id="brow-art-11" class="card-preview-art"></div>
+                        <img id="brow-icon-11" class="card-preview-icon" src="../icons/icon_folder.png"/>
+                        <div id="brow-badge-11" class="card-badge"></div>
+                        <img id="brow-fav-11" class="card-fav" src="../icons/icon_favorites.png"/>
+                        <div id="brow-duration-11" class="card-duration"></div>
+                        <div id="brow-track-11" class="card-track"><div id="brow-fill-11" class="card-fill"></div></div>
+                    </div>
+                    <div class="card-meta">
+                        <div id="brow-name-11" class="card-title"></div>
+                        <div id="brow-detail-11" class="card-sub"></div>
+                    </div>
+                    <div class="card-action-bar">
+                        <div id="brow-kind-11" class="card-kind"></div>
+                        <div id="brow-ext-11" class="card-ext"></div>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <!-- 4. Bottom Status & Selection Strip -->
-        <div id="browser-status-strip">
-            <div id="status-details">
-                <span id="ins-name" class="status-name">No Selection</span>
-                <div id="status-specs">
-                    <span id="status-pill-res" class="status-spec-pill"></span>
-                    <span id="status-pill-vcodec" class="status-spec-pill"></span>
-                    <span id="status-pill-acodec" class="status-spec-pill"></span>
-                    <span id="status-pill-duration" class="status-spec-pill"></span>
-                    <span id="status-pill-size" class="status-spec-pill"></span>
-                    <span id="ins-probing" class="status-probing">PROBING...</span>
-                </div>
-            </div>
-
+        <div id="browser-footer-bar">
             <!-- Controller action hints -->
             <div id="browser-footer">
                 <div class="footer-hint">

@@ -1540,34 +1540,7 @@ void EvoRmlApp::UpdateBrowserState(const EvoBrowserState& state) {
         }
     }
 
-    /* 4. Bottom Status & Selection Strip */
-    if (Rml::Element* e = el("ins-name")) {
-        e->SetInnerRML(state.ins_name.empty() ? "No Selection" : state.ins_name);
-    }
-    if (Rml::Element* e = el("status-pill-res")) {
-        e->SetProperty("display", state.status_res.empty() ? "none" : "inline-block");
-        e->SetInnerRML(state.status_res);
-    }
-    if (Rml::Element* e = el("status-pill-vcodec")) {
-        e->SetProperty("display", state.status_vcodec.empty() ? "none" : "inline-block");
-        e->SetInnerRML(state.status_vcodec);
-    }
-    if (Rml::Element* e = el("status-pill-acodec")) {
-        e->SetProperty("display", state.status_acodec.empty() ? "none" : "inline-block");
-        e->SetInnerRML(state.status_acodec);
-    }
-    if (Rml::Element* e = el("status-pill-duration")) {
-        e->SetProperty("display", state.status_duration.empty() ? "none" : "inline-block");
-        e->SetInnerRML(state.status_duration);
-    }
-    if (Rml::Element* e = el("status-pill-size")) {
-        e->SetProperty("display", state.status_size.empty() ? "none" : "inline-block");
-        e->SetInnerRML(state.status_size);
-    }
-    if (Rml::Element* e = el("ins-probing")) {
-        e->SetProperty("display", state.ins_probing ? "inline-block" : "none");
-    }
-
+    /* 4. Controller hints */
     if (Rml::Element* e = el("footer-action-label")) {
         if (state.sidebar_focused) {
             e->SetInnerRML("SELECT");

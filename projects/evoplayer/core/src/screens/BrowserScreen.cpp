@@ -593,6 +593,7 @@ void BrowserScreen::openActionMenu() {
         m_actionTargetName = item.name;
         m_actionTargetPath = item.fullPath;
         m_actionTargetIsDir = (item.category == FileCategory::Folder);
+        m_actionTargetSub = m_actionTargetIsDir ? "Directory" : item.detail;
         if (m_activeSource == 3 && item.fullPath.empty() && !m_actionTargetIsDir) return;
         char root[EVO_USB_VOLUME_ROOT_CAP];
         m_actionCanFavorite = m_actionTargetIsDir &&
@@ -604,6 +605,7 @@ void BrowserScreen::openActionMenu() {
                 m_actionFileOps = false;
         }
     } else {
+        m_actionTargetSub = "Current Directory";
         if (!currentPath.empty()) {
             size_t slash = currentPath.find_last_of('/');
             if (slash != std::string::npos && slash + 1 < currentPath.size()) {
@@ -1552,8 +1554,7 @@ void BrowserScreen::navigate(int delta) {
 }
 
 void BrowserScreen::jumpPage(int direction) {
-    constexpr int pageSize = 8;
-    navigate(direction * pageSize);
+    navigate(direction * EVO_RMLUI_BROWSER_ROWS);
 }
 
 void BrowserScreen::jumpLetter(int direction) {
@@ -2154,7 +2155,7 @@ bool BrowserScreen::handleInput(uint32_t pressed, uint32_t held, uint32_t releas
 
     // Media Grid navigation (4 columns)
     if (pressed & PadButtons::Left) {
-        if (m_items.empty() || m_selectedIndex % 4 == 0) {
+        if (m_items.empty() || m_selectedIndex % EVO_RMLUI_BROWSER_COLUMNS == 0) {
             m_focusPane = BrowserFocusPane::Sidebar;
             m_sidebarIndex = activeSidebarIndex();
             evo_feedback(EVO_FB_MOVE);
@@ -2190,7 +2191,7 @@ bool BrowserScreen::handleInput(uint32_t pressed, uint32_t held, uint32_t releas
                 return true;
             }
         }
-        navigate(-4);
+        navigate(-EVO_RMLUI_BROWSER_COLUMNS);
         return true;
     }
     if (pressed & PadButtons::Down) {
@@ -2206,7 +2207,7 @@ bool BrowserScreen::handleInput(uint32_t pressed, uint32_t held, uint32_t releas
             }
             return true;
         }
-        navigate(4);
+        navigate(EVO_RMLUI_BROWSER_COLUMNS);
         return true;
     }
     if (pressed & PadButtons::L1) {
@@ -2735,15 +2736,15 @@ void BrowserScreen::render(uint32_t* framebuffer, int width, int height) {
 
     params.cursor_index = totalCount > 0 ? m_selectedIndex : -1;
 
-    // 8 cards visible per page (2 rows x 4 columns)
-    constexpr int visibleCards = 8;
+    constexpr int columns = EVO_RMLUI_BROWSER_COLUMNS;
+    constexpr int visibleCards = EVO_RMLUI_BROWSER_ROWS;
     if (m_selectedIndex < m_scrollOffset) {
-        m_scrollOffset = (m_selectedIndex / 4) * 4;
+        m_scrollOffset = (m_selectedIndex / columns) * columns;
     } else if (m_selectedIndex >= m_scrollOffset + visibleCards) {
-        m_scrollOffset = ((m_selectedIndex - visibleCards + 4) / 4) * 4;
+        m_scrollOffset = ((m_selectedIndex - visibleCards + columns) / columns) * columns;
     }
-    if (m_scrollOffset < 0) m_scrollOffset = 0;
 
+    params.first_item_index = m_scrollOffset;
     params.row_count = std::min(visibleCards, std::max(0, totalCount - m_scrollOffset));
 
     /* Poster extraction runs on the CoverArtService worker, which paces itself;
@@ -2810,99 +2811,15 @@ void BrowserScreen::render(uint32_t* framebuffer, int width, int height) {
         }
     }
 
-    // Selected item metadata for preview and bottom status strip
     if (m_selectedIndex >= 0 && m_selectedIndex < totalCount) {
-        const auto& curItem = m_items[m_selectedIndex];
-        std::snprintf(m_insName, sizeof(m_insName), "%s", curItem.name.c_str());
-        std::snprintf(m_insKind, sizeof(m_insKind), "%s", curItem.badge.c_str());
-
-        size_t lastDot = curItem.name.find_last_of('.');
-        if (lastDot != std::string::npos && lastDot + 1 < curItem.name.size()) {
-            std::string ext = curItem.name.substr(lastDot + 1);
-            std::transform(ext.begin(), ext.end(), ext.begin(), ::toupper);
-            std::snprintf(m_insExt, sizeof(m_insExt), "%s", ext.c_str());
-        } else {
-            std::snprintf(m_insExt, sizeof(m_insExt), "%s", curItem.category == FileCategory::Folder ? "DIR" : "FILE");
-        }
-
-        params.ins_name = m_insName;
-        params.ins_kind = m_insKind;
-        params.ins_ext = m_insExt;
-
-        // Technical specs for bottom status strip
-        if (m_cachedMetadata.filePath == curItem.fullPath) {
-            if (m_cachedMetadata.width > 0 && m_cachedMetadata.height > 0) {
-                if (m_cachedMetadata.width >= 3840 || m_cachedMetadata.height >= 2160) {
-                    std::snprintf(m_statusRes, sizeof(m_statusRes), "4K UHD (%dx%d)", m_cachedMetadata.width, m_cachedMetadata.height);
-                } else if (m_cachedMetadata.width >= 1920 || m_cachedMetadata.height >= 1080) {
-                    std::snprintf(m_statusRes, sizeof(m_statusRes), "1080p (%dx%d)", m_cachedMetadata.width, m_cachedMetadata.height);
-                } else if (m_cachedMetadata.width >= 1280 || m_cachedMetadata.height >= 720) {
-                    std::snprintf(m_statusRes, sizeof(m_statusRes), "720p (%dx%d)", m_cachedMetadata.width, m_cachedMetadata.height);
-                } else {
-                    std::snprintf(m_statusRes, sizeof(m_statusRes), "%dx%d", m_cachedMetadata.width, m_cachedMetadata.height);
-                }
-                params.status_res = m_statusRes;
-            }
-
-            if (!m_cachedMetadata.videoCodec.empty()) {
-                std::snprintf(m_statusVCodec, sizeof(m_statusVCodec), "%s", m_cachedMetadata.videoCodec.c_str());
-                params.status_vcodec = m_statusVCodec;
-            }
-            if (!m_cachedMetadata.audioCodec.empty()) {
-                std::snprintf(m_statusACodec, sizeof(m_statusACodec), "%s", m_cachedMetadata.audioCodec.c_str());
-                params.status_acodec = m_statusACodec;
-            }
-
-            double totalDur = (m_cachedMetadata.durationSeconds > 0.0) ? m_cachedMetadata.durationSeconds : curItem.duration;
-            if (totalDur > 0.0) {
-                int dur = static_cast<int>(totalDur);
-                int h = dur / 3600;
-                int m = (dur % 3600) / 60;
-                int s = dur % 60;
-                if (h > 0) std::snprintf(m_statusDuration, sizeof(m_statusDuration), "%02d:%02d:%02d", h, m, s);
-                else std::snprintf(m_statusDuration, sizeof(m_statusDuration), "%02d:%02d", m, s);
-                params.status_duration = m_statusDuration;
-            }
-        }
-
-        struct stat st;
-        if (!curItem.fullPath.empty() && curItem.fullPath.find("://") == std::string::npos && stat(curItem.fullPath.c_str(), &st) == 0 && curItem.category != FileCategory::Folder) {
-            double sz = static_cast<double>(st.st_size);
-            const char* unit = "B";
-            if (sz >= 1024.0) { sz /= 1024.0; unit = "KB"; }
-            if (sz >= 1024.0) { sz /= 1024.0; unit = "MB"; }
-            if (sz >= 1024.0) { sz /= 1024.0; unit = "GB"; }
-            std::snprintf(m_statusSize, sizeof(m_statusSize), "%.2f %s", sz, unit);
-            params.status_size = m_statusSize;
-        } else if (evo_ntfs_is_url(curItem.fullPath.c_str()) && curItem.category != FileCategory::Folder) {
-            /* #217: an NTFS drive has no stat(); its size comes from the file's
-             * record, looked up once per selection, not once per frame. */
-            static std::string s_sizePath;
-            static uint64_t s_size = 0;
-            static bool s_sizeOk = false;
-            if (s_sizePath != curItem.fullPath) {
-                s_sizePath = curItem.fullPath;
-                int isDir = 0;
-                s_sizeOk = evo_ntfs_stat(curItem.fullPath.c_str(), &isDir, &s_size) == 0 && !isDir;
-            }
-            if (s_sizeOk) {
-                double sz = static_cast<double>(s_size);
-                const char* unit = "B";
-                if (sz >= 1024.0) { sz /= 1024.0; unit = "KB"; }
-                if (sz >= 1024.0) { sz /= 1024.0; unit = "MB"; }
-                if (sz >= 1024.0) { sz /= 1024.0; unit = "GB"; }
-                std::snprintf(m_statusSize, sizeof(m_statusSize), "%.2f %s", sz, unit);
-                params.status_size = m_statusSize;
-            }
-        }
-
-        if (coverService && curItem.fullPath.find("://") == std::string::npos) {
+        const auto& item = m_items[m_selectedIndex];
+        params.ins_name = item.name.c_str();
+        params.ins_kind = item.category == FileCategory::Folder ? "Folder" : nullptr;
+        if (coverService && item.fullPath.find("://") == std::string::npos) {
             params.ins_preview = coverService->getBrowserPreviewPixels();
             params.ins_preview_w = ICoverArtService::PreviewWidth;
             params.ins_preview_h = ICoverArtService::PreviewHeight;
         }
-
-        params.ins_probing = (m_settleMs >= 200.0 && curItem.fullPath.find("://") == std::string::npos && m_cachedMetadata.filePath != curItem.fullPath && curItem.category != FileCategory::Folder) ? 1 : 0;
     }
 
     if (m_activeSource == 2 && m_networkShareId.empty()) {
@@ -3104,14 +3021,7 @@ void BrowserScreen::render(uint32_t* framebuffer, int width, int height) {
             }
         }
 
-        if (m_actionTargetIsDir) {
-            std::snprintf(m_actionTargetSubBuf, sizeof(m_actionTargetSubBuf), "Directory");
-        } else if (m_selectedIndex >= 0 && m_selectedIndex < totalCount) {
-            std::snprintf(m_actionTargetSubBuf, sizeof(m_actionTargetSubBuf), "%s • %s", m_insExt, m_statusSize[0] ? m_statusSize : "File");
-        } else {
-            std::snprintf(m_actionTargetSubBuf, sizeof(m_actionTargetSubBuf), "Current Directory");
-        }
-        params.action_target_sub = m_actionTargetSubBuf;
+        params.action_target_sub = m_actionTargetSub.c_str();
 
         if (m_actionFileOps && transferService && transferService->hasClipboardItem()) {
             const auto& clip = transferService->getClipboard();

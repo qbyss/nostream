@@ -140,14 +140,6 @@ private:
     MediaMetadataInfo m_cachedMetadata;
     char m_formattedPath[256];
     char m_rowDurations[16][32];
-    char m_insName[128];
-    char m_insKind[32];
-    char m_insExt[16];
-    char m_statusRes[64];
-    char m_statusVCodec[64];
-    char m_statusACodec[64];
-    char m_statusDuration[32];
-    char m_statusSize[32];
 
     std::string m_networkShareId;
     std::string m_networkRemotePath = "/";
@@ -207,7 +199,7 @@ private:
     bool m_actionTargetIsDir = false;
     char m_transferTitleBuf[64];
     char m_transferDetailBuf[256];
-    char m_actionTargetSubBuf[64];
+    std::string m_actionTargetSub;
     char m_actionClipboardBuf[128];
     char m_transferSpeedBuf[32];
     char m_transferBytesBuf[64];

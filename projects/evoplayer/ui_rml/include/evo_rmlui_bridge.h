@@ -466,6 +466,7 @@ typedef struct {
  * can hold hundreds of files, and formatting all of them every frame to draw
  * twelve is work nobody sees.
  */
+#define EVO_RMLUI_BROWSER_COLUMNS 4
 #define EVO_RMLUI_BROWSER_ROWS 12
 #define EVO_RMLUI_BROWSER_SOURCES 10
 #define EVO_RMLUI_BROWSER_ACTIONS 8
@@ -511,7 +512,8 @@ typedef struct {
 
     int         total_count;   /* items in the folder */
     int         cursor_index;  /* absolute index under the cursor, or -1 */
-    int         row_count;     /* rows populated below */
+    int         first_item_index; /* absolute index of the first visible card */
+    int         row_count;     /* cards populated below */
     evo_rmlui_browser_row_t rows[EVO_RMLUI_BROWSER_ROWS];
 
     int         is_empty;

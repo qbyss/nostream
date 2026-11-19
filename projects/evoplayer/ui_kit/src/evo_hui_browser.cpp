@@ -41,7 +41,6 @@ constexpr float kCardH = 169.0f;
 constexpr float kGapX = 28.0f;
 constexpr float kRowPitch = kCardH + 76.0f; /* card + its caption */
 constexpr float kChipsY = 162.0f; /* on the path line, right-aligned under the count */
-constexpr float kStripY = 760.0f;
 constexpr float kMenuW = 660.0f;
 constexpr float kActionH = 58.0f;
 
@@ -95,16 +94,6 @@ void BrowserScreen::set(const evo_rmlui_browser_params_t &p)
     empty_title_ = str(p.empty_title);
     empty_hint_ = str(p.empty_hint);
     loading_text_ = str(p.loading_text);
-    ins_name_ = str(p.ins_name);
-    ins_kind_ = str(p.ins_kind);
-    props_.clear();
-    for (int i = 0; i < p.ins_prop_count && i < EVO_RMLUI_BROWSER_PROPS; ++i)
-        props_.emplace_back(str(p.ins_props[i].key), str(p.ins_props[i].value));
-    status_[0] = str(p.status_res);
-    status_[1] = str(p.status_vcodec);
-    status_[2] = str(p.status_acodec);
-    status_[3] = str(p.status_duration);
-    status_[4] = str(p.status_size);
     if (!p.action_menu_open)
         action_snapped_ = false;
     act_target_ = str(p.action_menu_target);
@@ -121,8 +110,7 @@ void BrowserScreen::set(const evo_rmlui_browser_params_t &p)
     raw_.path = raw_.title = nullptr;
 
     /* A new page (or folder) re-runs the cards' entrance. */
-    const int first = p.cursor_index >= 0 ? (p.cursor_index / 8) * 8 : 0;
-    const std::string key = path_ + "#" + std::to_string(first) + "#" + std::to_string(p.active_source);
+    const std::string key = path_ + "#" + std::to_string(p.first_item_index) + "#" + std::to_string(p.active_source);
     if (static_cast<int>(hash_of(key) & 0x7fffffff) != last_first_)
     {
         last_first_ = static_cast<int>(hash_of(key) & 0x7fffffff);
@@ -140,8 +128,8 @@ void BrowserScreen::enter()
 
 Rect BrowserScreen::card_rect(int i) const
 {
-    return {kGridX + static_cast<float>(i % 4) * (kCardW + kGapX),
-            kGridY + static_cast<float>(i / 4) * kRowPitch, kCardW, kCardH};
+    return {kGridX + static_cast<float>(i % EVO_RMLUI_BROWSER_COLUMNS) * (kCardW + kGapX),
+            kGridY + static_cast<float>(i / EVO_RMLUI_BROWSER_COLUMNS) * kRowPitch, kCardW, kCardH};
 }
 
 Rect BrowserScreen::source_rect(int i) const
@@ -443,40 +431,6 @@ void BrowserScreen::draw(DrawList &list, const Context &ctx) const
         list.pop_opacity();
     }
 
-    /* ---- details strip ---- */
-    if (!raw_.is_empty && !ins_name_.empty())
-    {
-        list.push_opacity(tween::stagger(age_, 5, 0.06f, 0.45f));
-        const Rect strip{kGridX, kStripY, kRight - kGridX, 150};
-        list.rounded_rect(strip, page::kRadiusCard, kWhite.with_alpha(0.05f));
-        list.bordered_rect(strip, page::kRadiusCard, kClear, 1.0f, kWhite.with_alpha(0.08f));
-        ui::text(list, fonts.semibold, ui::upper(ins_kind_.empty() ? "File" : ins_kind_), strip.x + 28,
-                 strip.y + 40, 15, p.accent, Align::left, 3.0f);
-        ui::text(list, fonts.display, fit(fonts.display, ins_name_, 30, strip.w - 56), strip.x + 28,
-                 strip.y + 80, 30, kWhite);
-        float x = strip.x + 28;
-        const float y = strip.y + 100;
-        auto pill = [&](const std::string &text, bool accent) {
-            if (text.empty())
-                return;
-            const float w = fonts.semibold.measure(text, 16, 1.0f) + 28;
-            if (x + w > strip.x + strip.w - 20)
-                return;
-            list.rounded_rect({x, y, w, 32}, 16, accent ? p.accent.with_alpha(0.22f) : kWhite.with_alpha(0.08f));
-            ui::text(list, fonts.semibold, text, x + w * 0.5f, y + 22, 16, accent ? p.accent : p.text_muted,
-                     Align::center, 1.0f);
-            x += w + 10;
-        };
-        if (raw_.ins_probing)
-            pill("Reading file...", false);
-        for (int i = 0; i < 5; ++i)
-            pill(status_[i], i == 0);
-        if (status_[0].empty() && status_[1].empty())
-            for (const auto &kv : props_)
-                pill(kv.first + "  " + kv.second, false);
-        list.pop_opacity();
-    }
-
     /* ---- hints ---- */
     {
         ui::Hint hints[4];
@@ -640,7 +594,7 @@ bool BrowserScreen::focus(FocusInfo *out) const
         out->focusable.emplace_back("browser-busy", out->text);
         out->index = 1;
         out->total = 1;
-        out->rect = {kGridX, kGridY, kRight - kGridX, 400.0f};
+        out->rect = {kGridX, kGridY, kRight - kGridX, kRowPitch * (EVO_RMLUI_BROWSER_ROWS / EVO_RMLUI_BROWSER_COLUMNS)};
         return true;
     }
     if (raw_.failed)
@@ -650,7 +604,7 @@ bool BrowserScreen::focus(FocusInfo *out) const
         out->focusable.emplace_back("browser-retry", "Retry");
         out->index = 1;
         out->total = 1;
-        out->rect = {kGridX, kGridY, kRight - kGridX, 400.0f};
+        out->rect = {kGridX, kGridY, kRight - kGridX, kRowPitch * (EVO_RMLUI_BROWSER_ROWS / EVO_RMLUI_BROWSER_COLUMNS)};
         return true;
     }
     for (std::size_t i = 0; i < cards_.size(); ++i)

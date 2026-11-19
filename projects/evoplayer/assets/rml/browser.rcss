@@ -5,8 +5,8 @@
  * Visual Architecture:
  * 1. Top Toolbar: Location, Breadcrumb Pills, Search, Item Counter
  * 2. Left Sidebar: Places & Filters (USB, Internal Storage, Favorites, Recent Media)
- * 3. Main File Area: 2x4 Media Card Grid (16:9 Visual Previews & Metadata)
- * 4. Bottom Status Strip: Detailed Selection Specifications & Console Hints
+ * 3. Main File Area: 3x4 Media Card Grid (16:9 Visual Previews & Metadata)
+ * 4. Controller Hints
  * ============================================================================= */
 
 body {
@@ -30,7 +30,7 @@ div, span, p {
 /* -----------------------------------------------------------------------------
  * Wallpaper + frosted chrome
  *
- * The toolbar pills, the sources sidebar and the status strip are translucent
+ * The toolbar pills, the sources sidebar and the controller hints are translucent
  * panels that blur the wallpaper; the media cards stay opaque so thumbnails
  * and filenames keep their contrast, and so the page does not pay for a
  * backdrop pass per card. Same split as Nautilus and macOS: the chrome is
@@ -288,13 +288,13 @@ div, span, p {
 }
 
 /* Translucent, but no backdrop-filter: the cards cover most of the page, and
- * eight backdrop passes a frame would cost more than the difference is worth
+ * a backdrop pass per card would cost more than the difference is worth
  * when what sits behind a card is smooth wallpaper and the card's own opaque
  * thumbnail box covers the top half of it anyway. The tint alone is what
  * carries the glass through the content area. */
 .grid-card {
     width: 341dp;
-    height: 418dp;
+    height: 272dp;
     background-color: #101a2cbf;
     border-width: 1dp;
     border-color: #5a7db44d;
@@ -320,7 +320,7 @@ div, span, p {
 
 .card-preview-box {
     width: 317dp;
-    height: 184dp;
+    height: 168dp;
     background-color: #070c16;
     border-radius: 10dp;
     border-width: 1dp;
@@ -337,7 +337,7 @@ div, span, p {
     left: 0;
     top: 0;
     width: 317dp;
-    height: 184dp;
+    height: 168dp;
     border-radius: 9dp;
     display: none;
 }
@@ -515,9 +515,9 @@ div, span, p {
     margin-top: 8dp;
 }
 
-/* ==================== 4. Bottom Status & Selection Strip ==================== */
+/* ==================== 4. Controller Hints ==================== */
 
-#browser-status-strip {
+#browser-footer-bar {
     position: absolute;
     left: 0;
     bottom: 20dp;
@@ -532,52 +532,7 @@ div, span, p {
     display: flex;
     flex-direction: row;
     align-items: center;
-    justify-content: space-between;
-}
-
-#status-details {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 14dp;
-    max-width: 860dp;
-}
-
-.status-name {
-    font-size: 17dp;
-    font-weight: bold;
-    color: #ffffff;
-    max-width: 280dp;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-    overflow: hidden;
-}
-
-#status-specs {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 8dp;
-}
-
-.status-spec-pill {
-    display: none;
-    background-color: #101c30;
-    border-width: 1dp;
-    border-color: #5a7db44d;
-    border-radius: 8dp;
-    padding: 4dp 10dp;
-    font-size: 11.5dp;
-    font-weight: bold;
-    color: #c2d2e8;
-}
-
-.status-probing {
-    display: none;
-    font-size: 12dp;
-    font-weight: bold;
-    color: #00cdff;
-    letter-spacing: 1.2dp;
+    justify-content: center;
 }
 
 #browser-footer {

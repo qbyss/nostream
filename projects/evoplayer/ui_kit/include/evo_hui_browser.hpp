@@ -47,9 +47,6 @@ class BrowserScreen
     std::vector<Card> cards_;
     std::string empty_title_, empty_hint_;
     std::string loading_text_;
-    std::string ins_name_, ins_kind_;
-    std::vector<std::pair<std::string, std::string>> props_;
-    std::string status_[5];
     std::string act_target_, act_sub_, act_clip_;
     std::string tr_title_, tr_item_, tr_speed_, tr_bytes_, tr_eta_, tr_pct_;
     double tr_progress_ = 0.0;
