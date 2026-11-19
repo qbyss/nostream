@@ -260,7 +260,7 @@ div, span, p {
 #hero-foot {
     position: absolute;
     left: 56dp;
-    bottom: 28dp;
+    bottom: 42dp;
     width: 800dp;
     display: flex;
     flex-direction: column;
@@ -272,7 +272,7 @@ div, span, p {
     height: 5dp;
     border-radius: 3dp;
     background-color: #7896c833;
-    margin-bottom: 18dp;
+    margin-bottom: 14dp;
 }
 
 /* Explicitly block: an inline element ignores width, so the fill drew
@@ -600,6 +600,7 @@ div, span, p {
     display: flex;
     flex-direction: row;
     align-items: center;
+    justify-content: flex-end;
     gap: 32dp;
 }
 

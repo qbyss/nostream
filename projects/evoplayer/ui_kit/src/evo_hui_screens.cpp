@@ -439,7 +439,7 @@ constexpr float kLibH = 96.0f;
 constexpr float kLibGap = 22.0f;
 constexpr float kShelfView = 1824.0f - kLeft; /* visible shelf width */
 const Rect kHeroArt{1176, 164, 640, 360};
-const Rect kHeroAction{kLeft, 452, 260, 64};
+const Rect kHeroAction{kLeft, 432, 260, 64};
 
 } // namespace
 
@@ -589,12 +589,12 @@ void HomeScreen::draw_hero(DrawList &list, const Context &ctx, const Hero &hero,
     if (hero.progress >= 0)
     {
         const float t = tween::clamp01(static_cast<float>(hero.progress) / 1000.0f);
-        const Rect bar{x, 382, 420, 8};
+        const Rect bar{x, 368, 420, 8};
         list.rounded_rect(bar, 4, kWhite.with_alpha(0.16f));
         list.rounded_rect({bar.x, bar.y, std::max(8.0f, bar.w * t), bar.h}, 4, p.accent);
         char pct[32];
         std::snprintf(pct, sizeof(pct), "%d%% watched", static_cast<int>(t * 100.0f + 0.5f));
-        ui::text(list, fonts.regular, pct, bar.x + bar.w + 24, 394, 22, p.text_muted);
+        ui::text(list, fonts.regular, pct, bar.x + bar.w + 24, bar.y + 12, 22, p.text_muted);
     }
 
     if (!hero.action.empty())
@@ -752,8 +752,11 @@ void HomeScreen::draw(DrawList &list, const Context &ctx) const
     /* Hints. */
     {
         list.push_opacity(tween::stagger(age_, 6, 0.08f, 0.5f));
-        const ui::Hint hints[] = {{ui::Button::cross, "Select"}, {ui::Button::circle, "Back"}};
-        draw_page_hints(list, fonts, hints, 2);
+        const ui::Hint hints[] = {
+            {ui::Button::cross, "Select"}, {ui::Button::circle, "Back"}, {ui::Button::square, "Options"},
+        };
+        const bool videoFocused = recent_cursor_ >= 0 || (hero_focused_ && recent_total_ > 0);
+        draw_page_hints(list, fonts, hints, videoFocused ? 3 : 2);
         list.pop_opacity();
     }
 

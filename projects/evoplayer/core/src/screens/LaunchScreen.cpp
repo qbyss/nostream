@@ -216,8 +216,9 @@ bool LaunchScreen::handleInput(uint32_t pressed, uint32_t held, uint32_t release
     (void)held;
     (void)released;
 
+    constexpr uint32_t contextButtons = PadButtons::Options | PadButtons::Square;
     if (!m_recentMenuPath.empty()) {
-        if (pressed & (PadButtons::Circle | PadButtons::Options)) {
+        if (pressed & (PadButtons::Circle | contextButtons)) {
             m_recentMenuPath.clear();
             evo_feedback(EVO_FB_CANCEL);
         } else if (pressed & (PadButtons::Up | PadButtons::Down)) {
@@ -238,7 +239,7 @@ bool LaunchScreen::handleInput(uint32_t pressed, uint32_t held, uint32_t release
         return true;
     }
 
-    if (pressed & PadButtons::Options) {
+    if (pressed & contextButtons) {
         if (m_selectedRow != 2 && m_selectedCol >= 0 && m_selectedCol < static_cast<int>(visible.size())) {
             m_recentMenuPath = visible[m_selectedCol].path;
             m_recentMenuFocused = 0;

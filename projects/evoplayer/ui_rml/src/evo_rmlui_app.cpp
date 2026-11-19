@@ -771,6 +771,11 @@ void EvoRmlApp::UpdateLaunchState(const EvoLaunchState& state) {
 
     m_last_launch = state;
 
+    if (auto* hint = m_launch_doc->GetElementById("launch-context-hint")) {
+        const bool videoFocused = state.recent_cursor >= 0 || (state.hero_focused && state.recent_total > 0);
+        hint->SetProperty("display", videoFocused ? "flex" : "none");
+    }
+
     const std::string accent    = to_hex_rgb(m_theme.accent);
     const std::string accent_bg = to_hex_rgba((m_theme.accent & 0x00FFFFFFu) | (0x26u << 24));
     const std::string surface   = to_hex_rgba(m_theme.surface);

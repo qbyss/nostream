@@ -232,6 +232,10 @@
                 <div class="glyph-badge"><img src="../icons/btn_cross.png" class="glyph-badge-img"/></div>
                 <span class="footer-text">SELECT</span>
             </div>
+            <div id="launch-context-hint" class="footer-hint" style="display: none">
+                <div class="glyph-badge"><img src="../icons/btn_square.png" class="glyph-badge-img"/></div>
+                <span class="footer-text">OPTIONS</span>
+            </div>
             <div class="footer-hint">
                 <div class="glyph-badge"><img src="../icons/btn_circle.png" class="glyph-badge-img"/></div>
                 <span class="footer-text">BACK</span>
