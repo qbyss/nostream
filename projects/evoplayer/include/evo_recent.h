@@ -19,6 +19,7 @@
  */
 
 #include "evo_data_path.h"
+#include "evo_ntfs.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -34,12 +35,16 @@ typedef struct {
     double    duration;
     long long last_played;
     int       audio_stream;   /* -1 for unset/default, or active audio stream index */
+    char volume_id[EVO_USB_VOLUME_ID_CAP];
 } RecentFileEntry;
 
 extern RecentFileEntry recent_files[MAX_RECENT_FILES];
 extern int             recent_file_count;
 extern int             recent_selected;
 
+int recent_usb_identity(const char *path, char id[EVO_USB_VOLUME_ID_CAP]);
+int recent_resolve(const RecentFileEntry *entry, char *path, size_t capacity);
+void recent_identify_usb_history(const char *root, const char *id);
 void   recent_clear(void);
 #ifdef __cplusplus
 void   recent_add_or_update(const char *path, const char *title,

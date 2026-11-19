@@ -26,7 +26,7 @@ public:
     // Asynchronous transfer triggers
     bool startCopy(const std::string& srcPath, const std::string& dstDir) override;
     bool startMove(const std::string& srcPath, const std::string& dstDir) override;
-    bool startDelete(const std::string& path, bool isDir) override;
+    bool startDelete(const std::string& path) override;
     bool startPaste(const std::string& targetDir) override;
 
     // Synchronous immediate operations
@@ -62,7 +62,7 @@ private:
     // Internal operations
     bool executeCopy(const std::string& src, const std::string& dst);
     bool executeMove(const std::string& src, const std::string& dst);
-    bool executeDelete(const std::string& path, bool isDir);
+    bool executeDelete(const std::string& path);
 
     // Fast copy implementation (ported from Ultracopier essentials)
     bool copySingleFile(const std::string& src, const std::string& dst, uint64_t fileSize, uint32_t mode, time_t mtime, time_t atime);

@@ -1,3 +1,4 @@
+#include "evo/services/HiddenStorage.hpp"
 #include "evo_readdir.h"
 #include "evo/screens/BrowserScreen.hpp"
 #include "evo_jailbreak.h"
@@ -549,7 +550,31 @@ void BrowserScreen::handleActionNewFolder(const std::string& folderName) {
     }
 }
 
+static std::vector<int> sidebarBuiltins() {
+    return hidden_storage::contains(hidden_storage::NetworkId)
+        ? std::vector<int>{1, 3, 4} : std::vector<int>{1, 2, 3, 4};
+}
+
 void BrowserScreen::openActionMenu() {
+    m_hideSourceMenu = false;
+    if (m_focusPane == BrowserFocusPane::Sidebar) {
+        const int row = m_sidebarIndex - static_cast<int>(m_folderShortcuts.size());
+        const int mounts = static_cast<int>(m_storageMounts.size());
+        if (row < 0) return;
+        const bool usb = row < mounts;
+        const auto builtins = sidebarBuiltins();
+        if (!usb && (row - mounts >= static_cast<int>(builtins.size()) || builtins[row - mounts] != 2))
+            return;
+        m_hideMount = usb ? m_storageMounts[row] : "";
+        m_hideId = usb ? hidden_storage::usbId(m_hideMount.c_str()) : hidden_storage::NetworkId;
+        m_actionTargetName = usb ? m_storageLabels[row] : "Network Storage";
+        m_actionMenuFocused = 0;
+        m_hideSourceMenu = true;
+        m_actionMenuOpen = true;
+        evo_feedback(EVO_FB_OPEN);
+        return;
+    }
+
     if (m_activeSource == 2 && m_networkShareId.empty()) {
         if (m_focusPane == BrowserFocusPane::Grid && m_selectedIndex >= 0 && m_selectedIndex < static_cast<int>(m_items.size())) {
             const auto& item = m_items[m_selectedIndex];
@@ -586,23 +611,30 @@ void BrowserScreen::openActionMenu() {
     std::string currentPath = browser ? browser->getCurrentPath() : "";
 
     m_actionFavoriteIndex = -1;
-    m_actionCanFavorite = false;
     m_actionFileOps = !evo_ntfs_is_url(currentPath.c_str());
+    m_actionTargetCategory = FileCategory::Unknown;
+    m_actionTargetPath.clear();
+    bool canFavorite = false;
+    bool isDriveRoot = false;
 
     if (m_focusPane == BrowserFocusPane::Grid && m_selectedIndex >= 0 && m_selectedIndex < static_cast<int>(m_items.size())) {
         const auto& item = m_items[m_selectedIndex];
         m_actionTargetName = item.name;
         m_actionTargetPath = item.fullPath;
-        m_actionTargetIsDir = (item.category == FileCategory::Folder);
-        m_actionTargetSub = m_actionTargetIsDir ? "Directory" : item.detail;
-        if (m_activeSource == 3 && item.fullPath.empty() && !m_actionTargetIsDir) return;
+        m_actionTargetCategory = item.category;
+        const bool isFolder = item.category == FileCategory::Folder;
+        m_actionTargetSub = isFolder ? "Directory" : item.detail;
+        if (m_activeSource == 3 && item.fullPath.empty() && !isFolder) return;
+        m_actionFileOps = m_actionFileOps && !evo_ntfs_is_url(item.fullPath.c_str());
         char root[EVO_USB_VOLUME_ROOT_CAP];
-        m_actionCanFavorite = m_actionTargetIsDir &&
-            (item.favoriteIndex >= 0 || evo_usb_volume_root(item.fullPath.c_str(), root));
-        if (m_actionCanFavorite) {
+        const bool onUsbDrive = isFolder && evo_usb_volume_root(item.fullPath.c_str(), root);
+        isDriveRoot = item.fullPath == "/data" || item.fullPath == "/data/" ||
+            (onUsbDrive && (item.fullPath == root || item.fullPath == std::string(root) + "/"));
+        canFavorite = isFolder && (item.favoriteIndex >= 0 || onUsbDrive);
+        if (canFavorite) {
             m_actionFavoriteIndex = item.favoriteIndex >= 0
                 ? item.favoriteIndex : favorites_find(item.fullPath.c_str());
-            if (m_activeSource == 3 || evo_ntfs_is_url(item.fullPath.c_str()))
+            if (m_activeSource == 3)
                 m_actionFileOps = false;
         }
     } else {
@@ -617,88 +649,83 @@ void BrowserScreen::openActionMenu() {
             if (currentPath.rfind("smb://", 0) == 0) {
                 m_actionTargetName = evo_url_decode_string(m_actionTargetName);
             }
-            m_actionTargetPath = currentPath;
-            m_actionTargetIsDir = true;
         } else {
             m_actionTargetName = "None";
-            m_actionTargetPath.clear();
-            m_actionTargetIsDir = false;
         }
     }
 
-    if (!m_actionFileOps && !m_actionCanFavorite) {
+    if (!m_actionFileOps && !canFavorite) {
         toast("NTFS DRIVE", "Read-only: play and browse only");
         evo_feedback(EVO_FB_BOUNDARY);
         return;
     }
 
-    auto transferService = Application::getInstance().getFileTransferService();
+    m_actions.clear();
+    if (canFavorite) m_actions.push_back(FileAction::Favorite);
+    if (m_actionFileOps) {
+        if (m_actionTargetCategory == FileCategory::Folder && !isDriveRoot && !m_actionTargetPath.empty()) {
+            m_actions.push_back(FileAction::Copy);
+            m_actions.push_back(FileAction::Cut);
+            m_actions.push_back(FileAction::Paste);
+            m_actions.push_back(FileAction::Rename);
+        }
+        if (m_actionTargetCategory == FileCategory::Video && !m_actionTargetPath.empty())
+            m_actions.push_back(FileAction::Delete);
+        if (!currentPath.empty())
+            m_actions.push_back(FileAction::NewFolder);
+    }
+    m_actions.push_back(FileAction::Close);
+
     m_actionMenuFocused = 0;
-    if (!m_actionCanFavorite && transferService && transferService->hasClipboardItem() &&
-        (m_actionTargetIsDir || m_actionTargetPath.empty())) {
-        m_actionMenuFocused = 2; // Paste
+    auto transferService = Application::getInstance().getFileTransferService();
+    if (!canFavorite && transferService && transferService->hasClipboardItem()) {
+        const auto paste = std::find(m_actions.begin(), m_actions.end(), FileAction::Paste);
+        if (paste != m_actions.end())
+            m_actionMenuFocused = static_cast<int>(paste - m_actions.begin());
     }
 
     m_actionMenuOpen = true;
     evo_feedback(EVO_FB_CONFIRM);
 }
 
-int BrowserScreen::actionMenuCount() const {
-    return m_actionFileOps ? 7 + static_cast<int>(m_actionCanFavorite) : 2;
-}
-
-int BrowserScreen::actionForRow(int row) const {
-    constexpr int favoriteAction = 7;
-    constexpr int closeAction = 6;
-    if (!m_actionCanFavorite) return row;
-    if (row == 0) return favoriteAction;
-    return m_actionFileOps ? row - 1 : closeAction;
-}
-
-void BrowserScreen::performAction(int actionIndex) {
+void BrowserScreen::performAction(FileAction action) {
     auto transferService = Application::getInstance().getFileTransferService();
     auto browser = Application::getInstance().getFileSystemBrowser();
     std::string currentPath = browser ? browser->getCurrentPath() : "";
 
-    switch (actionIndex) {
-        case 0: { // Copy
+    switch (action) {
+        case FileAction::Copy: {
             if (!transferService || m_actionTargetPath.empty()) {
-                toast("ERROR", "No file selected");
+                toast("ERROR", "No folder selected");
                 evo_feedback(EVO_FB_BOUNDARY);
                 return;
             }
-            transferService->copyToClipboard(m_actionTargetPath, m_actionTargetName, m_actionTargetIsDir);
+            transferService->copyToClipboard(m_actionTargetPath, m_actionTargetName, true);
             m_actionMenuOpen = false;
             toast("CLIPBOARD", ("Copied: " + m_actionTargetName).c_str());
             evo_feedback(EVO_FB_CONFIRM);
             break;
         }
-        case 1: { // Cut (Move)
+        case FileAction::Cut: {
             if (!transferService || m_actionTargetPath.empty()) {
-                toast("ERROR", "No file selected");
+                toast("ERROR", "No folder selected");
                 evo_feedback(EVO_FB_BOUNDARY);
                 return;
             }
-            transferService->cutToClipboard(m_actionTargetPath, m_actionTargetName, m_actionTargetIsDir);
+            transferService->cutToClipboard(m_actionTargetPath, m_actionTargetName, true);
             m_actionMenuOpen = false;
             toast("CLIPBOARD", ("Cut: " + m_actionTargetName).c_str());
             evo_feedback(EVO_FB_CONFIRM);
             break;
         }
-        case 2: { // Paste
+        case FileAction::Paste: {
             if (!transferService || !transferService->hasClipboardItem()) {
                 toast("PASTE", "Clipboard is empty");
                 evo_feedback(EVO_FB_BOUNDARY);
                 return;
             }
-            std::string destDir = currentPath;
-            if (destDir.empty()) {
-                toast("ERROR", "Cannot paste at root");
-                evo_feedback(EVO_FB_BOUNDARY);
-                return;
-            }
             m_actionMenuOpen = false;
-            bool ok = transferService->startPaste(destDir);
+            bool ok = transferService->startPaste(m_actionTargetPath);
             if (ok) {
                 m_showTransferDialog = true;
                 evo_feedback(EVO_FB_CONFIRM);
@@ -708,7 +735,7 @@ void BrowserScreen::performAction(int actionIndex) {
             }
             break;
         }
-        case 3: { // Rename
+        case FileAction::Rename: {
             if (!transferService || m_actionTargetPath.empty()) {
                 toast("ERROR", "No item to rename");
                 evo_feedback(EVO_FB_BOUNDARY);
@@ -718,9 +745,9 @@ void BrowserScreen::performAction(int actionIndex) {
             evo_keyboard_open("Rename item...", m_actionTargetName.c_str(), 128, OnRenameSubmitted, this);
             break;
         }
-        case 4: { // Delete
-            if (!transferService || m_actionTargetPath.empty()) {
-                toast("ERROR", "No item to delete");
+        case FileAction::Delete: {
+            if (!transferService || m_actionTargetPath.empty() || m_actionTargetCategory != FileCategory::Video) {
+                toast("ERROR", "No video selected");
                 evo_feedback(EVO_FB_BOUNDARY);
                 return;
             }
@@ -730,7 +757,7 @@ void BrowserScreen::performAction(int actionIndex) {
             evo_feedback(EVO_FB_CONFIRM);
             break;
         }
-        case 5: { // New Folder
+        case FileAction::NewFolder: {
             if (currentPath.empty()) {
                 toast("ERROR", "Cannot create folder here");
                 evo_feedback(EVO_FB_BOUNDARY);
@@ -740,7 +767,7 @@ void BrowserScreen::performAction(int actionIndex) {
             evo_keyboard_open("New folder name...", "New Folder", 64, OnNewFolderSubmitted, this);
             break;
         }
-        case 7: { // Toggle folder favorite
+        case FileAction::Favorite: {
             if (m_actionFavoriteIndex >= 0) {
                 favorites_remove_at(m_actionFavoriteIndex);
             } else if (!favorites_add_folder(m_actionTargetPath.c_str(), m_actionTargetName.c_str())) {
@@ -757,8 +784,7 @@ void BrowserScreen::performAction(int actionIndex) {
             evo_feedback(EVO_FB_CONFIRM);
             break;
         }
-        case 6: // Cancel
-        default: {
+        case FileAction::Close: {
             m_actionMenuOpen = false;
             evo_feedback(EVO_FB_CANCEL);
             break;
@@ -1149,7 +1175,7 @@ void BrowserScreen::rebuildItems() {
         // Favorites
         favorites_load();
         refreshFolderShortcuts();
-        for (int i = 0; i < favorite_count; ++i) {
+        for (int i : hidden_storage::visibleFavorites()) {
             const auto& fav = favorite_files[i];
             char path[sizeof fav.path];
             const bool available = favorites_resolve(&fav, path, sizeof path);
@@ -1213,8 +1239,7 @@ void BrowserScreen::rebuildItems() {
         // Recent Media
         recent_load();
         recent_prune_missing();   // #233: files deleted outside EVO leave the list too
-        for (int i = 0; i < recent_file_count; ++i) {
-            const auto& rec = recent_files[i];
+        for (const auto& rec : hidden_storage::visibleRecent()) {
             if (rec.path[0] == '\0') continue;
 
             FileCategory cat = browser ? browser->classifyFile(rec.path, 0) : FileCategory::Video;
@@ -1369,7 +1394,8 @@ void BrowserScreen::resetSelection() {
 void BrowserScreen::refreshFolderShortcuts() {
     size_t count = 0;
     bool changed = false;
-    for (int i = 0; i < favorite_count && count < 6; ++i) {
+    for (int i : hidden_storage::visibleFavorites()) {
+        if (count == 6) break;
         if (!favorite_files[i].is_folder) continue;
         if (count == m_folderShortcuts.size()) {
             m_folderShortcuts.push_back(i);
@@ -1409,7 +1435,10 @@ int BrowserScreen::storageSidebarIndex() const {
         const auto mount = std::find(m_storageMounts.begin(), m_storageMounts.end(), m_activeMount);
         return shortcutCount + static_cast<int>(mount == m_storageMounts.end() ? 0 : mount - m_storageMounts.begin());
     }
-    return shortcutCount + static_cast<int>(m_storageMounts.size()) + m_activeSource - 1;
+    const auto builtins = sidebarBuiltins();
+    const auto source = std::find(builtins.begin(), builtins.end(), m_activeSource);
+    return shortcutCount + static_cast<int>(m_storageMounts.size()) +
+        (source == builtins.end() ? 0 : static_cast<int>(source - builtins.begin()));
 }
 
 void BrowserScreen::refreshStorageSources() {
@@ -1454,8 +1483,11 @@ void BrowserScreen::setSource(int sourceIndex) {
     if (sourceIndex < 0 || sourceIndex > 4) sourceIndex = 0;
     const int mountCount = static_cast<int>(m_storageMounts.size());
     const int shortcutCount = static_cast<int>(m_folderShortcuts.size());
+    const auto builtins = sidebarBuiltins();
+    const bool networkVisible = !hidden_storage::contains(hidden_storage::NetworkId);
     if (sourceIndex == 0 && mountCount == 0)
-        sourceIndex = NetworkStorageService::getInstance().getShares().empty() ? 1 : 2;
+        sourceIndex = networkVisible && !NetworkStorageService::getInstance().getShares().empty() ? 2 : 1;
+    if (sourceIndex == 2 && !networkVisible) sourceIndex = 1;
     if (sourceIndex == 0 && m_activeSource == 0 && activeSidebarIndex() < shortcutCount) {
         m_sidebarIndex = activeSidebarIndex();
         m_focusPane = m_items.empty() ? BrowserFocusPane::Sidebar : BrowserFocusPane::Grid;
@@ -1464,7 +1496,8 @@ void BrowserScreen::setSource(int sourceIndex) {
     if (sourceIndex == 0)
         m_sidebarIndex = m_activeSource == 0 ? storageSidebarIndex() : shortcutCount;
     else
-        m_sidebarIndex = shortcutCount + mountCount + sourceIndex - 1;
+        m_sidebarIndex = shortcutCount + mountCount + static_cast<int>(
+            std::find(builtins.begin(), builtins.end(), sourceIndex) - builtins.begin());
     const bool focusGrid = evo_jailbreak_is_open() || sourceIndex >= 2;
     activateSidebar(focusGrid);
 }
@@ -1503,6 +1536,7 @@ void BrowserScreen::onEnter() {
     favorites_load();
     recent_load();
     refreshFolderShortcuts();
+    if (m_activeSource == 2 && hidden_storage::contains(hidden_storage::NetworkId)) setSource(1);
 
     auto browser = Application::getInstance().getFileSystemBrowser();
     if (browser) {
@@ -1659,14 +1693,15 @@ void BrowserScreen::activateSidebar(bool focusGrid) {
 
     const int shortcutCount = static_cast<int>(m_folderShortcuts.size());
     if (m_sidebarIndex < shortcutCount) {
-        if (focusGrid) openFavoriteFolder(m_folderShortcuts[m_sidebarIndex]);
-        else evo_feedback(EVO_FB_MOVE);
+        openFavoriteFolder(m_folderShortcuts[m_sidebarIndex], focusGrid);
         return;
     }
 
     const int driveRow = m_sidebarIndex - shortcutCount;
     const int mountCount = static_cast<int>(m_storageMounts.size());
-    const int source = driveRow < mountCount ? 0 : driveRow - mountCount + 1;
+    const auto builtins = sidebarBuiltins();
+    if (driveRow >= mountCount + static_cast<int>(builtins.size())) return;
+    const int source = driveRow < mountCount ? 0 : builtins[driveRow - mountCount];
     const bool fromShortcut = !m_openedFavoritePath.empty();
     m_openedFavoritePath.clear();
     switch (source) {
@@ -1740,18 +1775,20 @@ void BrowserScreen::activateSidebar(bool focusGrid) {
     }
 }
 
-void BrowserScreen::openFavoriteFolder(int index) {
+void BrowserScreen::openFavoriteFolder(int index, bool focusGrid) {
     if (index < 0 || index >= favorite_count || !favorite_files[index].is_folder) return;
     const auto& favorite = favorite_files[index];
     char path[sizeof(FavoriteEntry::path)];
+    if (hidden_storage::hidesPath(favorite.path, favorite.volume_id)) return;
     if (!favorites_resolve(&favorite, path, sizeof path)) {
         if (favorite.volume_id[0]) {
             m_pendingFolderFavorite = index;
             m_pendingFavoriteFromSidebar = m_focusPane == BrowserFocusPane::Sidebar;
+            m_pendingFavoriteFocusGrid = focusGrid;
             m_pendingFavoriteMs = 8000;
             evo_ntfs_refresh_async();
-            toast("FAVORITES", "Looking for the drive…");
-        } else {
+            if (focusGrid) toast("FAVORITES", "Looking for the drive…");
+        } else if (focusGrid) {
             toast("FAVORITES", "Drive unavailable");
         }
         return;
@@ -1762,28 +1799,31 @@ void BrowserScreen::openFavoriteFolder(int index) {
     const auto mount = browser->usbMountOf(path);
     refreshStorageSources();
     if (std::find(m_storageMounts.begin(), m_storageMounts.end(), mount) == m_storageMounts.end()) {
-        toast("FAVORITES", "Drive unavailable");
+        if (focusGrid) toast("FAVORITES", "Drive unavailable");
         return;
     }
-    evo_dir_t* dir = evo_opendir(path);
-    if (!dir) {
-        toast("FAVORITES", "Folder unavailable");
-        return;
-    }
-    evo_closedir(dir);
+    if (m_activeSource != 0 || m_openedFavoritePath != path || browser->getCurrentPath() != path || m_isSearching) {
+        evo_dir_t* dir = evo_opendir(path);
+        if (!dir) {
+            if (focusGrid) toast("FAVORITES", "Folder unavailable");
+            return;
+        }
+        evo_closedir(dir);
 
-    m_activeSource = 0;
-    m_activeMount = mount;
-    m_openedFavoritePath = path;
-    m_categoryFilter = -1;
-    m_isSearching = false;
-    m_searchQuery.clear();
-    browser->clearSearch();
-    browser->setCurrentPath(path);
-    resetSelection();
+        m_activeSource = 0;
+        m_activeMount = mount;
+        m_openedFavoritePath = path;
+        m_categoryFilter = -1;
+        m_isSearching = false;
+        m_searchQuery.clear();
+        browser->clearSearch();
+        browser->setCurrentPath(path);
+        resetSelection();
+    }
+
     m_sidebarIndex = activeSidebarIndex();
-    m_focusPane = m_items.empty() ? BrowserFocusPane::Sidebar : BrowserFocusPane::Grid;
-    evo_feedback(EVO_FB_OPEN);
+    m_focusPane = focusGrid && !m_items.empty() ? BrowserFocusPane::Grid : BrowserFocusPane::Sidebar;
+    evo_feedback(focusGrid ? EVO_FB_OPEN : EVO_FB_MOVE);
 }
 
 void BrowserScreen::activateSelection() {
@@ -2116,8 +2156,8 @@ bool BrowserScreen::handleInput(uint32_t pressed, uint32_t held, uint32_t releas
             } else { // Confirm Delete
                 m_showDeleteConfirm = false;
                 auto ts = Application::getInstance().getFileTransferService();
-                if (ts && !m_actionTargetPath.empty()) {
-                    bool ok = ts->startDelete(m_actionTargetPath, m_actionTargetIsDir);
+                if (ts && m_actionTargetCategory == FileCategory::Video && !m_actionTargetPath.empty()) {
+                    bool ok = ts->startDelete(m_actionTargetPath);
                     if (ok) {
                         m_pendingForgetPath = m_actionTargetPath;
                         m_showTransferDialog = true;
@@ -2133,16 +2173,40 @@ bool BrowserScreen::handleInput(uint32_t pressed, uint32_t held, uint32_t releas
         return true;
     }
 
+    if (m_actionMenuOpen && m_hideSourceMenu) {
+        if (pressed & (PadButtons::Circle | PadButtons::Options)) {
+            m_actionMenuOpen = false;
+            evo_feedback(EVO_FB_CANCEL);
+        } else if (pressed & PadButtons::Cross) {
+            if (m_hideId.empty() || (!m_hideMount.empty() && hidden_storage::usbId(m_hideMount.c_str()) != m_hideId)) {
+                evo_feedback(EVO_FB_BOUNDARY);
+            } else if (!hidden_storage::hide(m_hideId, m_actionTargetName)) {
+                toast("HIDDEN DRIVE", "Could not save this change");
+                evo_feedback(EVO_FB_ERROR);
+            } else {
+                if (!m_hideMount.empty())
+                    recent_identify_usb_history(m_hideMount.c_str(), m_hideId.c_str());
+                m_actionMenuOpen = false;
+                m_networkShareId.clear();
+                m_netJob.reset();
+                refreshFolderShortcuts();
+                setSource(1);
+                m_focusPane = BrowserFocusPane::Sidebar;
+            }
+        }
+        return true;
+    }
+
     // 0c. File Operations Action Menu Modal
     if (m_actionMenuOpen) {
         if (pressed & PadButtons::Up) {
             if (m_actionMenuFocused > 0) m_actionMenuFocused--;
-            else m_actionMenuFocused = actionMenuCount() - 1;
+            else m_actionMenuFocused = static_cast<int>(m_actions.size()) - 1;
             evo_feedback(EVO_FB_MOVE);
             return true;
         }
         if (pressed & PadButtons::Down) {
-            if (m_actionMenuFocused + 1 < actionMenuCount()) m_actionMenuFocused++;
+            if (m_actionMenuFocused + 1 < static_cast<int>(m_actions.size())) m_actionMenuFocused++;
             else m_actionMenuFocused = 0;
             evo_feedback(EVO_FB_MOVE);
             return true;
@@ -2153,7 +2217,7 @@ bool BrowserScreen::handleInput(uint32_t pressed, uint32_t held, uint32_t releas
             return true;
         }
         if (pressed & PadButtons::Cross) {
-            performAction(actionForRow(m_actionMenuFocused));
+            performAction(m_actions[m_actionMenuFocused]);
             return true;
         }
         return true;
@@ -2177,7 +2241,7 @@ bool BrowserScreen::handleInput(uint32_t pressed, uint32_t held, uint32_t releas
             return true;
         }
         if (pressed & PadButtons::Down) {
-            if (m_sidebarIndex < static_cast<int>(m_folderShortcuts.size() + m_storageMounts.size()) + 3) {
+            if (m_sidebarIndex < static_cast<int>(m_folderShortcuts.size() + m_storageMounts.size() + sidebarBuiltins().size()) - 1) {
                 m_sidebarIndex++;
                 activateSidebar(false);
             } else {
@@ -2463,10 +2527,10 @@ void BrowserScreen::update(double deltaMs) {
             m_pendingFavoriteMs -= deltaMs;
             if (favorites_resolve(&favorite_files[index], path, sizeof path)) {
                 m_pendingFolderFavorite = -1;
-                openFavoriteFolder(index);
+                openFavoriteFolder(index, m_pendingFavoriteFocusGrid);
             } else if (m_pendingFavoriteMs <= 0) {
                 m_pendingFolderFavorite = -1;
-                toast("FAVORITES", "Drive unavailable");
+                if (m_pendingFavoriteFocusGrid) toast("FAVORITES", "Drive unavailable");
             }
         }
     }
@@ -2769,7 +2833,8 @@ void BrowserScreen::render(uint32_t* framebuffer, int width, int height) {
                                             "../icons/icon_favorites.png", "../icons/icon_recent_files.png"};
     const int driveCount = static_cast<int>(m_storageMounts.size());
     const int shortcutCount = static_cast<int>(m_folderShortcuts.size());
-    const int sourceCount = shortcutCount + driveCount + 4;
+    const auto builtins = sidebarBuiltins();
+    const int sourceCount = shortcutCount + driveCount + static_cast<int>(builtins.size());
     const int firstSource = std::clamp(m_sidebarIndex - EVO_RMLUI_BROWSER_SOURCES + 1, 0,
                                       std::max(0, sourceCount - EVO_RMLUI_BROWSER_SOURCES));
     params.source_count = std::min(sourceCount, EVO_RMLUI_BROWSER_SOURCES);
@@ -2782,9 +2847,9 @@ void BrowserScreen::render(uint32_t* framebuffer, int width, int height) {
         } else {
             const int storage = source - shortcutCount;
             params.source_labels[row] = storage < driveCount ? m_storageLabels[storage].c_str()
-                                                             : labels[storage - driveCount];
+                                                             : labels[builtins[storage - driveCount] - 1];
             params.source_icons[row] = storage < driveCount ? "../icons/icon_browse_usb.png"
-                                                            : icons[storage - driveCount];
+                                                            : icons[builtins[storage - driveCount] - 1];
         }
     }
     if (shortcutCount > firstSource && shortcutCount < firstSource + params.source_count)
@@ -3085,8 +3150,18 @@ void BrowserScreen::render(uint32_t* framebuffer, int width, int height) {
 
         params.action_paste_enabled = 0;
         params.action_clipboard_info = nullptr;
+    } else if (m_hideSourceMenu && m_actionMenuOpen) {
+        params.action_menu_open = 1;
+        params.action_menu_count = 1;
+        params.action_menu_target = m_actionTargetName.c_str();
+        params.action_menu_eyebrow = "STORAGE";
+        auto& item = params.action_menu_items[0];
+        item.label = m_hideMount.empty() ? "Hide Network Storage" : "Hide Drive";
+        item.desc = m_hideId.empty() ? "The drive could not be identified" : "Restore it from Settings > Hidden Drive";
+        item.icon_path = "../icons/icon_browse_usb.png";
+        item.disabled = m_hideId.empty();
     } else {
-        params.action_menu_count = actionMenuCount();
+        params.action_menu_count = static_cast<int>(m_actions.size());
         params.action_menu_eyebrow = m_actionFileOps ? "FILE OPERATIONS" : "FAVORITES";
         params.action_menu_open = m_actionMenuOpen ? 1 : 0;
         params.action_menu_focused = m_actionMenuFocused;
@@ -3097,9 +3172,9 @@ void BrowserScreen::render(uint32_t* framebuffer, int width, int height) {
             "Copy", "Cut (Move)", "Paste", "Rename", "Delete", "New Folder", "Close"
         };
         static constexpr const char* descriptions[] = {
-            "Copy item to clipboard", "Move item to clipboard for relocation",
-            "Paste clipboard item into this folder", "Change file or folder name",
-            "Permanently remove this item", "Create directory in current location",
+            "Copy folder to clipboard", "Move folder to clipboard for relocation",
+            "Paste clipboard item into this folder", "Change folder name",
+            "Permanently remove this video", "Create directory in current location",
             "Dismiss menu and return to browser"
         };
         static constexpr const char* icons[] = {
@@ -3107,19 +3182,20 @@ void BrowserScreen::render(uint32_t* framebuffer, int width, int height) {
             "../icons/icon_type.png", "../icons/icon_trash.png", "../icons/icon_folder.png", "../icons/btn_circle.png"
         };
         for (int row = 0; row < params.action_menu_count; ++row) {
-            const int action = actionForRow(row);
+            const auto action = m_actions[row];
             auto& item = params.action_menu_items[row];
-            if (action == 7) {
+            if (action == FileAction::Favorite) {
                 const bool saved = m_actionFavoriteIndex >= 0;
                 item.label = saved ? "Remove from Favorites" : "Add to Favorites";
                 item.desc = saved ? "Remove this shortcut" : "Save a shortcut to this folder";
                 item.icon_path = "../icons/icon_favorites.png";
             } else {
-                item.label = labels[action];
-                item.desc = descriptions[action];
-                item.icon_path = icons[action];
-                item.danger = action == 4;
-                item.disabled = action == 2 && !params.action_paste_enabled;
+                const auto index = static_cast<int>(action);
+                item.label = labels[index];
+                item.desc = descriptions[index];
+                item.icon_path = icons[index];
+                item.danger = action == FileAction::Delete;
+                item.disabled = action == FileAction::Paste && !params.action_paste_enabled;
             }
         }
 
@@ -3220,10 +3296,7 @@ void BrowserScreen::render(uint32_t* framebuffer, int width, int height) {
         std::memset(&dlg, 0, sizeof(dlg));
         dlg.eyebrow = "DELETE PERMANENTLY";
         dlg.title = m_actionTargetName.c_str();
-        std::snprintf(m_transferDetailBuf, sizeof(m_transferDetailBuf),
-                      "Are you sure you want to permanently delete this %s?",
-                      m_actionTargetIsDir ? "folder and all its contents" : "file");
-        dlg.detail = m_transferDetailBuf;
+        dlg.detail = "Permanently delete this video file?";
         dlg.progress_pct = -1.0;
         dlg.action_count = 2;
         dlg.focused_action = m_deleteConfirmButton;

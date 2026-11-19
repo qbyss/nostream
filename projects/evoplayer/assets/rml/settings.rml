@@ -65,20 +65,29 @@
             </div>
             <div id="sb-4" class="sb-section">
                 <div class="sb-icon-box">
-                    <img id="sb-icon-4" src="../icons/icon_developer_tools.png" class="sb-icon"/>
+                    <img id="sb-icon-4" src="../icons/icon_browse_usb.png" class="sb-icon"/>
                 </div>
                 <div class="sb-text">
-                    <div id="sb-label-4" class="sb-label">SYSTEM &amp; DIAGNOSTICS</div>
-                    <div id="sb-sub-4" class="sb-sub">Reports, debug &amp; quit</div>
+                    <div id="sb-label-4" class="sb-label">HIDDEN DRIVE</div>
+                    <div id="sb-sub-4" class="sb-sub">Restore hidden storage</div>
                 </div>
             </div>
             <div id="sb-5" class="sb-section">
                 <div class="sb-icon-box">
-                    <img id="sb-icon-5" src="../icons/icon_sparkles.png" class="sb-icon"/>
+                    <img id="sb-icon-5" src="../icons/icon_developer_tools.png" class="sb-icon"/>
                 </div>
                 <div class="sb-text">
-                    <div id="sb-label-5" class="sb-label">EXPERIMENTAL</div>
-                    <div id="sb-sub-5" class="sb-sub">Unfinished work</div>
+                    <div id="sb-label-5" class="sb-label">SYSTEM &amp; DIAGNOSTICS</div>
+                    <div id="sb-sub-5" class="sb-sub">Reports, debug &amp; quit</div>
+                </div>
+            </div>
+            <div id="sb-6" class="sb-section">
+                <div class="sb-icon-box">
+                    <img id="sb-icon-6" src="../icons/icon_sparkles.png" class="sb-icon"/>
+                </div>
+                <div class="sb-text">
+                    <div id="sb-label-6" class="sb-label">EXPERIMENTAL</div>
+                    <div id="sb-sub-6" class="sb-sub">Unfinished work</div>
                 </div>
             </div>
         </div>

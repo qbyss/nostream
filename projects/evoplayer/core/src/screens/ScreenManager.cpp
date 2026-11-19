@@ -91,6 +91,7 @@ int ScreenManager::getSectionForScreen(ScreenId screenId) const {
         case ScreenId::SettingsSubtitles:
         case ScreenId::SettingsInterface:
         case ScreenId::SettingsSystem:
+        case ScreenId::SettingsHiddenDrive:
         case ScreenId::SettingsExperimental: return secSettings; // Settings
         case ScreenId::AboutSupport:
         case ScreenId::Changelog:       return secAbout; // About & Support

@@ -13,6 +13,7 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/time.h>
+#include <limits.h>
 #include <utime.h>
 #include <errno.h>
 #include <queue>
@@ -184,13 +185,12 @@ bool FileTransferService::startMove(const std::string& srcPath, const std::strin
     return true;
 }
 
-bool FileTransferService::startDelete(const std::string& path, bool isDir) {
+bool FileTransferService::startDelete(const std::string& path) {
     if (m_isBusy.load() || path.empty()) return false;
 
     m_activeOp = FileOpType::Delete;
     m_activeSrc = path;
     m_activeDst.clear();
-    m_activeIsDir = isDir;
 
     m_cancelRequested.store(false);
     m_isBusy.store(true);
@@ -218,6 +218,17 @@ bool FileTransferService::startDelete(const std::string& path, bool isDir) {
 
 bool FileTransferService::startPaste(const std::string& targetDir) {
     if (!hasClipboardItem() || targetDir.empty() || m_isBusy.load()) return false;
+
+    if (m_clipboard.isDirectory) {
+        char sourcePath[PATH_MAX];
+        char destinationPath[PATH_MAX];
+        if (!realpath(m_clipboard.path.c_str(), sourcePath) || !realpath(targetDir.c_str(), destinationPath))
+            return false;
+        const std::string source(sourcePath);
+        const std::string destination(destinationPath);
+        if (destination == source || destination.rfind(source + "/", 0) == 0)
+            return false;
+    }
 
     if (m_clipboard.action == ClipboardAction::Copy) {
         return startCopy(m_clipboard.path, targetDir);
@@ -285,7 +296,7 @@ void FileTransferService::runTransfer() {
     } else if (m_activeOp == FileOpType::Move) {
         success = executeMove(m_activeSrc, m_activeDst);
     } else if (m_activeOp == FileOpType::Delete) {
-        success = executeDelete(m_activeSrc, m_activeIsDir);
+        success = executeDelete(m_activeSrc);
     }
 
     {
@@ -780,7 +791,7 @@ bool FileTransferService::executeMove(const std::string& src, const std::string&
 
 bool FileTransferService::recursiveDelete(const std::string& path) {
     struct stat st;
-    if (stat(path.c_str(), &st) != 0) return true;
+    if (lstat(path.c_str(), &st) != 0) return errno == ENOENT;
 
     if (!S_ISDIR(st.st_mode)) {
         return unlink(path.c_str()) == 0;
@@ -800,8 +811,7 @@ bool FileTransferService::recursiveDelete(const std::string& path) {
     return rmdir(path.c_str()) == 0;
 }
 
-bool FileTransferService::executeDelete(const std::string& path, bool isDir) {
-    (void)isDir;
+bool FileTransferService::executeDelete(const std::string& path) {
     {
         std::lock_guard<std::mutex> lock(m_progressMutex);
         size_t slash = path.find_last_of('/');
@@ -811,7 +821,13 @@ bool FileTransferService::executeDelete(const std::string& path, bool isDir) {
         m_progress.status = TransferStatus::Transferring;
         m_progress.progressPercent = 50.0;
     }
-    return recursiveDelete(path);
+    struct stat st;
+    if (lstat(path.c_str(), &st) != 0) return false;
+    if (!S_ISREG(st.st_mode)) {
+        errno = EINVAL;
+        return false;
+    }
+    return unlink(path.c_str()) == 0;
 }
 
 } // namespace evo

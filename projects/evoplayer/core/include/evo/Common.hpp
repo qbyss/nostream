@@ -58,6 +58,7 @@ enum class ScreenId : int {
     ChapterPicker = 35,        /* #150 */
     SubtitleFile = 36,         /* pick a subtitle file anywhere on the console */
     WebHome = 37,              /* #237: the Web section (Prospero Browser's UI, browser/) */
+    SettingsHiddenDrive = 39,
     WebPage = 38               /* #237: no longer used (was the page view); kept so the ids stay */
 };
 

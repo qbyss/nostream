@@ -38,6 +38,58 @@ int             recent_selected   = 0;
  * Implementation
  * -------------------------------------------------------------------------- */
 
+int recent_usb_identity(const char *path, char id[EVO_USB_VOLUME_ID_CAP])
+{
+    char root[EVO_USB_VOLUME_ROOT_CAP], resolved[EVO_USB_VOLUME_ROOT_CAP];
+    evo_usb_volume_info info;
+    if (!evo_usb_volume_root(path, root) || !evo_usb_volume_get(root, &info) ||
+        !evo_usb_volume_resolve(info.id, resolved) || strcmp(root, resolved) != 0)
+        return 0;
+    snprintf(id, EVO_USB_VOLUME_ID_CAP, "%s", info.id);
+    return 1;
+}
+
+int recent_resolve(const RecentFileEntry *entry, char *path, size_t capacity)
+{
+    int written;
+    if (!entry->volume_id[0]) {
+        written = snprintf(path, capacity, "%s", entry->path);
+    } else {
+        char original[EVO_USB_VOLUME_ROOT_CAP], current[EVO_USB_VOLUME_ROOT_CAP];
+        if (!evo_usb_volume_root(entry->path, original) || !evo_usb_volume_resolve(entry->volume_id, current))
+            return 0;
+        written = snprintf(path, capacity, "%s%s", current, entry->path + strlen(original));
+    }
+    return written > 0 && (size_t)written < capacity;
+}
+
+void recent_identify_usb_history(const char *root, const char *id)
+{
+    int changed = 0;
+    for (int i = 0; i < recent_file_count; ++i) {
+        RecentFileEntry *entry = &recent_files[i];
+        char mount[EVO_USB_VOLUME_ROOT_CAP];
+        if (entry->volume_id[0] || !evo_usb_volume_root(entry->path, mount) || strcmp(mount, root))
+            continue;
+        int is_dir = 0;
+        struct stat st;
+        const int exists = evo_ntfs_is_url(entry->path)
+            ? evo_ntfs_stat(entry->path, &is_dir, NULL) == 0 && !is_dir
+            : stat(entry->path, &st) == 0 && S_ISREG(st.st_mode);
+        if (exists) {
+            snprintf(entry->volume_id, sizeof entry->volume_id, "%s", id);
+            changed = 1;
+        }
+    }
+    if (changed) recent_save();
+}
+
+static int recent_matches(const RecentFileEntry *entry, const char *path)
+{
+    char resolved[sizeof entry->path];
+    return recent_resolve(entry, resolved, sizeof resolved) && strcmp(resolved, path) == 0;
+}
+
 void recent_clear(void)
 {
     memset(recent_files, 0, sizeof(recent_files));
@@ -58,7 +110,7 @@ void recent_add_or_update(const char *path, const char *title,
 
     int existing = -1;
     for (int i = 0; i < recent_file_count; i++) {
-        if (strcmp(recent_files[i].path, clean_path) == 0) {
+        if (recent_matches(&recent_files[i], clean_path)) {
             existing = i;
             break;
         }
@@ -67,6 +119,7 @@ void recent_add_or_update(const char *path, const char *title,
     RecentFileEntry entry;
     memset(&entry, 0, sizeof(entry));
     snprintf(entry.path, sizeof(entry.path), "%s", clean_path);
+    recent_usb_identity(clean_path, entry.volume_id);
 
     char clean_title[128];
     evo_url_sanitize(title && title[0] ? title : clean_path, clean_title, sizeof(clean_title));
@@ -119,13 +172,14 @@ void recent_save(void)
     if (!fp) return;
 
     for (int i = 0; i < recent_file_count; i++) {
-        fprintf(fp, "%s\t%s\t%.3f\t%.3f\t%lld\t%d\n",
+        fprintf(fp, "%s\t%s\t%.3f\t%.3f\t%lld\t%d\t%s\n",
                 recent_files[i].path,
                 recent_files[i].title,
                 recent_files[i].last_pos,
                 recent_files[i].duration,
                 recent_files[i].last_played,
-                recent_files[i].audio_stream);
+                recent_files[i].audio_stream,
+                recent_files[i].volume_id);
     }
 
     fclose(fp);
@@ -150,6 +204,8 @@ void recent_load(void)
         char *last_played = strtok(NULL,  "\t\r\n");
         char *audio_stream= strtok(NULL,  "\t\r\n");
 
+        char *volume_id = strtok(NULL, "\t\r\n");
+
         if (!path || !title || strncmp(path, "evo://", 6) == 0) continue;
 
         evo_url_sanitize(path, e->path, sizeof(e->path));
@@ -158,6 +214,7 @@ void recent_load(void)
         e->duration     = duration     ? atof(duration)     : 0.0;
         e->last_played  = last_played  ? atoll(last_played)  : 0;
         e->audio_stream = audio_stream ? atoi(audio_stream) : -1;
+        if (volume_id) snprintf(e->volume_id, sizeof e->volume_id, "%s", volume_id);
 
         recent_file_count++;
     }
@@ -192,7 +249,8 @@ int recent_forget(const char *path)
 
     int gone = 0;
     for (int i = 0; i < recent_file_count; ) {
-        const char *p = recent_files[i].path;
+        char p[sizeof recent_files[i].path];
+        if (!recent_resolve(&recent_files[i], p, sizeof p)) { ++i; continue; }
         /* The file itself, or anything inside a deleted folder - not a
          * sibling that merely starts with the same name ("a.mkv" vs "a.mkv2"). */
         if (strncmp(p, clean_path, n) == 0 && (p[n] == '\0' || p[n] == '/')) {
@@ -230,7 +288,8 @@ int recent_prune_missing(void)
 {
     int gone = 0;
     for (int i = 0; i < recent_file_count; ) {
-        const char *p = recent_files[i].path;
+        char p[sizeof recent_files[i].path];
+        if (!recent_resolve(&recent_files[i], p, sizeof p)) { ++i; continue; }
         struct stat st;
         int missing = 0;
         if (p[0] == '/' && stat(p, &st) != 0 && errno == ENOENT) {
@@ -265,7 +324,7 @@ double recent_lookup(const char *path)
     char clean_path[512];
     evo_url_sanitize(path, clean_path, sizeof(clean_path));
     for (int i = 0; i < recent_file_count; i++) {
-        if (strcmp(recent_files[i].path, clean_path) == 0)
+        if (recent_matches(&recent_files[i], clean_path))
             return recent_files[i].last_pos;
     }
     return 0.0;
@@ -277,7 +336,7 @@ int recent_lookup_audio(const char *path)
     char clean_path[512];
     evo_url_sanitize(path, clean_path, sizeof(clean_path));
     for (int i = 0; i < recent_file_count; i++) {
-        if (strcmp(recent_files[i].path, clean_path) == 0)
+        if (recent_matches(&recent_files[i], clean_path))
             return recent_files[i].audio_stream;
     }
     return -1;

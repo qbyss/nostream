@@ -57,11 +57,12 @@ struct SectionDef
     const char *icon;
 };
 
-const SectionDef kSections[6] = {
+const SectionDef kSections[] = {
     {"Video & Display", "../icons/icon_tv.png"},
     {"Audio", "../icons/icon_volume.png"},
     {"Subtitles", "../icons/icon_subtitles.png"},
     {"Interface & Storage", "../icons/icon_palette.png"},
+    {"Hidden Drive", "../icons/icon_browse_usb.png"},
     {"System & Diagnostics", "../icons/icon_developer_tools.png"},
     {"Experimental", "../icons/icon_sparkles.png"}};
 
@@ -203,7 +204,7 @@ void SettingsScreen::update(float dt)
     }
     collapse_.update(dt, 32.0f);
 
-    int sec_active = std::clamp(params_.section_active, 0, 5);
+    int sec_active = std::clamp(params_.section_active, 0, 6);
     sidebar_cursor_ = {kLeft, 210.0f + sec_active * (64.0f + 8.0f), side_w(), 64.0f};
 
     row_cursor_ = {};
@@ -354,7 +355,7 @@ void SettingsScreen::draw(DrawList &list, const Context &ctx) const
         list.rounded_rect(sc, page::kRadiusTile, kWhite);
     }
 
-    for (int i = 0; i < 6; ++i)
+    for (int i = 0; i < 7; ++i)
     {
         float y = 210.0f + static_cast<float>(i) * 72.0f;
         Rect r{kLeft, y, side_w(), 64.0f};
@@ -513,16 +514,16 @@ bool SettingsScreen::focus(FocusInfo *out) const
 {
     if (params_.sidebar_focused)
     {
-        if (params_.section_active >= 0 && params_.section_active < 6)
+        if (params_.section_active >= 0 && params_.section_active < 7)
         {
             if (out)
             {
                 out->id = "section-" + std::to_string(params_.section_active);
                 out->text = kSections[params_.section_active].label;
                 out->index = params_.section_active + 1;
-                out->total = 6;
+                out->total = 7;
                 out->rect = {kLeft, 210.0f + static_cast<float>(params_.section_active) * 72.0f, side_w(), 64.0f};
-                for (int i = 0; i < 6; ++i)
+                for (int i = 0; i < 7; ++i)
                 {
                     out->focusable.push_back({"section-" + std::to_string(i), kSections[i].label});
                 }

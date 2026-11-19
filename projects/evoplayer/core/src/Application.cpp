@@ -1,3 +1,4 @@
+#include "evo/services/HiddenStorage.hpp"
 #include "evo/Application.hpp"
 #include "evo/screens/LaunchScreen.hpp"
 #include "evo/screens/BrowserScreen.hpp"
@@ -461,6 +462,7 @@ bool Application::initServices() {
     }
     evo_speaker_cal_load();
     recent_load();
+    hidden_storage::load();
     favorites_load();
     m_fileSystemBrowser->setSortFoldersFirst(m_settingsService->isSortFoldersFirst());
     m_fileSystemBrowser->loadLastFolder();
@@ -478,6 +480,7 @@ bool Application::initScreens() {
     m_screenManager->registerScreen(std::make_unique<SettingsSectionScreen>(ScreenId::SettingsSubtitles));
     m_screenManager->registerScreen(std::make_unique<SettingsSectionScreen>(ScreenId::SettingsInterface));
     m_screenManager->registerScreen(std::make_unique<SettingsSectionScreen>(ScreenId::SettingsSystem));
+    m_screenManager->registerScreen(std::make_unique<SettingsSectionScreen>(ScreenId::SettingsHiddenDrive));
     m_screenManager->registerScreen(std::make_unique<SettingsSectionScreen>(ScreenId::SettingsExperimental));
     m_screenManager->registerScreen(std::make_unique<SubtitlePickerScreen>());
     m_screenManager->registerScreen(std::make_unique<AudioTrackPickerScreen>());
@@ -1095,6 +1098,7 @@ int Application::run() {
              * evo_crash_note_init(). */
             evo_crash_note_init();
             recent_load();
+            hidden_storage::load();
             favorites_load();
             if (m_settingsService) {
                 m_settingsService->loadSettings();

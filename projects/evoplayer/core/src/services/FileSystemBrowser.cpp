@@ -1,3 +1,4 @@
+#include "evo/services/HiddenStorage.hpp"
 #include "evo/services/FileSystemBrowser.hpp"
 #include "evo_readdir.h"
 #include "evo_jailbreak.h"
@@ -78,11 +79,17 @@ static uint64_t nowMs() {
 static const uint64_t kUsbMountsTtlMs = 3000;
 
 std::vector<std::string> FileSystemBrowser::usbMounts() const {
+    auto visible = [](std::vector<std::string> mounts) {
+        mounts.erase(std::remove_if(mounts.begin(), mounts.end(), [](const auto& mount) {
+            return hidden_storage::hidesPath(mount.c_str());
+        }), mounts.end());
+        return mounts;
+    };
     const uint64_t now = nowMs();
     const unsigned generation = evo_usb_volume_generation();
     if (m_usbMountsAtMs != 0 && now - m_usbMountsAtMs < kUsbMountsTtlMs &&
         generation == m_usbMountsGeneration)
-        return m_usbMounts;
+        return visible(m_usbMounts);
     evo_jailbreak_ensure();
     std::vector<std::string> out;
     for (const char* m : kUsbMounts) {
@@ -99,7 +106,7 @@ std::vector<std::string> FileSystemBrowser::usbMounts() const {
     m_usbMounts = out;
     m_usbMountsGeneration = generation;
     m_usbMountsAtMs = now;
-    return out;
+    return visible(std::move(out));
 }
 
 std::string FileSystemBrowser::usbHome() const {
@@ -592,7 +599,7 @@ void FileSystemBrowser::loadLastFolder() {
     }
     std::fclose(file);
 
-    if (savedFolder[0] != '\0' && isSafePath(savedFolder)) {
+    if (savedFolder[0] != '\0' && isSafePath(savedFolder) && !hidden_storage::hidesPath(savedFolder)) {
         evo_dir_t* dir = evo_opendir(savedFolder);
         if (dir) {
             evo_closedir(dir);

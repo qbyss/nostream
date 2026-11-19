@@ -1,3 +1,4 @@
+#include "evo/services/HiddenStorage.hpp"
 #include "evo/screens/RecentFilesScreen.hpp"
 #include "evo/screens/BrowserScreen.hpp"
 #include "evo/Application.hpp"
@@ -32,6 +33,7 @@ void RecentFilesScreen::onExit() {
 }
 
 bool RecentFilesScreen::handleInput(uint32_t pressed, uint32_t held, uint32_t released) {
+    const auto visible = hidden_storage::visibleRecent();
     (void)held;
     (void)released;
 
@@ -49,7 +51,7 @@ bool RecentFilesScreen::handleInput(uint32_t pressed, uint32_t held, uint32_t re
     }
 
     if (pressed & PadButtons::Down) {
-        if (m_selectedIndex < recent_file_count - 1) {
+        if (m_selectedIndex < static_cast<int>(visible.size()) - 1) {
             m_selectedIndex++;
             if (m_selectedIndex >= m_scrollOffset + EVO_RMLUI_LIST_ROWS) {
                 m_scrollOffset = m_selectedIndex - EVO_RMLUI_LIST_ROWS + 1;
@@ -69,8 +71,8 @@ bool RecentFilesScreen::handleInput(uint32_t pressed, uint32_t held, uint32_t re
     }
 
     if (pressed & PadButtons::Cross) {
-        if (m_selectedIndex >= 0 && m_selectedIndex < recent_file_count) {
-            const auto& r = recent_files[m_selectedIndex];
+        if (m_selectedIndex >= 0 && m_selectedIndex < static_cast<int>(visible.size())) {
+            const auto& r = visible[m_selectedIndex];
             evo_feedback(EVO_FB_CONFIRM);
             if (auto pb = Application::getInstance().getPlaybackController()) {
                 if (!pb->startPlayback(r.path, r.last_pos)) return true;
@@ -97,6 +99,7 @@ void RecentFilesScreen::update(double deltaMs) {
 }
 
 void RecentFilesScreen::render(uint32_t* framebuffer, int width, int height) {
+    const auto visible = hidden_storage::visibleRecent();
     evo_rmlui_list_params_t params;
     std::memset(&params, 0, sizeof(params));
 
@@ -107,14 +110,14 @@ void RecentFilesScreen::render(uint32_t* framebuffer, int width, int height) {
 
     params.title = "RECENT FILES";
     params.subtitle = "PICK UP WHERE YOU LEFT OFF";
-    params.total_count = recent_file_count;
+    params.total_count = static_cast<int>(visible.size());
     params.cursor_index = m_selectedIndex;
-    params.is_empty = (recent_file_count == 0);
+    params.is_empty = (static_cast<int>(visible.size()) == 0);
     params.empty_title = "NO RECENT FILES";
     params.empty_hint = "Files you play will appear here";
     params.rail_focused = railFocused ? 1 : 0;
 
-    int rowsToDisplay = std::min(EVO_RMLUI_LIST_ROWS, std::max(0, recent_file_count - m_scrollOffset));
+    int rowsToDisplay = std::min(EVO_RMLUI_LIST_ROWS, std::max(0, static_cast<int>(visible.size()) - m_scrollOffset));
     params.row_count = rowsToDisplay;
 
     char safeTitles[EVO_RMLUI_LIST_ROWS][128];
@@ -122,7 +125,7 @@ void RecentFilesScreen::render(uint32_t* framebuffer, int width, int height) {
 
     for (int i = 0; i < rowsToDisplay; ++i) {
         int idx = m_scrollOffset + i;
-        const auto& r = recent_files[idx];
+        const auto& r = visible[idx];
         evo_url_sanitize(r.path, safeDetails[i], sizeof(safeDetails[i]));
         evo_url_sanitize(r.title[0] ? r.title : safeDetails[i], safeTitles[i], sizeof(safeTitles[i]));
         params.rows[i].title = safeTitles[i];

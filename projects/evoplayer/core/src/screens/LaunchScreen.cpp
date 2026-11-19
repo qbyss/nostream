@@ -1,3 +1,4 @@
+#include "evo/services/HiddenStorage.hpp"
 #include "evo/screens/LaunchScreen.hpp"
 #include "evo/screens/BrowserScreen.hpp"
 #include "evo/Application.hpp"
@@ -69,7 +70,8 @@ void LaunchScreen::initLaunchStateMachine() {
 void LaunchScreen::onEnter() {
     StatefulScreen::onEnter();
     evo::animation::AnimationManager::getInstance().setContinuousAnimation(true);
-    recent_prune_missing();   // #233: a file deleted outside EVO leaves Jump back in
+    recent_prune_missing();
+    const auto visible = hidden_storage::visibleRecent();
     /* #229: once per launch, after a crash: where the report of that run is. */
     static bool s_crashNoticeShown = false;
     if (!s_crashNoticeShown && evo_prev_run_state() == EVO_PREV_RUN_CRASHED) {
@@ -77,7 +79,7 @@ void LaunchScreen::onEnter() {
         EVO_LOGW("app", "the last run crashed; its log is in %s", evo_prev_run_path());
         toast("NoStream CLOSED UNEXPECTEDLY", "Settings > System > Report the last run");
     }
-    m_selectedRow = (recent_file_count > 0) ? 0 : 2;
+    m_selectedRow = (!visible.empty()) ? 0 : 2;
     m_selectedCol = 0;
     m_heroSettlePath.clear();
     m_heroSettleMs = 0.0;
@@ -93,21 +95,29 @@ void LaunchScreen::onExit() {
 }
 
 std::string LaunchScreen::heroPathForSelection() const {
+    const auto visible = hidden_storage::visibleRecent();
     /*
      * The hero is the most recently played file and nothing else. It used to
      * follow the recent-shelf cursor and to be overwritten by whichever library
      * tile was hovered, so moving around Home kept rewriting the one panel that
      * is supposed to sit still and say "here is what you were watching".
      */
-    if (recent_file_count <= 0) {
+    if (visible.empty()) {
         return std::string();
     }
-    return std::string(recent_files[0].path);
+    return std::string(visible[0].path);
 }
 
 void LaunchScreen::update(double deltaMs) {
     StatefulScreen::update(deltaMs);
     m_launchFsm.update(deltaMs);
+    const int count = static_cast<int>(hidden_storage::visibleRecent().size());
+    if (m_selectedRow != 2 && count == 0) {
+        m_selectedRow = 2;
+        m_selectedCol = 0;
+    } else if (m_selectedRow == 1) {
+        m_selectedCol = std::clamp(m_selectedCol, 0, count - 1);
+    }
 
     /* Restart the debounce whenever the cursor lands on a different file. */
     std::string heroPath = heroPathForSelection();
@@ -120,10 +130,11 @@ void LaunchScreen::update(double deltaMs) {
 }
 
 void LaunchScreen::navigate(int dx, int dy) {
+    const auto visible = hidden_storage::visibleRecent();
     evo::animation::AnimationManager::getInstance().triggerTransition(350.0);
     if (dy < 0) {
         if (m_selectedRow == 2) {
-            m_selectedRow = (recent_file_count > 0) ? 1 : 0;
+            m_selectedRow = (!visible.empty()) ? 1 : 0;
             evo_feedback(EVO_FB_MOVE);
         } else if (m_selectedRow == 1) {
             m_selectedRow = 0;
@@ -133,7 +144,7 @@ void LaunchScreen::navigate(int dx, int dy) {
         }
     } else if (dy > 0) {
         if (m_selectedRow == 0) {
-            m_selectedRow = (recent_file_count > 0) ? 1 : 2;
+            m_selectedRow = (!visible.empty()) ? 1 : 2;
             evo_feedback(EVO_FB_MOVE);
         } else if (m_selectedRow == 1) {
             m_selectedRow = 2;
@@ -147,7 +158,7 @@ void LaunchScreen::navigate(int dx, int dy) {
     if (m_selectedRow == 0) {
         maxCol = 0;
     } else if (m_selectedRow == 1) {
-        maxCol = (recent_file_count > 0) ? std::min(recent_file_count - 1, EVO_RMLUI_TILES - 1) : 0;
+        maxCol = (!visible.empty()) ? std::min(static_cast<int>(visible.size()) - 1, EVO_RMLUI_TILES - 1) : 0;
     } else if (m_selectedRow == 2) {
         maxCol = libraryTileCount - 1;
     }
@@ -171,22 +182,23 @@ void LaunchScreen::navigate(int dx, int dy) {
 }
 
 void LaunchScreen::activateSelection() {
+    const auto visible = hidden_storage::visibleRecent();
     auto playback = Application::getInstance().getPlaybackController();
     auto screenMgr = Application::getInstance().getScreenManager();
     if (!playback || !screenMgr) return;
 
     if (m_selectedRow == 0) {
         // Hero row
-        if (recent_file_count > 0) {
-            if (playback->startPlayback(recent_files[0].path, recent_files[0].last_pos))
+        if (!visible.empty()) {
+            if (playback->startPlayback(visible[0].path, visible[0].last_pos))
                 screenMgr->navigateTo(ScreenId::Player);   // on failure the toast is up and we stay
         } else {
             screenMgr->navigateTo(ScreenId::UsbBrowser);
         }
     } else if (m_selectedRow == 1) {
         // Recent shelf
-        if (m_selectedCol >= 0 && m_selectedCol < recent_file_count) {
-            if (playback->startPlayback(recent_files[m_selectedCol].path, recent_files[m_selectedCol].last_pos))
+        if (m_selectedCol >= 0 && m_selectedCol < static_cast<int>(visible.size())) {
+            if (playback->startPlayback(visible[m_selectedCol].path, visible[m_selectedCol].last_pos))
                 screenMgr->navigateTo(ScreenId::Player);
         }
     } else if (m_selectedRow == 2) {
@@ -200,6 +212,7 @@ void LaunchScreen::activateSelection() {
 }
 
 bool LaunchScreen::handleInput(uint32_t pressed, uint32_t held, uint32_t released) {
+    auto visible = hidden_storage::visibleRecent();
     (void)held;
     (void)released;
 
@@ -213,8 +226,9 @@ bool LaunchScreen::handleInput(uint32_t pressed, uint32_t held, uint32_t release
         } else if (pressed & PadButtons::Cross) {
             if (m_recentMenuFocused == 0) {
                 const int removed = recent_forget(m_recentMenuPath.c_str());
-                if (recent_file_count == 0) m_selectedRow = 2;
-                m_selectedCol = std::clamp(m_selectedCol, 0, std::max(0, recent_file_count - 1));
+                visible = hidden_storage::visibleRecent();
+                if (visible.empty()) m_selectedRow = 2;
+                m_selectedCol = std::clamp(m_selectedCol, 0, std::max(0, static_cast<int>(visible.size()) - 1));
                 evo_feedback(removed ? EVO_FB_CONFIRM : EVO_FB_BOUNDARY);
             } else {
                 evo_feedback(EVO_FB_CANCEL);
@@ -225,8 +239,8 @@ bool LaunchScreen::handleInput(uint32_t pressed, uint32_t held, uint32_t release
     }
 
     if (pressed & PadButtons::Options) {
-        if (m_selectedRow != 2 && m_selectedCol >= 0 && m_selectedCol < recent_file_count) {
-            m_recentMenuPath = recent_files[m_selectedCol].path;
+        if (m_selectedRow != 2 && m_selectedCol >= 0 && m_selectedCol < static_cast<int>(visible.size())) {
+            m_recentMenuPath = visible[m_selectedCol].path;
             m_recentMenuFocused = 0;
             evo_feedback(EVO_FB_OPEN);
             return true;
@@ -274,6 +288,7 @@ bool LaunchScreen::handleInput(uint32_t pressed, uint32_t held, uint32_t release
 }
 
 void LaunchScreen::render(uint32_t* framebuffer, int width, int height) {
+    const auto visible = hidden_storage::visibleRecent();
     evo_rmlui_launch_params_t params;
     std::memset(&params, 0, sizeof(params));
 
@@ -300,7 +315,6 @@ void LaunchScreen::render(uint32_t* framebuffer, int width, int height) {
     params.hero_focused = (!railFocused && m_selectedRow == 0);
 
     char safeHeroTitle[128];
-    char safeHeroDetail[512];
     char safeRecentTitles[EVO_RMLUI_TILES][128];
 
     /* A file's name tidied again on the way out, so entries saved before the
@@ -316,17 +330,17 @@ void LaunchScreen::render(uint32_t* framebuffer, int width, int height) {
     };
 
     // Hero - always the most recent file; it does not track the cursor.
-    if (recent_file_count > 0) {
-        const auto& r = recent_files[0];
+    if (!visible.empty()) {
+        const auto& r = visible[0];
         const std::string heroName = displayTitle(r);
-        evo_url_sanitize(r.path, safeHeroDetail, sizeof(safeHeroDetail));
-        evo_url_sanitize(!heroName.empty() ? heroName.c_str() : safeHeroDetail, safeHeroTitle, sizeof(safeHeroTitle));
+        const char* filename = std::strrchr(r.path, '/');
+        evo_url_sanitize(!heroName.empty() ? heroName.c_str() : (filename ? filename + 1 : r.path),
+                         safeHeroTitle, sizeof(safeHeroTitle));
         params.hero_eyebrow = (r.last_pos > 1.0) ? "CONTINUE WATCHING" : "START WATCHING";
         /* Say so before Play is pressed, not after a 3 s connect fails. */
         if (NetworkStorageService::serverStatusForUrl(r.path) == 0)
             params.hero_eyebrow = "SERVER OFFLINE";
         params.hero_title = safeHeroTitle;
-        params.hero_detail = safeHeroDetail;
         params.hero_action = (r.last_pos > 1.0) ? "RESUME" : "PLAY";
         if (r.duration > 1.0) {
             params.hero_progress = static_cast<int>((r.last_pos / r.duration) * 1000.0);
@@ -362,13 +376,13 @@ void LaunchScreen::render(uint32_t* framebuffer, int width, int height) {
     }
 
     // Recent shelf
-    params.recent_total = recent_file_count;
+    params.recent_total = static_cast<int>(visible.size());
     params.recent_cursor = (!railFocused && m_selectedRow == 1) ? m_selectedCol : -1;
-    params.recent_visible = (recent_file_count > EVO_RMLUI_TILES) ? EVO_RMLUI_TILES : recent_file_count;
+    params.recent_visible = (static_cast<int>(visible.size()) > EVO_RMLUI_TILES) ? EVO_RMLUI_TILES : static_cast<int>(visible.size());
 
     int coverBudget = 1;
     for (int i = 0; i < params.recent_visible; ++i) {
-        const auto& r = recent_files[i];
+        const auto& r = visible[i];
         char safeRecentPath[512];
         evo_url_sanitize(r.path, safeRecentPath, sizeof(safeRecentPath));
         const std::string name = displayTitle(r);

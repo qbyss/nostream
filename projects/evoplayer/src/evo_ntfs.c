@@ -1546,6 +1546,12 @@ helper_ready:
  * that needs the answer (opening an ntfs:// path) asks for one. */
 static pthread_mutex_t g_refresh = PTHREAD_MUTEX_INITIALIZER;
 static volatile int g_refresh_busy;
+static int g_identity_ready;
+
+int evo_usb_identity_ready(void)
+{
+    return __atomic_load_n(&g_identity_ready, __ATOMIC_ACQUIRE);
+}
 
 static void refresh_locked(void);
 
@@ -1553,6 +1559,7 @@ int evo_ntfs_refresh(void)
 {
     pthread_mutex_lock(&g_refresh);
     refresh_locked();
+    __atomic_store_n(&g_identity_ready, 1, __ATOMIC_RELEASE);
     pthread_mutex_unlock(&g_refresh);
     return evo_ntfs_volume_count();
 }

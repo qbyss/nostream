@@ -94,7 +94,7 @@ private:
     void activateSelection();
     void activateSidebar(bool focusGrid = true);
     void refreshFolderShortcuts();
-    void openFavoriteFolder(int index);
+    void openFavoriteFolder(int index, bool focusGrid = true);
     int storageSidebarIndex() const;
     void refreshStorageSources();
     int activeSidebarIndex() const;
@@ -103,7 +103,8 @@ private:
     std::string filterScopeKey() const;
     void openSearch();
     void openActionMenu();
-    void performAction(int actionIndex);
+    enum class FileAction { Copy, Cut, Paste, Rename, Delete, NewFolder, Close, Favorite };
+    void performAction(FileAction action);
     void openEditShareKeyboard(const std::string& shareId);
     void openServerMenu(const std::string& shareId, const std::string& shareName);
     void performServerAction(int actionIndex);
@@ -143,6 +144,7 @@ private:
     int m_pendingFolderFavorite = -1;
     double m_pendingFavoriteMs = 0;
     bool m_pendingFavoriteFromSidebar = false;
+    bool m_pendingFavoriteFocusGrid = true;
     MediaMetadataInfo m_cachedMetadata;
     char m_formattedPath[256];
     char m_rowDurations[16][32];
@@ -171,13 +173,14 @@ private:
     void pollServerStatus(double deltaMs);
 
     // File operations & Action menu
+    bool m_hideSourceMenu = false;
+    std::string m_hideMount;
+    std::string m_hideId;
     bool m_actionMenuOpen = false;
     int m_actionMenuFocused = 0;
-    bool m_actionCanFavorite = false;
     bool m_actionFileOps = true;
     int m_actionFavoriteIndex = -1;
-    int actionMenuCount() const;
-    int actionForRow(int row) const;
+    std::vector<FileAction> m_actions;
     bool m_showDeleteConfirm = false;
     int m_deleteConfirmButton = 0;
     bool m_showTransferDialog = false;
@@ -202,9 +205,8 @@ private:
     std::string m_actionTargetName;
     std::string m_actionTargetPath;
     std::string m_pendingForgetPath;   // #233: a delete in flight; dropped from Recent when it completes
-    bool m_actionTargetIsDir = false;
+    FileCategory m_actionTargetCategory = FileCategory::Unknown;
     char m_transferTitleBuf[64];
-    char m_transferDetailBuf[256];
     std::string m_actionTargetSub;
     char m_actionClipboardBuf[128];
     char m_transferSpeedBuf[32];

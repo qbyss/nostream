@@ -209,6 +209,7 @@ CORE_SRCS := \
     core/src/Application.cpp \
     core/src/Bridge.cpp \
     core/src/services/SettingsService.cpp \
+    core/src/services/HiddenStorage.cpp \
     core/src/services/MediaMetadataService.cpp \
     core/src/services/ReleaseName.cpp \
     core/src/services/CoverArtService.cpp \

@@ -73,7 +73,7 @@ public:
     // Asynchronous transfer operations (runs on background worker thread)
     virtual bool startCopy(const std::string& srcPath, const std::string& dstDir) = 0;
     virtual bool startMove(const std::string& srcPath, const std::string& dstDir) = 0;
-    virtual bool startDelete(const std::string& path, bool isDir) = 0;
+    virtual bool startDelete(const std::string& path) = 0;
     virtual bool startPaste(const std::string& targetDir) = 0;
 
     // Synchronous immediate operations

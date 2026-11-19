@@ -1,3 +1,4 @@
+#include "evo/services/HiddenStorage.hpp"
 #include "evo/screens/SettingsScreen.hpp"
 #include "evo/Application.hpp"
 #include "evo/services/CastService.hpp"
@@ -264,7 +265,7 @@ constexpr SectionSpec makeSection(const char* title, const char* subtitle, const
     return {title, subtitle, name, screen, keys, static_cast<int>(N)};
 }
 
-/* Order here is the sidebar order in settings.rml (sb-0 .. sb-4). */
+/* Order here is the sidebar order in settings.rml. */
 const SectionSpec kSections[] = {
     makeSection("Video & Display", "DECODER, UPSCALING, 120 HZ & HDR",
                 "SettingsPlaybackScreen", ScreenId::SettingsPlayback, kVideoKeys),
@@ -274,6 +275,8 @@ const SectionSpec kSections[] = {
                 "SettingsSubtitlesScreen", ScreenId::SettingsSubtitles, kSubtitleKeys),
     makeSection("Interface & Storage", "THEMES, CONTROLS & BROWSING",
                 "SettingsInterfaceScreen", ScreenId::SettingsInterface, kInterfaceKeys),
+    {"Hidden Drive", "RESTORE HIDDEN STORAGE SOURCES",
+     "SettingsHiddenDriveScreen", ScreenId::SettingsHiddenDrive, nullptr, 0},
     makeSection("System & Diagnostics", "DIAGNOSTICS & SYSTEM MANAGEMENT",
                 "SettingsSystemScreen", ScreenId::SettingsSystem, kSystemKeys),
     makeSection("Experimental", "UNFINISHED WORK - EXPECT ARTEFACTS",
@@ -857,6 +860,31 @@ int buildSlots(const SettingDef* d, int n, int expanded, DisplaySlot* out) {
 /* Fills the params for one section. cursor < 0 = the sidebar owns the cursor,
  * so nothing in the detail pane is highlighted. */
 int fillSection(int section, int expanded, int cursor, evo_rmlui_settings_params_t& p) {
+    if (kSections[section].screen == ScreenId::SettingsHiddenDrive) {
+        p.title = kSections[section].title;
+        p.subtitle = kSections[section].subtitle;
+        const auto& hidden = hidden_storage::entries();
+        const int count = static_cast<int>(hidden.size());
+        if (count == 0) {
+            p.row_count = 1;
+            p.rows[0].title = "You can hide a drive from its Options menu in Storage.";
+            return 0;
+        }
+        const int first = std::clamp(cursor - EVO_RMLUI_SETTINGS_ROWS / 2, 0,
+                                     std::max(0, count - EVO_RMLUI_SETTINGS_ROWS));
+        p.row_count = std::min(count - first, EVO_RMLUI_SETTINGS_ROWS);
+        for (int i = 0; i < p.row_count; ++i) {
+            const auto& entry = hidden[first + i];
+            auto& row = p.rows[i];
+            row.title = entry.name.c_str();
+            row.detail = "Make this source visible again";
+            row.icon_path = "../icons/icon_browse_usb.png";
+            row.kind = EVO_RMLUI_ROW_VALUE;
+            row.badge = "Remove";
+            row.is_focused = cursor == first + i;
+        }
+        return count;
+    }
     SettingDef d[kMaxDefs];
     DisplaySlot all_slots[kMaxSlots];
     const int n = buildSectionDefs(section, d);
@@ -1428,6 +1456,13 @@ void SettingsSectionScreen::onEnter() {
 }
 
 void SettingsSectionScreen::navigate(int delta) {
+    if (m_id == ScreenId::SettingsHiddenDrive) {
+        const int last = std::max(0, static_cast<int>(hidden_storage::entries().size()) - 1);
+        const int next = std::clamp(m_selectedIndex + delta, 0, last);
+        evo_feedback(next != m_selectedIndex ? EVO_FB_MOVE : EVO_FB_BOUNDARY);
+        m_selectedIndex = next;
+        return;
+    }
     SettingDef d[kMaxDefs];
     DisplaySlot slots[kMaxSlots];
     const int total = buildSlots(d, buildSectionDefs(m_section, d), m_expandedIndex, slots);
@@ -1445,6 +1480,19 @@ void SettingsSectionScreen::navigate(int delta) {
 }
 
 void SettingsSectionScreen::activateSelection() {
+    if (m_id == ScreenId::SettingsHiddenDrive) {
+        const auto& hidden = hidden_storage::entries();
+        if (m_selectedIndex >= static_cast<int>(hidden.size())) return;
+        const auto id = hidden[m_selectedIndex].id;
+        if (!hidden_storage::restore(id)) {
+            toast("HIDDEN DRIVE", "Could not save this change");
+            evo_feedback(EVO_FB_ERROR);
+            return;
+        }
+        m_selectedIndex = std::min(m_selectedIndex, std::max(0, static_cast<int>(hidden.size()) - 1));
+        evo_feedback(EVO_FB_CONFIRM);
+        return;
+    }
     SettingDef d[kMaxDefs];
     DisplaySlot slots[kMaxSlots];
     const int m = buildSlots(d, buildSectionDefs(m_section, d), m_expandedIndex, slots);

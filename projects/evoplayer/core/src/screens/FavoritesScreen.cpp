@@ -1,3 +1,4 @@
+#include "evo/services/HiddenStorage.hpp"
 #include "evo/screens/FavoritesScreen.hpp"
 #include "evo/screens/BrowserScreen.hpp"
 #include "evo/Application.hpp"
@@ -32,6 +33,7 @@ void FavoritesScreen::onExit() {
 }
 
 bool FavoritesScreen::handleInput(uint32_t pressed, uint32_t held, uint32_t released) {
+    auto visible = hidden_storage::visibleFavorites();
     (void)held;
     (void)released;
 
@@ -49,7 +51,7 @@ bool FavoritesScreen::handleInput(uint32_t pressed, uint32_t held, uint32_t rele
     }
 
     if (pressed & PadButtons::Down) {
-        if (m_selectedIndex < favorite_count - 1) {
+        if (m_selectedIndex < static_cast<int>(visible.size()) - 1) {
             m_selectedIndex++;
             if (m_selectedIndex >= m_scrollOffset + EVO_RMLUI_LIST_ROWS) {
                 m_scrollOffset = m_selectedIndex - EVO_RMLUI_LIST_ROWS + 1;
@@ -69,8 +71,8 @@ bool FavoritesScreen::handleInput(uint32_t pressed, uint32_t held, uint32_t rele
     }
 
     if (pressed & PadButtons::Cross) {
-        if (m_selectedIndex >= 0 && m_selectedIndex < favorite_count) {
-            const auto& f = favorite_files[m_selectedIndex];
+        if (m_selectedIndex >= 0 && m_selectedIndex < static_cast<int>(visible.size())) {
+            const auto& f = favorite_files[visible[m_selectedIndex]];
             evo_feedback(EVO_FB_CONFIRM);
             if (auto pb = Application::getInstance().getPlaybackController()) {
                 char path[sizeof f.path];
@@ -85,12 +87,13 @@ bool FavoritesScreen::handleInput(uint32_t pressed, uint32_t held, uint32_t rele
     }
 
     if (pressed & (PadButtons::Square | PadButtons::Triangle)) {
-        if (m_selectedIndex >= 0 && m_selectedIndex < favorite_count) {
-            favorites_remove_at(m_selectedIndex);
+        if (m_selectedIndex >= 0 && m_selectedIndex < static_cast<int>(visible.size())) {
+            favorites_remove_at(visible[m_selectedIndex]);
+            visible = hidden_storage::visibleFavorites();
             favorites_save();
             toast("FAVORITES", "Removed");
             evo_feedback(EVO_FB_CANCEL);
-            if (m_selectedIndex >= favorite_count && m_selectedIndex > 0) {
+            if (m_selectedIndex >= static_cast<int>(visible.size()) && m_selectedIndex > 0) {
                 m_selectedIndex--;
             }
         }
@@ -113,6 +116,7 @@ void FavoritesScreen::update(double deltaMs) {
 }
 
 void FavoritesScreen::render(uint32_t* framebuffer, int width, int height) {
+    const auto visible = hidden_storage::visibleFavorites();
     evo_rmlui_list_params_t params;
     std::memset(&params, 0, sizeof(params));
 
@@ -123,14 +127,14 @@ void FavoritesScreen::render(uint32_t* framebuffer, int width, int height) {
 
     params.title = "FAVORITES";
     params.subtitle = "MEDIA YOU SAVED FOR LATER";
-    params.total_count = favorite_count;
+    params.total_count = static_cast<int>(visible.size());
     params.cursor_index = m_selectedIndex;
-    params.is_empty = (favorite_count == 0);
+    params.is_empty = (static_cast<int>(visible.size()) == 0);
     params.empty_title = "NO FAVORITES YET";
     params.empty_hint = "Press Triangle in the browser to add favorites";
     params.rail_focused = railFocused ? 1 : 0;
 
-    int rowsToDisplay = std::min(EVO_RMLUI_LIST_ROWS, std::max(0, favorite_count - m_scrollOffset));
+    int rowsToDisplay = std::min(EVO_RMLUI_LIST_ROWS, std::max(0, static_cast<int>(visible.size()) - m_scrollOffset));
     params.row_count = rowsToDisplay;
 
     char safeTitles[EVO_RMLUI_LIST_ROWS][128];
@@ -138,7 +142,7 @@ void FavoritesScreen::render(uint32_t* framebuffer, int width, int height) {
 
     for (int i = 0; i < rowsToDisplay; ++i) {
         int idx = m_scrollOffset + i;
-        const auto& f = favorite_files[idx];
+        const auto& f = favorite_files[visible[idx]];
         evo_url_sanitize(f.path, safeDetails[i], sizeof(safeDetails[i]));
         evo_url_sanitize(f.title[0] ? f.title : safeDetails[i], safeTitles[i], sizeof(safeTitles[i]));
         params.rows[i].title = safeTitles[i];
