@@ -147,7 +147,7 @@ private:
     ViewMode m_defaultViewMode = ViewMode::Fit;
     bool m_autoSubtitlesEnabled = true;
     bool m_sortFoldersFirst = true;
-    std::string m_themeName = "EVO Dark";
+    std::string m_themeName = "NoStream Dark";
     bool m_soundFeedbackEnabled = true;
     bool m_lightbarFeedbackEnabled = true;
     int m_subtitleFontFace = 0; // STANDARD (prospero_subtitle_style)

@@ -24,10 +24,10 @@
     -->
     <div id="nav-privilege-banner">
         <span id="nav-privilege-title">ELEVATED PRIVILEGES NEEDED</span>
-        <span id="nav-privilege-hint">Start the jailbreak payload (Lapy JB or etaHEN), then relaunch EVO</span>
+        <span id="nav-privilege-hint">Start the jailbreak payload (Lapy JB or etaHEN), then relaunch NoStream</span>
     </div>
 
-    <!-- EVO logo mark -->
+    <!-- NoStream logo mark -->
     <div id="nav-logo">
         <img id="nav-logo-img" src="../icons/icon_logo.png"/>
     </div>
@@ -65,7 +65,7 @@
     </div>
 
     <!--
-      QUIT EVO. An action, not a section: it releases everything and parks the
+      QUIT NoStream. An action, not a section: it releases everything and parks the
       app on the safe-to-close screen (Application::requestSoftClose), so it is
       pinned to the foot of the rail, apart from the places you can go. Slot 4
       in both panels; ScreenManager treats the index after the last section
@@ -89,7 +89,7 @@
         <div id="nav-expanded-logo">
             <img id="nav-expanded-logo-img" src="../icons/icon_logo.png"/>
         </div>
-        <div id="nav-app-label">EVO</div>
+        <div id="nav-app-label">NoStream</div>
 
         <!-- Labelled items -->
         <div id="nav-expanded-items">
@@ -111,11 +111,11 @@
             </div>
         </div>
 
-        <!-- QUIT EVO, pinned to the foot of the panel like the rail entry -->
+        <!-- QUIT NoStream, pinned to the foot of the panel like the rail entry -->
         <div id="nav-expanded-quit">
             <div class="rail-exp-item" id="nav-exp-4">
                 <img id="nav-exp-icon-4" src="../icons/icon_power.png" class="rail-exp-icon"/>
-                <span class="rail-exp-label" id="nav-exp-label-4">QUIT EVO</span>
+                <span class="rail-exp-label" id="nav-exp-label-4">QUIT NoStream</span>
             </div>
         </div>
     </div>

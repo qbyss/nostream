@@ -77,7 +77,7 @@ void SubtitleFileScreen::showPlaces() {
         for (const auto& m : fs->usbMounts()) add(fs->usbMountLabel(m), m, m);
     }
     add("Internal Storage", "/data", "/data");
-    add("Whole console", "/", "Every folder EVO can see");
+    add("Whole console", "/", "Every folder NoStream can see");
     m_selectedIndex = 0;
     m_scrollOffset = 0;
 }

@@ -85,7 +85,7 @@ void LaunchScreen::onEnter() {
     if (!s_crashNoticeShown && evo_prev_run_state() == EVO_PREV_RUN_CRASHED) {
         s_crashNoticeShown = true;
         EVO_LOGW("app", "the last run crashed; its log is in %s", evo_prev_run_path());
-        toast("EVO CLOSED UNEXPECTEDLY", "Settings > System > Report the last run");
+        toast("NoStream CLOSED UNEXPECTEDLY", "Settings > System > Report the last run");
     }
     m_selectedRow = (recent_file_count > 0) ? 0 : 2;
     m_selectedCol = 0;

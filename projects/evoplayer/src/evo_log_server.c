@@ -94,7 +94,7 @@ const unsigned char *evo_web_asset(const char *name, unsigned *size);
  * files, no libraries: it has to load on any phone browser on the LAN. */
 static const char k_input_page[] =
 "<!doctype html><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'>"
-"<title>EVO input</title><style>"
+"<title>NoStream input</title><style>"
 ":root{color-scheme:dark light;--bg:#111;--fg:#eee;--dim:#999;--card:#1c1c1c;--line:#333;--ac:#4da3ff}"
 "@media(prefers-color-scheme:light){:root{--bg:#f5f5f5;--fg:#222;--dim:#666;--card:#fff;--line:#ddd;--ac:#0a66d6}}"
 "body{margin:0;font:17px/1.4 system-ui,sans-serif;background:var(--bg);color:var(--fg)}"
@@ -111,7 +111,7 @@ static const char k_input_page[] =
 "</style><main><h1>NoStream</h1><p id=sub>Checking...</p>"
 "<textarea id=t enterkeyhint=send autocapitalize=off autocorrect=off autocomplete=off spellcheck=false placeholder='Type or paste here'></textarea>"
 "<p id=cnt></p><button id=b disabled>Send to PS5</button><p id=msg></p>"
-"<h2>Play a YouTube link</h2><p class=dim>Plays the whole video in EVO, up to 1080p60.</p>"
+"<h2>Play a YouTube link</h2><p class=dim>Plays the whole video in NoStream, up to 1080p60.</p>"
 "<input id=y type=url inputmode=url enterkeyhint=go autocapitalize=off autocorrect=off autocomplete=off spellcheck=false maxlength=500 "
 "placeholder='https://youtu.be/...'><button id=yb>Play on PS5</button><p id=ym></p>"
 "<p class=dim style='text-align:center;margin-top:24px'><a href=/remote style='color:var(--ac)'>Use this phone as a remote</a></p></main><script>"
@@ -155,7 +155,7 @@ static const char k_input_page[] =
  * polled once a second. No external files: any phone browser on the LAN. */
 static const char k_remote_page[] =
 "<!doctype html><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1,user-scalable=no'>"
-"<title>EVO remote</title><style>"
+"<title>NoStream remote</title><style>"
 ":root{color-scheme:dark;--bg:#0b0f19;--card:#151b2b;--line:#273049;--fg:#eef1f7;--dim:#8d97ad;--ac:#ffcd00}"
 "*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}"
 "body{margin:0;font:16px/1.35 system-ui,sans-serif;background:var(--bg);color:var(--fg);user-select:none}"
@@ -174,7 +174,7 @@ static const char k_remote_page[] =
 ".pad button{padding:20px 0;font-size:20px}.pad .ok{border-radius:50%;aspect-ratio:1;padding:0;background:#232c45}"
 "#msg{color:var(--dim);font-size:13px;text-align:center;margin-top:12px;min-height:1.3em}"
 "h2{font-size:13px;letter-spacing:.12em;color:var(--dim);margin:20px 0 0;font-weight:600}"
-"</style><main><header><span id=dot></span><h1>EVO remote</h1></header>"
+"</style><main><header><span id=dot></span><h1>NoStream remote</h1></header>"
 "<div class=card><div id=title>Nothing playing</div><input id=bar type=range min=0 max=1000 value=0 disabled>"
 "<div id=time><span id=pos>0:00</span><span id=dur>0:00</span></div></div>"
 "<div class='row r3'><button data-c='seek -10'>&#8630; 10s</button><button class=big id=pp data-c=pause>&#9654;&#10074;&#10074;</button>"
@@ -212,7 +212,7 @@ static const char k_remote_page[] =
  * files: it has to load on any phone browser on the LAN. */
 static const char k_report_page[] =
 "<!doctype html><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'>"
-"<title>EVO problem report</title><style>"
+"<title>NoStream problem report</title><style>"
 ":root{color-scheme:dark light;--bg:#111;--fg:#eee;--dim:#999;--card:#1c1c1c;--line:#333;--ac:#4da3ff;--e:#ff6b6b;--w:#ffc857}"
 "@media(prefers-color-scheme:light){:root{--bg:#f5f5f5;--fg:#222;--dim:#666;--card:#fff;--line:#ddd;--ac:#0a66d6;--e:#c62828;--w:#a66a00}}"
 "body{margin:0;font:17px/1.45 system-ui,sans-serif;background:var(--bg);color:var(--fg)}"
@@ -225,11 +225,11 @@ static const char k_report_page[] =
 "white-space:pre-wrap;word-break:break-word;max-height:320px;overflow:auto}.E{color:var(--e)}.W{color:var(--w)}"
 "textarea{position:absolute;left:-9999px}"
 "</style><main><h1>NoStream: report a problem</h1>"
-"<p>This page gets EVO's log from your PS5, so you can send it with your bug report. No USB stick needed.</p>"
+"<p>This page gets NoStream's log from your PS5, so you can send it with your bug report. No USB stick needed.</p>"
 "<ol><li>Tap <b>Download report</b> (or Share / Copy).</li>"
 "<li>Attach the file to your report on GitHub or Discord, and say what you did just before the problem.</li></ol>"
 "<p id=runs>Report: <a href='/report'>this run</a> &middot; <a href='/report?run=last'>the last run</a> "
-"<span class=dim>(pick the last run if EVO crashed or froze before you reopened it)</span></p>"
+"<span class=dim>(pick the last run if NoStream crashed or froze before you reopened it)</span></p>"
 "<div id=sum>Loading the report from the PS5...</div>"
 "<a class=b id=dl href='/report.txt' download>Download report</a>"
 "<button class='b alt' id=sh hidden>Share</button><button class='b alt' id=cp>Copy text</button><p id=msg class=dim></p>"
@@ -250,7 +250,7 @@ static const char k_report_page[] =
 "for(var j=0;j<bad.length;j++){var s=document.createElement('div');s.className=bad[j][0];s.textContent=bad[j][1];LA.appendChild(s)}"
 "try{var f=new File([t],name,{type:'text/plain'});if(navigator.canShare&&navigator.canShare({files:[f]})){SH.hidden=false;"
 "SH.onclick=function(){navigator.share({files:[f],title:'NoStream report'}).catch(function(){})}}}catch(x){}"
-"}).catch(function(){S.textContent='Could not reach the PS5. Is EVO still open, and is this phone on the same network?'});"
+"}).catch(function(){S.textContent='Could not reach the PS5. Is NoStream still open, and is this phone on the same network?'});"
 "document.getElementById('cp').onclick=function(){if(!txt){M.textContent='The report has not loaded yet.';return}"
 "function done(){M.textContent='Copied. Paste it into your report.'}"
 "if(navigator.clipboard&&window.isSecureContext){navigator.clipboard.writeText(txt).then(done,function(){M.textContent='Copy failed - use Download.'});return}"

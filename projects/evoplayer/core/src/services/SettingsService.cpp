@@ -19,7 +19,7 @@
 namespace evo {
 
 SettingsService::SettingsService() {
-    m_themeName = "EVO Dark";
+    m_themeName = "NoStream Dark";
 }
 
 const char* SettingsService::getViewModeName(ViewMode mode) const {

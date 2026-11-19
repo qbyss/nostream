@@ -1384,7 +1384,7 @@ void draw_passthrough(DrawList &list, const Context &ctx, const Rect &box, const
     Rect b1{row1.x + 16.0f, row1.cy() - 20.0f, 68.0f, 40.0f};
     list.rounded_rect(b1, 8, col1.with_alpha(!on ? 0.25f : 0.08f));
     list.bordered_rect(b1, 8, Color::rgb(0,0), 1.0f, col1);
-    ui::text(list, fonts.semibold, "EVO", b1.cx(), b1.cy() + 6.0f, 16, ink1, Align::center);
+    ui::text(list, fonts.semibold, "NoStream", b1.cx(), b1.cy() + 5.0f, 13, ink1, Align::center);
 
     const float a1_start = b1.x + b1.w + 10.0f;
     const float a1_end = a1_start + 70.0f;
@@ -1416,7 +1416,7 @@ void draw_passthrough(DrawList &list, const Context &ctx, const Rect &box, const
     Rect r2_b1{row2.x + 16.0f, row2.cy() - 20.0f, 68.0f, 40.0f};
     list.rounded_rect(r2_b1, 8, col2.with_alpha(on ? 0.25f : 0.08f));
     list.bordered_rect(r2_b1, 8, Color::rgb(0,0), 1.0f, col2);
-    ui::text(list, fonts.semibold, "EVO", r2_b1.cx(), r2_b1.cy() + 6.0f, 16, ink2, Align::center);
+    ui::text(list, fonts.semibold, "NoStream", r2_b1.cx(), r2_b1.cy() + 5.0f, 13, ink2, Align::center);
 
     const float r2_a_start = r2_b1.x + r2_b1.w + 14.0f;
     const float r2_a_end = row2.x + row2.w - 180.0f - 14.0f;
@@ -1738,7 +1738,7 @@ void draw_keyboard(DrawList &list, const Context &ctx, const Rect &box, const Se
     if (sel_l)
         list.glow(p_left, 12.0f, 6.0f, p.accent.with_alpha(0.35f));
 
-    ui::text(list, ctx.fonts.semibold, "EVO KEYBOARD", p_left.cx(), p_left.y + 24.0f, 14,
+    ui::text(list, ctx.fonts.semibold, "NoStream KEYBOARD", p_left.cx(), p_left.y + 24.0f, 14,
              sel_l ? p.accent : p.text_faint, Align::center);
 
     // 3 rows of drawn key caps
@@ -1838,7 +1838,7 @@ void draw_port(DrawList &list, const Context &ctx, const Rect &box, const Settin
         ui::text(list, ctx.fonts.semibold, "NO FREE PORT", a.x + 24.0f, a.top + 13.0f, 20, bad, Align::left, 2.0f);
         ui::paragraph(list, ctx.fonts.regular, status, a.x, a.top + 52.0f, 20, a.w, 28, kWhite, 3);
         static const char *const kSteps[] = {"Select this row", "Type a port from 1024 to 65535",
-                                             "EVO checks it, then the phone link is back"};
+                                             "NoStream checks it, then the phone link is back"};
         float sy = a.top + 150.0f;
         for (int i = 0; i < 3; ++i)
         {
@@ -1886,7 +1886,7 @@ void draw_report(DrawList &list, const Context &ctx, const Rect &box, const Sett
         const float tw = a.w - qs - 24.0f;
         ui::text(list, ctx.fonts.semibold, "SCAN WITH YOUR PHONE", tx, a.top + 22.0f, 14, p.text_faint, Align::left, 2.0f);
         ui::text(list, ctx.fonts.semibold, ctx.fonts.semibold.font->fit(link, 18, tw), tx, a.top + 62.0f, 18, kWhite);
-        ui::paragraph(list, ctx.fonts.regular, "Opens a page to download or share EVO's log. No USB stick needed.",
+        ui::paragraph(list, ctx.fonts.regular, "Opens a page to download or share NoStream's log. No USB stick needed.",
                       tx, a.top + 104.0f, 18, tw, 24, p.text_faint, 3);
         ty = a.top + qs + 20.0f;
     }
@@ -2136,7 +2136,7 @@ void draw_phone_cast(DrawList &list, const Context &ctx, const Rect &box, const 
         const bool dot_lit = on && std::fmod(ctx.time * 0.9f, 1.0f) >= t - 0.12f && std::fmod(ctx.time * 0.9f, 1.0f) <= t + 0.12f;
         list.circle(x, yy, dot_lit ? 4.5f : 3.0f, on ? (dot_lit ? kWhite : ctx.palette.accent) : kWhite.with_alpha(0.15f));
     }
-    caption(list, ctx, a, ph.y + ph.h + 34.0f, on ? "EVO shows up in the YouTube app's cast list" : "Off: phones on your network cannot see EVO", on);
+    caption(list, ctx, a, ph.y + ph.h + 34.0f, on ? "NoStream shows up in the YouTube app's cast list" : "Off: phones on your network cannot see NoStream", on);
     const float yc = chips(list, ctx, a, ph.y + ph.h + 58.0f, chip_labels(pv), pv.index);
     benefit_fit(list, ctx, a, yc + 24.0f, pv.benefit);
 }
@@ -2167,7 +2167,7 @@ void draw_cast_player(DrawList &list, const Context &ctx, const Rect &box, const
         ui::text(list, fonts.regular, l.what, dest.x + 14.0f, dest.y + 50.0f, 15, l.lit ? p.text_muted : p.text_faint);
         y += 104.0f + 14.0f;
     }
-    caption(list, ctx, a, y + 16.0f, on ? "On: casts play in EVO, controls as usual" : "Off: casts open in the PS5 browser", true);
+    caption(list, ctx, a, y + 16.0f, on ? "On: casts play in NoStream, controls as usual" : "Off: casts open in the PS5 browser", true);
     const float yc = chips(list, ctx, a, y + 40.0f, chip_labels(pv), pv.index);
     benefit_fit(list, ctx, a, yc + 24.0f, pv.benefit);
 }
@@ -2656,7 +2656,7 @@ static void draw_console(DrawList &list, const Context &ctx, const Rect &box, co
     flow_box(list, ctx, b_pro, "PS5 PRO", false, 15);
 
     const float cap_y = base.y + 36.0f;
-    caption(list, ctx, a, cap_y, "The model EVO detected", false);
+    caption(list, ctx, a, cap_y, "The model NoStream detected", false);
     benefit_fit(list, ctx, a, cap_y + 36.0f, pv.benefit);
 }
 
@@ -2764,7 +2764,7 @@ static void draw_quit(DrawList &list, const Context &ctx, const Rect &box, const
     flow_box(list, ctx, b3, "CLOSE IN SWITCHER", true, 12);
 
     const float cap_y = y + bh + 36.0f;
-    caption(list, ctx, a, cap_y, "Closes EVO safely", true);
+    caption(list, ctx, a, cap_y, "Closes NoStream safely", true);
     benefit_fit(list, ctx, a, cap_y + 36.0f, pv.benefit);
 }
 

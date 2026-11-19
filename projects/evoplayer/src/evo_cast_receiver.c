@@ -1071,7 +1071,7 @@ static int lounge_send_command(const char *cmd, const char *extra_params)
     long now_ms = (long)time(NULL) * 1000;
     snprintf(url, sizeof(url),
         "https://www.youtube.com/api/lounge/bc/bind?device=LOUNGE_SCREEN&id=%s&name=%s&loungeIdToken=%s&VER=8&SID=%s&RID=%d&AID=%d&gsessionid=%s&zx=%ld",
-        dev_id, "EVO%20Player", tok, sid, rid, aid, gsid, now_ms);
+        dev_id, "NoStream", tok, sid, rid, aid, gsid, now_ms);
 
     char body[1024];
     snprintf(body, sizeof(body),
@@ -1551,7 +1551,7 @@ static void *lounge_thread(void *arg)
             long now_ms = (long)time(NULL) * 1000;
             snprintf(url, sizeof(url),
                 "https://www.youtube.com/api/lounge/bc/bind?device=LOUNGE_SCREEN&id=%s&name=%s&loungeIdToken=%s&VER=8&RID=%d&zx=%ld",
-                s_device_id, "EVO%20Player", cur_tok, bind_rid, now_ms);
+                s_device_id, "NoStream", cur_tok, bind_rid, now_ms);
 
             char hdr_token[600];
             snprintf(hdr_token, sizeof(hdr_token), "X-YouTube-LoungeId-Token: %s", cur_tok);
@@ -1606,7 +1606,7 @@ static void *lounge_thread(void *arg)
 
         snprintf(poll_url, sizeof(poll_url),
             "https://www.youtube.com/api/lounge/bc/bind?device=LOUNGE_SCREEN&id=%s&name=%s&loungeIdToken=%s&VER=8&RID=rpc&SID=%s&CI=0&AID=%d&gsessionid=%s&TYPE=xmlhttp&zx=%ld",
-            s_device_id, "EVO%20Player", cur_tok, session_sid, cur_aid, session_gsid, now_ms);
+            s_device_id, "NoStream", cur_tok, session_sid, cur_aid, session_gsid, now_ms);
 
         int ret = lounge_listen_channel(poll_url, cur_tok, screen_on_chunk, &s_lounge_running);
         if (!s_running || !s_lounge_running) break;
@@ -1708,7 +1708,7 @@ static void page_watch_session(const char *tok)
     char base[1024];
     snprintf(base, sizeof(base),
         "https://www.youtube.com/api/lounge/bc/bind?device=REMOTE_CONTROL&mdx-version=3&ui=1&v=2"
-        "&name=EVO%%20Player&app=youtube-desktop&loungeIdToken=%s&id=%s-w&VER=8&CVER=1",
+        "&name=NoStream&app=youtube-desktop&loungeIdToken=%s&id=%s-w&VER=8&CVER=1",
         tok, s_device_id);
     char hdr_token[600];
     snprintf(hdr_token, sizeof(hdr_token), "X-YouTube-LoungeId-Token: %s", tok);

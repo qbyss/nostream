@@ -42,7 +42,7 @@ void DeveloperToolsScreen::activateSelection() {
     switch (m_selectedIndex) {
         case 0:
             evo_boot_log_flush();
-            toast("LOGS", "Flushed evo.log to USB");
+            toast("LOGS", "Flushed the NoStream log to USB");
             break;
         case 1: {
             auto settings = Application::getInstance().getSettingsService();

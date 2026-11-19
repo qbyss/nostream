@@ -321,7 +321,7 @@ int rail_items(RailItem *out)
         out[n++] = {"Web", "../icons/icon_globe.png"}; /* #237 */
     out[n++] = {"Settings", "../icons/icon_settings.png"};
     out[n++] = {"About", "../icons/icon_about_support.png"};
-    out[n++] = {"Quit EVO", "../icons/icon_power.png"};
+    out[n++] = {"Quit NoStream", "../icons/icon_power.png"};
     return n;
 }
 
@@ -385,7 +385,7 @@ void NavRail::draw(DrawList &list, const Context &ctx) const
     if (e > 0.01f)
     {
         list.push_opacity(e);
-        ui::text(list, fonts.display, "EVO", 112, 104, 34, kWhite);
+        ui::text(list, fonts.display, "NoStream", 112, 104, 34, kWhite);
         list.pop_opacity();
     }
 

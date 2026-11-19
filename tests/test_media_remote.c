@@ -58,7 +58,7 @@ int test_media_remote(void)
         sample(0, 0);
         held = evo_media_remote_poll(&remote, i, 0, 0, &pressed, &released);
         CHECK(held == 0 && pressed == keys[i].action);
-        CHECK(released == (keys[i].action & ~EVO_MEDIA_TRANSPORT));
+        CHECK(released == (keys[i].action & ~EVO_MEDIA_PLAY_PAUSE));
     }
     CHECK(open_attempts == 3 && remote.handle == 42);
 
@@ -82,21 +82,33 @@ int test_media_remote(void)
     evo_media_remote_poll(&remote, 13, 0, 0, &pressed, &released);
     CHECK(pressed == 0);
 
+    sample(0, 0x18);
+    held = evo_media_remote_poll(&remote, 14, 0, 0, &pressed, &released);
+    CHECK(held == EVO_MEDIA_FORWARD && pressed == EVO_MEDIA_FORWARD && released == 0);
+    held = evo_media_remote_poll(&remote, 400, 0, held, &pressed, &released);
+    CHECK(held == EVO_MEDIA_FORWARD && pressed == 0 && released == 0);
+    sample(0, 0x17);
+    held = evo_media_remote_poll(&remote, 500, 0, held, &pressed, &released);
+    CHECK(held == EVO_MEDIA_REWIND && pressed == EVO_MEDIA_REWIND && released == EVO_MEDIA_FORWARD);
+    sample(0, 0);
+    held = evo_media_remote_poll(&remote, 501, 0, held, &pressed, &released);
+    CHECK(held == 0 && pressed == 0 && released == EVO_MEDIA_REWIND);
+
     sample(0x80000000u, 0x18);
     sample(0, 0x18);
-    evo_media_remote_poll(&remote, 14, 0, 0, &pressed, &released);
+    evo_media_remote_poll(&remote, 502, 0, 0, &pressed, &released);
     CHECK(pressed == 0);
     sample(0, 0);
     sample(up, 0);
-    held = evo_media_remote_poll(&remote, 15, 0, 0, &pressed, &released);
+    held = evo_media_remote_poll(&remote, 503, 0, 0, &pressed, &released);
     CHECK(held == up && pressed == up);
     fail_read = 1;
-    held = evo_media_remote_poll(&remote, 16, 0, held, &pressed, &released);
+    held = evo_media_remote_poll(&remote, 504, 0, held, &pressed, &released);
     CHECK(held == 0 && released == up && closed == 1);
     fail_read = 0;
-    evo_media_remote_poll(&remote, 17, 0, 0, &pressed, &released);
+    evo_media_remote_poll(&remote, 505, 0, 0, &pressed, &released);
     CHECK(open_attempts == 3);
-    evo_media_remote_poll(&remote, 5016, 0, 0, &pressed, &released);
+    evo_media_remote_poll(&remote, 5504, 0, 0, &pressed, &released);
     CHECK(open_attempts == 6);
     evo_media_remote_close(&remote);
     CHECK(closed == 2);

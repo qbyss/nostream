@@ -37,7 +37,7 @@
         <div id="music-card">
             <div id="music-art"></div>
             <div id="music-lines">
-                <div id="music-title">EVO MUSIC</div>
+                <div id="music-title">NoStream MUSIC</div>
                 <div id="music-state">PLAYING</div>
                 <div id="music-hint">AUDIO · CROSS PAUSE · L/R SEEK</div>
             </div>

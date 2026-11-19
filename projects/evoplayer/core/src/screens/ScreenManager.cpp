@@ -146,7 +146,6 @@ ScreenId ScreenManager::getRootScreenForSection(int section) const {
 bool ScreenManager::isPlaybackScreen(ScreenId screenId) const {
     switch (screenId) {
         case ScreenId::Player:
-        case ScreenId::ExitConfirm:
         case ScreenId::ResumePrompt:
         case ScreenId::MediaInfo:
         case ScreenId::SubtitlePicker:

@@ -301,7 +301,7 @@ int evo_updater_download(void)
     pthread_mutex_unlock(&s_mx);
     if (!ok) return 0;
     if (!find_installed_image()) {
-        set_state(EVO_UPD_FAILED, "EVO's image was not found in a homebrew folder");
+        set_state(EVO_UPD_FAILED, "NoStream's image was not found in a homebrew folder");
         return 0;
     }
     pthread_mutex_lock(&s_mx);

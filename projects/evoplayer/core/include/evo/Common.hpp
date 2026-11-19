@@ -43,7 +43,6 @@ enum class ScreenId : int {
     PlaybackFinished = 17,
     SubtitlePicker = 18,
     Changelog = 19,
-    ExitConfirm = 20,
     TextReader = 21,
     SettingsPlayback = 24,
     SettingsSubtitles = 25,

@@ -499,8 +499,7 @@ bool Application::initScreens() {
     m_screenManager->registerScreen(std::make_unique<ChangelogScreen>());
     m_screenManager->registerScreen(std::make_unique<ImageViewerScreen>());
     m_screenManager->registerScreen(std::make_unique<WebScreen>());   /* #237 */
-    m_screenManager->registerScreen(std::make_unique<ModalDialogScreen>(ModalType::ExitConfirm));
-    m_screenManager->registerScreen(std::make_unique<ModalDialogScreen>(ModalType::ResumePrompt));
+    m_screenManager->registerScreen(std::make_unique<ModalDialogScreen>());
     m_screenManager->navigateTo(ScreenId::MainMenu);
     return true;
 }
@@ -1068,7 +1067,7 @@ int Application::run() {
                     evo_updater_status_t us;
                     evo_updater_get(&us);
                     char title[48];
-                    std::snprintf(title, sizeof title, "EVO %s is available", us.latest);
+                    std::snprintf(title, sizeof title, "NoStream %s is available", us.latest);
                     char head[160];
                     evo_updater_plain_notes(us.notes, head, sizeof head);
                     if (char* sep = std::strstr(head, " - ")) *sep = '\0';
@@ -1210,7 +1209,20 @@ int Application::run() {
             s_stickUp = curStickUp;
             s_stickDown = curStickDown;
 
-            evo_input_update(&evo_pad_state, padData.buttons, static_cast<uint64_t>(now_ms()));
+            uint32_t repeatButtons = padData.buttons & ~EVO_MEDIA_TRANSPORT;
+            if (m_screenManager && m_screenManager->getCurrentScreenId() == ScreenId::Player &&
+                !evo_webui_active() && !evo_keyboard_is_open()) {
+                const auto seekDirections = [](uint32_t buttons) {
+                    uint32_t directions = 0;
+                    if (buttons & EVO_MEDIA_REWIND) directions |= PadButtons::Left;
+                    if (buttons & EVO_MEDIA_FORWARD) directions |= PadButtons::Right;
+                    return directions;
+                };
+                pressed |= seekDirections(pressed);
+                held |= seekDirections(held);
+                repeatButtons |= seekDirections(padData.buttons);
+            }
+            evo_input_update(&evo_pad_state, repeatButtons, static_cast<uint64_t>(now_ms()));
 
             // Synthesize directional repeat events into pressed mask
             if (evo_input_fired(&evo_pad_state, EVO_ACT_UP))    pressed |= PadButtons::Up;
@@ -1312,7 +1324,7 @@ int Application::run() {
                     toast("SCREENSHOT", name ? name + 1 : shotPath.c_str());
                     {
                         char note[160];
-                        std::snprintf(note, sizeof note, "EVO: screenshot saved - %s",
+                        std::snprintf(note, sizeof note, "NoStream: screenshot saved - %s",
                                       name ? name + 1 : shotPath.c_str());
                         notifyOnScreen(note);
                     }
@@ -1321,7 +1333,7 @@ int Application::run() {
                     evo_feedback(EVO_FB_CONFIRM);
                 } else {
                     toast("SCREENSHOT", "Capture failed");
-                    notifyOnScreen("EVO: screenshot failed");
+                    notifyOnScreen("NoStream: screenshot failed");
                     evo_feedback(EVO_FB_BOUNDARY);
                 }
                 pressed &= ~(PadButtons::L3 | ((r3IsChapters || r3ToKeyboard || r3ToSubtitles) ? 0u : PadButtons::R3));
@@ -1644,8 +1656,8 @@ int Application::run() {
                         s_upcmp.state = 0;
                         if (!s_upcmp.wasPaused && m_playbackController)
                             m_playbackController->setPaused(false);
-                        notifyOnScreen(s_upcmp.kind ? "EVO: deep blacks comparison saved to USB"
-                                                 : "EVO: upscaler comparison saved to USB");
+                        notifyOnScreen(s_upcmp.kind ? "NoStream: deep blacks comparison saved to USB"
+                                                    : "NoStream: upscaler comparison saved to USB");
                     }
                 }
                 if (s_upcmp.state != 0) {

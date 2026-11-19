@@ -50,7 +50,6 @@ const char* screen_name(int id)
     case 17: return "PlaybackFinished";
     case 18: return "SubtitlePicker";
     case 19: return "Changelog";
-    case 20: return "ExitConfirm";
     case 21: return "TextReader";
     case 24: return "SettingsPlayback";
     case 25: return "SettingsSubtitles";

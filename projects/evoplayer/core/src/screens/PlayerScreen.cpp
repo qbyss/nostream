@@ -375,16 +375,17 @@ bool PlayerScreen::handleInput(uint32_t pressed, uint32_t held, uint32_t release
         m_controlsLastUsedMs = NowMs();
     }
 
-    // Scrub hold update
+    if (pressed & PadButtons::Circle) {
+        evo_feedback(EVO_FB_CONFIRM);
+        playback->stopPlayback();
+        if (screenMgr) screenMgr->returnFromPlayback();
+        return true;
+    }
+
     playback->updateScrubHold(held);
 
-    if (pressed & EVO_MEDIA_TRANSPORT) {
+    if (pressed & EVO_MEDIA_PLAY_PAUSE) {
         if (!playback->isActive() || playback->isScrubbing()) return true;
-        if (!(pressed & EVO_MEDIA_PLAY_PAUSE)) {
-            const int steps = !!(pressed & EVO_MEDIA_FORWARD) - !!(pressed & EVO_MEDIA_REWIND);
-            if (steps) playback->seekRelative(steps * 10.0);
-            return true;
-        }
         if (evo_pb_is_eof() && !playback->isLiveSource()) {
             playback->seekTo(0.0);
             playback->setPaused(false);
@@ -399,13 +400,6 @@ bool PlayerScreen::handleInput(uint32_t pressed, uint32_t held, uint32_t release
             // Toggle play / pause
             playback->togglePause();
             toast("PLAYBACK", playback->isPaused() ? "PAUSED" : "RESUMED");
-        }
-        return true;
-    }
-    if (pressed & PadButtons::Circle) {
-        // Stop playback confirmation prompt
-        if (screenMgr) {
-            screenMgr->navigateTo(ScreenId::ExitConfirm);
         }
         return true;
     }

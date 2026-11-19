@@ -60,10 +60,10 @@ void AudioTrackPickerScreen::refreshTracks() {
         a.kind = KindAuto;
         a.streamIndex = -1;
         a.label = "AUTO";
-        a.detail = "EVO picks the best quality available";
+        a.detail = "NoStream picks the best quality available";
         a.badge = pinned ? "" : "PLAYING";
         a.pills = pinned ? "BEST QUALITY" : "+PLAYING\tBEST QUALITY";
-        a.facts = {{"Mode", "Automatic"}, {"Behaviour", "EVO picks the best quality available"}};
+        a.facts = {{"Mode", "Automatic"}, {"Behaviour", "NoStream picks the best quality available"}};
         if (!pinned) m_activeIndex = static_cast<int>(m_tracks.size());
         m_tracks.push_back(std::move(a));
 

@@ -187,28 +187,28 @@ const PreviewSpec kPreviews[] = {
     {SettingKey::Lightbar, EVO_RMLUI_PREVIEW_LIGHTBAR, "The DualSense light follows the theme accent."},
     {SettingKey::FoldersFirst, EVO_RMLUI_PREVIEW_FOLDERS_FIRST, "Lists folders above files in the USB browser."},
     {SettingKey::KeyboardInput, EVO_RMLUI_PREVIEW_KEYBOARD,
-     "The virtual keyboard is drawn by EVO. The native one is the PS5 system keyboard."},
+     "The virtual keyboard is drawn by NoStream. The native one is the PS5 system keyboard."},
     {SettingKey::PhonePort, EVO_RMLUI_PREVIEW_PORT,
-     "EVO checks the port is free before it saves it. If it is busy at start-up, EVO tries the next nine and shows the one it got."},
+     "NoStream checks the port is free before it saves it. If it is busy at start-up, NoStream tries the next nine and shows the one it got."},
     {SettingKey::PhoneCast, EVO_RMLUI_PREVIEW_PHONE_CAST,
      "Allows casting YouTube from your phone directly to NoStream (DIAL receiver on port 8765)."},
     {SettingKey::CastNativePlayer, EVO_RMLUI_PREVIEW_CAST_PLAYER,
      "Plays YouTube casts in NoStream, full length up to 1080p60, instead of the 720p WebKit browser."},
     {SettingKey::YouTubeLink, EVO_RMLUI_PREVIEW_YT_LINK,
-     "Paste or type a YouTube link (or use the phone page) and EVO plays the whole video, up to 1080p60."},
+     "Paste or type a YouTube link (or use the phone page) and NoStream plays the whole video, up to 1080p60."},
     {SettingKey::ReportProblem, EVO_RMLUI_PREVIEW_REPORT,
-     "The report has EVO's log, version and settings. Passwords and tokens are taken out."},
+     "The report has NoStream's log, version and settings. Passwords and tokens are taken out."},
     {SettingKey::ReportLastRun, EVO_RMLUI_PREVIEW_REPORT,
-     "The log of the run before this one. Use it when EVO crashed or froze and you reopened it."},
+     "The log of the run before this one. Use it when NoStream crashed or froze and you reopened it."},
     {SettingKey::DebugOverlay, EVO_RMLUI_PREVIEW_DEBUG_OVERLAY, "Shows live performance numbers on screen."},
     {SettingKey::DeveloperTools, EVO_RMLUI_PREVIEW_DEV_TOOLS, "System diagnostics and performance stats."},
     {SettingKey::ConsoleModel, EVO_RMLUI_PREVIEW_CONSOLE,
-     "The console EVO detected. Some features, like Maximum AI upscaling, need a PS5 Pro."},
+     "The console NoStream detected. Some features, like Maximum AI upscaling, need a PS5 Pro."},
     {SettingKey::MemoryMode, EVO_RMLUI_PREVIEW_MEMORY,
-     "How much GPU memory EVO was given. A PS5 Pro gives about 1.2 GiB more to the Pro memory package. Standard mode is the normal amount."},
+     "How much GPU memory NoStream was given. A PS5 Pro gives about 1.2 GiB more to the Pro memory package. Standard mode is the normal amount."},
     {SettingKey::SoftwareUpdate, EVO_RMLUI_PREVIEW_UPDATE,
-     "Checks GitHub for a newer EVO. It downloads only after you say so, checks the file against GitHub's checksum, and replaces the installed image just once, when you confirm. EVO then closes; open it again from the Games row."},
-    {SettingKey::QuitEvo, EVO_RMLUI_PREVIEW_QUIT, "Releases everything, then close EVO from the switcher."},
+     "Checks GitHub for a newer NoStream. It downloads only after you say so, checks the file against GitHub's checksum, and replaces the installed image just once, when you confirm. NoStream then closes; open it again from the Media tab."},
+    {SettingKey::QuitEvo, EVO_RMLUI_PREVIEW_QUIT, "Releases everything, then close NoStream from the switcher."},
     {SettingKey::WebBrowser, EVO_RMLUI_PREVIEW_WEB,
      "Enables the built-in Prospero Web browser section on the navigation rail. Unfinished experimental feature."},
 };
@@ -680,7 +680,7 @@ SettingDef makeDef(SettingKey key, ISettingsService* settings) {
         break;
 
     case SettingKey::ReportProblem:
-        d = actionDef(key, "REPORT A PROBLEM", "SEND EVO'S LOG FROM YOUR PHONE, OR SAVE IT TO USB",
+        d = actionDef(key, "REPORT A PROBLEM", "SEND NoStream'S LOG FROM YOUR PHONE, OR SAVE IT TO USB",
                       "../icons/icon_report.png", "SAVE");
         break;
 
@@ -773,10 +773,10 @@ SettingDef makeDef(SettingKey key, ISettingsService* settings) {
                           us.total ? static_cast<int>(us.done * 100 / us.total) : 0);
             break;
         case EVO_UPD_READY:
-            std::snprintf(s_upd_sub, sizeof s_upd_sub, "%s VERIFIED - CROSS TO INSTALL AND CLOSE EVO", us.latest);
+            std::snprintf(s_upd_sub, sizeof s_upd_sub, "%s VERIFIED - CROSS TO INSTALL AND CLOSE NoStream", us.latest);
             break;
         case EVO_UPD_APPLIED:
-            std::snprintf(s_upd_sub, sizeof s_upd_sub, "INSTALLED - OPEN EVO AGAIN FROM THE GAMES ROW");
+            std::snprintf(s_upd_sub, sizeof s_upd_sub, "INSTALLED - OPEN NoStream AGAIN FROM THE MEDIA TAB");
             break;
         case EVO_UPD_FAILED:
             std::snprintf(s_upd_sub, sizeof s_upd_sub, "%s - CROSS TO TRY AGAIN", us.error);
@@ -792,7 +792,7 @@ SettingDef makeDef(SettingKey key, ISettingsService* settings) {
     }
 
     case SettingKey::QuitEvo:
-        d = actionDef(key, "QUIT EVO", "RELEASE EVERYTHING, THEN CLOSE FROM THE SWITCHER",
+        d = actionDef(key, "QUIT NoStream", "RELEASE EVERYTHING, THEN CLOSE FROM THE SWITCHER",
                       "../icons/icon_power.png", "QUIT");
         break;
     }
@@ -1101,7 +1101,7 @@ void fillReportPreview(evo_rmlui_settings_row_t& row, bool lastRun) {
     if (actual > 0 && ip[0]) {
         std::snprintf(s_link, sizeof s_link, "http://%s:%d/report%s", ip, actual, lastRun ? "?run=last" : "");
         std::snprintf(s_status, sizeof s_status,
-                      "The phone must be on the same network as the PS5. EVO has to stay open.");
+                      "The phone must be on the same network as the PS5. NoStream has to stay open.");
         row.preview_index = 0;
     } else {
         s_link[0] = '\0';
@@ -1209,7 +1209,7 @@ bool runAction(const SettingDef& def) {
             break;
         case EVO_UPD_READY:
             if (evo_updater_apply()) {
-                toast("EVO UPDATED", "Closing. Open EVO again from the Games row");
+                toast("NoStream UPDATED", "Closing. Open NoStream again from the Media tab");
                 evo_boot_log("settings: update installed - closing");
                 evo_boot_log_flush();
                 Application::getInstance().requestCloseAndExit();

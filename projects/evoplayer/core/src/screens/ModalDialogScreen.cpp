@@ -2,16 +2,14 @@
 #include "evo/Application.hpp"
 #include "evo_rmlui_bridge.h"
 #include "evo_feedback.h"
-#include "evo_playback.h"
 
 #include <cstdio>
 #include <cstring>
 
 namespace evo {
 
-ModalDialogScreen::ModalDialogScreen(ModalType type)
+ModalDialogScreen::ModalDialogScreen()
     : StatefulScreen("ModalDialogScreen")
-    , m_type(type)
     , m_modalFsm(ModalDialogState::Inactive, "ModalDialogFSM")
 {
     initModalStateMachine();
@@ -34,14 +32,13 @@ void ModalDialogScreen::initModalStateMachine() {
 }
 
 ScreenId ModalDialogScreen::getScreenId() const {
-    return (m_type == ModalType::ExitConfirm) ? ScreenId::ExitConfirm : ScreenId::ResumePrompt;
+    return ScreenId::ResumePrompt;
 }
 
 void ModalDialogScreen::onEnter() {
     StatefulScreen::onEnter();
     m_modalFsm.postEvent(ModalDialogEvent::Open);
-    m_focusedButton = (m_type == ModalType::ExitConfirm) ? 1 : 0; // Default STOP (1) or CONTINUE (0)
-    m_atEnd = (m_type == ModalType::ExitConfirm) && evo_pb_is_eof();
+    m_focusedButton = 0;
 }
 
 void ModalDialogScreen::onExit() {
@@ -54,53 +51,29 @@ void ModalDialogScreen::executeAction(int actionIndex) {
     auto screenMgr = Application::getInstance().getScreenManager();
     if (!screenMgr) return;
 
-    if (m_type == ModalType::ExitConfirm) {
-        if (actionIndex == 0 && m_atEnd && playback) {
-            // "REPLAY": the clip is over, so start it again from the top
-            evo_feedback(EVO_FB_CONFIRM);
-            const PlaybackSource src = playback->getSource();
-            if (!playback->startPlaybackSource(src, 0.0)) {
-                screenMgr->returnFromPlayback();
-                return;
-            }
-            screenMgr->navigateTo(ScreenId::Player);
-        } else if (actionIndex == 0) {
-            // "KEEP WATCHING"
-            evo_feedback(EVO_FB_CANCEL);
-            screenMgr->navigateBack(ScreenId::Player);
-        } else {
-            // "STOP"
-            evo_feedback(EVO_FB_CONFIRM);
-            if (playback) {
-                playback->stopPlayback();
-            }
-            screenMgr->returnFromPlayback();
+    // Resume prompt
+    if (actionIndex == 0) {
+        // "CONTINUE"
+        evo_feedback(EVO_FB_CONFIRM);
+        if (playback && !m_resumePath.empty() &&
+            !playback->startPlayback(m_resumePath, m_resumeTimestamp)) {
+            screenMgr->returnFromPlayback();   // open failed: back to the list, toast already shown
+            return;
         }
+        screenMgr->navigateTo(ScreenId::Player);
+    } else if (actionIndex == 1) {
+        // "RESTART"
+        evo_feedback(EVO_FB_CONFIRM);
+        if (playback && !m_resumePath.empty() &&
+            !playback->startPlayback(m_resumePath, 0.0)) {
+            screenMgr->returnFromPlayback();
+            return;
+        }
+        screenMgr->navigateTo(ScreenId::Player);
     } else {
-        // Resume prompt
-        if (actionIndex == 0) {
-            // "CONTINUE"
-            evo_feedback(EVO_FB_CONFIRM);
-            if (playback && !m_resumePath.empty() &&
-                !playback->startPlayback(m_resumePath, m_resumeTimestamp)) {
-                screenMgr->returnFromPlayback();   // open failed: back to the list, toast already shown
-                return;
-            }
-            screenMgr->navigateTo(ScreenId::Player);
-        } else if (actionIndex == 1) {
-            // "RESTART"
-            evo_feedback(EVO_FB_CONFIRM);
-            if (playback && !m_resumePath.empty() &&
-                !playback->startPlayback(m_resumePath, 0.0)) {
-                screenMgr->returnFromPlayback();
-                return;
-            }
-            screenMgr->navigateTo(ScreenId::Player);
-        } else {
-            // "CANCEL"
-            evo_feedback(EVO_FB_CANCEL);
-            screenMgr->returnFromPlayback();
-        }
+        // "CANCEL"
+        evo_feedback(EVO_FB_CANCEL);
+        screenMgr->returnFromPlayback();
     }
 }
 
@@ -108,56 +81,27 @@ bool ModalDialogScreen::handleInput(uint32_t pressed, uint32_t held, uint32_t re
     (void)held;
     (void)released;
 
-    if (m_type == ModalType::ResumePrompt) {
-        if (pressed & (PadButtons::Left | PadButtons::Up)) {
-            m_focusedButton = (m_focusedButton + 2) % 3;
-            evo_feedback(EVO_FB_MOVE);
-            return true;
-        }
-        if (pressed & (PadButtons::Right | PadButtons::Down)) {
-            m_focusedButton = (m_focusedButton + 1) % 3;
-            evo_feedback(EVO_FB_MOVE);
-            return true;
-        }
-    } else {
-        if (pressed & (PadButtons::Left | PadButtons::Right | PadButtons::Up | PadButtons::Down)) {
-            m_focusedButton = (m_focusedButton == 0) ? 1 : 0;
-            evo_feedback(EVO_FB_MOVE);
-            return true;
-        }
+    if (pressed & (PadButtons::Left | PadButtons::Up)) {
+        m_focusedButton = (m_focusedButton + 2) % 3;
+        evo_feedback(EVO_FB_MOVE);
+        return true;
     }
-
+    if (pressed & (PadButtons::Right | PadButtons::Down)) {
+        m_focusedButton = (m_focusedButton + 1) % 3;
+        evo_feedback(EVO_FB_MOVE);
+        return true;
+    }
     if (pressed & PadButtons::Cross) {
         executeAction(m_focusedButton);
         return true;
     }
-
     if (pressed & PadButtons::Square) {
-        if (m_type == ModalType::ResumePrompt) {
-            executeAction(1); // RESTART shortcut
-            return true;
-        }
-    }
-
-    if (pressed & PadButtons::Circle) {
-        if (m_type == ModalType::ResumePrompt) {
-            // Circle directly triggers "CANCEL"
-            executeAction(2);
-        } else {
-            evo_feedback(EVO_FB_CANCEL);
-            if (auto sm = Application::getInstance().getScreenManager()) {
-                sm->navigateBack(ScreenId::Player);
-            }
-        }
+        executeAction(1);
         return true;
     }
-
-    if (pressed & PadButtons::Triangle) {
-        // Back out to file manager / browser if cancelled from resume prompt
-        if (m_type == ModalType::ResumePrompt) {
-            executeAction(2);
-            return true;
-        }
+    if (pressed & (PadButtons::Circle | PadButtons::Triangle)) {
+        executeAction(2);
+        return true;
     }
 
     return false;
@@ -174,63 +118,45 @@ void ModalDialogScreen::render(uint32_t* framebuffer, int width, int height) {
     evo_rmlui_dialog_params_t dialog;
     std::memset(&dialog, 0, sizeof(dialog));
 
-    if (m_type == ModalType::ExitConfirm) {
-        dialog.eyebrow = "PLAYBACK";
-        dialog.title = m_atEnd ? "Playback finished" : "Stop playback?";
-        dialog.detail = m_atEnd ? "Watch it again, or go back to the list."
-                                : "Your current position will be saved automatically.";
-        dialog.progress_pct = -1.0;
-        dialog.action_count = 2;
-        dialog.focused_action = m_focusedButton;
+    dialog.eyebrow = "RESUME";
+    dialog.title = "Continue from previous position?";
 
-        dialog.actions[0].label = m_atEnd ? "REPLAY" : "KEEP WATCHING";
-        dialog.actions[0].icon_path = "/assets/icons/btn_circle.png";
-        dialog.actions[0].is_primary = (m_focusedButton == 0) ? 1 : 0;
-
-        dialog.actions[1].label = m_atEnd ? "CLOSE" : "STOP";
-        dialog.actions[1].icon_path = "/assets/icons/btn_cross.png";
-        dialog.actions[1].is_primary = (m_focusedButton == 1) ? 1 : 0;
+    static char resumeDetailBuf[128];
+    int pos = static_cast<int>(m_resumeTimestamp);
+    int ph = pos / 3600, pm = (pos % 3600) / 60, ps = pos % 60;
+    int dur = static_cast<int>(m_resumeDuration);
+    int dh = dur / 3600, dm = (dur % 3600) / 60, ds = dur % 60;
+    if (dh > 0) {
+        std::snprintf(resumeDetailBuf, sizeof(resumeDetailBuf), "STOPPED AT %02d:%02d:%02d OF %02d:%02d:%02d",
+                      ph, pm, ps, dh, dm, ds);
+    } else if (dur > 0) {
+        std::snprintf(resumeDetailBuf, sizeof(resumeDetailBuf), "STOPPED AT %02d:%02d OF %02d:%02d",
+                      pm, ps, dm, ds);
     } else {
-        dialog.eyebrow = "RESUME";
-        dialog.title = "Continue from previous position?";
-
-        static char resumeDetailBuf[128];
-        int pos = static_cast<int>(m_resumeTimestamp);
-        int ph = pos / 3600, pm = (pos % 3600) / 60, ps = pos % 60;
-        int dur = static_cast<int>(m_resumeDuration);
-        int dh = dur / 3600, dm = (dur % 3600) / 60, ds = dur % 60;
-        if (dh > 0) {
-            std::snprintf(resumeDetailBuf, sizeof(resumeDetailBuf), "STOPPED AT %02d:%02d:%02d OF %02d:%02d:%02d",
-                          ph, pm, ps, dh, dm, ds);
-        } else if (dur > 0) {
-            std::snprintf(resumeDetailBuf, sizeof(resumeDetailBuf), "STOPPED AT %02d:%02d OF %02d:%02d",
-                          pm, ps, dm, ds);
-        } else {
-            std::snprintf(resumeDetailBuf, sizeof(resumeDetailBuf), "STOPPED AT %02d:%02d", pm, ps);
-        }
-        dialog.detail = resumeDetailBuf;
-
-        if (m_resumeDuration > 0.0) {
-            dialog.progress_pct = (m_resumeTimestamp / m_resumeDuration) * 100.0;
-        } else {
-            dialog.progress_pct = -1.0;
-        }
-
-        dialog.action_count = 3;
-        dialog.focused_action = m_focusedButton;
-
-        dialog.actions[0].label = "CONTINUE";
-        dialog.actions[0].icon_path = "../icons/btn_cross.png";
-        dialog.actions[0].is_primary = (m_focusedButton == 0) ? 1 : 0;
-
-        dialog.actions[1].label = "RESTART";
-        dialog.actions[1].icon_path = "../icons/btn_square.png";
-        dialog.actions[1].is_primary = (m_focusedButton == 1) ? 1 : 0;
-
-        dialog.actions[2].label = "CANCEL";
-        dialog.actions[2].icon_path = "../icons/btn_circle.png";
-        dialog.actions[2].is_primary = (m_focusedButton == 2) ? 1 : 0;
+        std::snprintf(resumeDetailBuf, sizeof(resumeDetailBuf), "STOPPED AT %02d:%02d", pm, ps);
     }
+    dialog.detail = resumeDetailBuf;
+
+    if (m_resumeDuration > 0.0) {
+        dialog.progress_pct = (m_resumeTimestamp / m_resumeDuration) * 100.0;
+    } else {
+        dialog.progress_pct = -1.0;
+    }
+
+    dialog.action_count = 3;
+    dialog.focused_action = m_focusedButton;
+
+    dialog.actions[0].label = "CONTINUE";
+    dialog.actions[0].icon_path = "../icons/btn_cross.png";
+    dialog.actions[0].is_primary = (m_focusedButton == 0) ? 1 : 0;
+
+    dialog.actions[1].label = "RESTART";
+    dialog.actions[1].icon_path = "../icons/btn_square.png";
+    dialog.actions[1].is_primary = (m_focusedButton == 1) ? 1 : 0;
+
+    dialog.actions[2].label = "CANCEL";
+    dialog.actions[2].icon_path = "../icons/btn_circle.png";
+    dialog.actions[2].is_primary = (m_focusedButton == 2) ? 1 : 0;
 
     evo_rmlui_update_dialog(&dialog);
     evo_rmlui_render_dialog(framebuffer, width, height);

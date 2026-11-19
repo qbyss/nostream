@@ -7,7 +7,7 @@
 extern "C" {
 #endif
 
-/* App-only press bits, separate from the standard pad mask. */
+/* App-only input bits, separate from the standard pad mask. */
 #define EVO_MEDIA_PLAY_PAUSE UINT32_C(0x01000000)
 #define EVO_MEDIA_REWIND     UINT32_C(0x02000000)
 #define EVO_MEDIA_FORWARD    UINT32_C(0x04000000)
@@ -22,7 +22,7 @@ typedef struct {
 } evo_media_remote;
 
 /* Returns the merged navigation state, accumulating press/release edges
- * from every buffered sample. Transport bits appear only in pressed. */
+ * from every buffered sample. Seek buttons are held until release. Play/Pause appears only in pressed. */
 uint32_t evo_media_remote_poll(evo_media_remote *remote, uint64_t now_ms,
                               uint32_t standard, uint32_t previous,
                               uint32_t *pressed, uint32_t *released);

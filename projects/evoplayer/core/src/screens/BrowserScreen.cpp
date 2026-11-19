@@ -2731,7 +2731,7 @@ void BrowserScreen::render(uint32_t* framebuffer, int width, int height) {
     if (storage_locked) {
         params.empty_title = "ELEVATED PRIVILEGES NEEDED";
         params.empty_hint = "Start the jailbreak payload (Lapy JB or etaHEN), "
-                            "then relaunch EVO";
+                            "then relaunch NoStream";
     } else if (m_activeSource == 2) {
         params.empty_title = m_networkEmptyTitle.empty() ? "NO SHARES CONFIGURED" : m_networkEmptyTitle.c_str();
         params.empty_hint = m_networkEmptyHint.empty() ? "Press Cross on [+ Add Server] to configure" : m_networkEmptyHint.c_str();

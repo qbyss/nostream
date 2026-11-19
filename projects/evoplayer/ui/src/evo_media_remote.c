@@ -62,7 +62,7 @@ uint32_t evo_media_remote_poll(evo_media_remote *remote, uint64_t now_ms,
                               uint32_t *pressed, uint32_t *released)
 {
     standard &= ~EVO_MEDIA_TRANSPORT;
-    uint32_t merged = standard | (remote->buttons & ~EVO_MEDIA_TRANSPORT);
+    uint32_t merged = standard | (remote->buttons & ~EVO_MEDIA_PLAY_PAUSE);
     *pressed = merged & ~previous;
     *released = previous & ~merged;
 
@@ -90,8 +90,8 @@ uint32_t evo_media_remote_poll(evo_media_remote *remote, uint64_t now_ms,
             buttons = 0;
         }
 
-        const uint32_t next = standard | (buttons & ~EVO_MEDIA_TRANSPORT);
-        *pressed |= (next & ~merged) | (buttons & ~remote->buttons & EVO_MEDIA_TRANSPORT);
+        const uint32_t next = standard | (buttons & ~EVO_MEDIA_PLAY_PAUSE);
+        *pressed |= (next & ~merged) | (buttons & ~remote->buttons & EVO_MEDIA_PLAY_PAUSE);
         *released |= merged & ~next;
         remote->buttons = buttons;
         merged = next;

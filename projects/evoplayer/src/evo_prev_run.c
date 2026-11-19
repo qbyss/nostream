@@ -80,7 +80,7 @@ const char *evo_prev_run_text(evo_prev_run_t s)
 {
     switch (s) {
     case EVO_PREV_RUN_CRASHED: return "crashed";
-    case EVO_PREV_RUN_CLOSED:  return "closed from EVO";
+    case EVO_PREV_RUN_CLOSED:  return "closed from NoStream";
     case EVO_PREV_RUN_ENDED:   return "ended without closing (PS button or crash)";
     default:                   return "no earlier run";
     }
