@@ -195,6 +195,7 @@ void evo_rmlui_update_browser(const evo_rmlui_browser_params_t* p) {
     state.rail_focused = (p->rail_focused != 0);
     state.sidebar_focused = (p->sidebar_focused != 0);
     state.sidebar_index = p->sidebar_index;
+    state.source_divider_before = p->source_divider_before;
     state.active_source = p->active_source;
     state.sources.clear();
     for (int i = 0; i < p->source_count && i < EVO_RMLUI_BROWSER_SOURCES; ++i)

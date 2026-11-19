@@ -134,7 +134,8 @@ Rect BrowserScreen::card_rect(int i) const
 
 Rect BrowserScreen::source_rect(int i) const
 {
-    return {kLeft, kSourceTop + static_cast<float>(i) * (kSourceH + 6.0f), kSourceW, kSourceH};
+    const float dividerGap = raw_.source_divider_before > 0 && i >= raw_.source_divider_before ? 12.0f : 0.0f;
+    return {kLeft, kSourceTop + static_cast<float>(i) * (kSourceH + 6.0f) + dividerGap, kSourceW, kSourceH};
 }
 
 float BrowserScreen::chips_x(int i) const
@@ -259,6 +260,11 @@ void BrowserScreen::draw(DrawList &list, const Context &ctx) const
 
     /* ---- sources ---- */
     {
+        if (raw_.source_divider_before > 0) {
+            const Rect next = source_rect(raw_.source_divider_before);
+            list.rounded_rect({next.x + 12.0f, next.y - 9.0f, next.w - 24.0f, 1.0f},
+                              0.0f, kWhite.with_alpha(0.20f));
+        }
         list.rounded_rect(source_ring_.value(), page::kRadiusTile, kWhite.with_alpha(raw_.sidebar_focused || raw_.active_source < 0 ? 0.0f : 0.10f));
         for (int i = 0; i < static_cast<int>(sources_.size()); ++i)
         {

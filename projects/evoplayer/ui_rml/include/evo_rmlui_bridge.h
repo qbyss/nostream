@@ -499,6 +499,7 @@ typedef struct {
     int         sidebar_index;
     int         active_source;
     int         source_count;
+    int         source_divider_before; /* visible row index, or 0 for no divider */
     const char* source_labels[EVO_RMLUI_BROWSER_SOURCES];
     const char* source_icons[EVO_RMLUI_BROWSER_SOURCES];
 

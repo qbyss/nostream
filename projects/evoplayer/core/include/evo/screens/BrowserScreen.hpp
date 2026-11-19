@@ -93,6 +93,9 @@ private:
     void jumpLetter(int direction);
     void activateSelection();
     void activateSidebar(bool focusGrid = true);
+    void refreshFolderShortcuts();
+    void openFavoriteFolder(int index);
+    int storageSidebarIndex() const;
     void refreshStorageSources();
     int activeSidebarIndex() const;
     void applyFolderFilter();
@@ -113,6 +116,8 @@ private:
     std::vector<std::string> m_storageMounts;
     std::vector<std::string> m_storageLabels;
     std::string m_activeMount;
+    std::vector<int> m_folderShortcuts;
+    std::string m_openedFavoritePath;
     /*
      * Folder filter. m_folderCats holds the categories that actually have
      * files in the folder in view, so a chip can never produce an empty grid,
@@ -137,6 +142,7 @@ private:
     unsigned m_usbVolumeGeneration = 0;
     int m_pendingFolderFavorite = -1;
     double m_pendingFavoriteMs = 0;
+    bool m_pendingFavoriteFromSidebar = false;
     MediaMetadataInfo m_cachedMetadata;
     char m_formattedPath[256];
     char m_rowDurations[16][32];

@@ -1,3 +1,4 @@
+#include "evo_readdir.h"
 #include "evo/screens/BrowserScreen.hpp"
 #include "evo_jailbreak.h"
 #include "evo/screens/TextReaderScreen.hpp"
@@ -748,6 +749,7 @@ void BrowserScreen::performAction(int actionIndex) {
                 return;
             }
             favorites_save();
+            refreshFolderShortcuts();
             m_actionMenuOpen = false;
             rebuildItems();
             m_selectedIndex = std::clamp(m_selectedIndex, 0, std::max(0, static_cast<int>(m_items.size()) - 1));
@@ -1146,6 +1148,7 @@ void BrowserScreen::rebuildItems() {
     } else if (m_activeSource == 3) {
         // Favorites
         favorites_load();
+        refreshFolderShortcuts();
         for (int i = 0; i < favorite_count; ++i) {
             const auto& fav = favorite_files[i];
             char path[sizeof fav.path];
@@ -1363,12 +1366,50 @@ void BrowserScreen::resetSelection() {
     m_browserFsm.postEvent(BrowserScreenEvent::CursorMoved);
 }
 
+void BrowserScreen::refreshFolderShortcuts() {
+    size_t count = 0;
+    bool changed = false;
+    for (int i = 0; i < favorite_count && count < 6; ++i) {
+        if (!favorite_files[i].is_folder) continue;
+        if (count == m_folderShortcuts.size()) {
+            m_folderShortcuts.push_back(i);
+            changed = true;
+        } else if (m_folderShortcuts[count] != i) {
+            m_folderShortcuts[count] = i;
+            changed = true;
+        }
+        ++count;
+    }
+    if (changed || count != m_folderShortcuts.size()) {
+        m_folderShortcuts.resize(count);
+        m_sidebarIndex = activeSidebarIndex();
+    }
+}
+
 int BrowserScreen::activeSidebarIndex() const {
+    if (m_activeSource == 0 && !m_openedFavoritePath.empty()) {
+        if (auto browser = Application::getInstance().getFileSystemBrowser()) {
+            const auto& path = browser->getCurrentPath();
+            if (path == m_openedFavoritePath || path.rfind(m_openedFavoritePath + "/", 0) == 0) {
+                for (size_t row = 0; row < m_folderShortcuts.size(); ++row) {
+                    char resolved[sizeof(FavoriteEntry::path)];
+                    if (favorites_resolve(&favorite_files[m_folderShortcuts[row]], resolved, sizeof resolved) &&
+                        m_openedFavoritePath == resolved)
+                        return static_cast<int>(row);
+                }
+            }
+        }
+    }
+    return storageSidebarIndex();
+}
+
+int BrowserScreen::storageSidebarIndex() const {
+    const int shortcutCount = static_cast<int>(m_folderShortcuts.size());
     if (m_activeSource == 0) {
         const auto mount = std::find(m_storageMounts.begin(), m_storageMounts.end(), m_activeMount);
-        return mount == m_storageMounts.end() ? 0 : static_cast<int>(mount - m_storageMounts.begin());
+        return shortcutCount + static_cast<int>(mount == m_storageMounts.end() ? 0 : mount - m_storageMounts.begin());
     }
-    return static_cast<int>(m_storageMounts.size()) + m_activeSource - 1;
+    return shortcutCount + static_cast<int>(m_storageMounts.size()) + m_activeSource - 1;
 }
 
 void BrowserScreen::refreshStorageSources() {
@@ -1387,14 +1428,18 @@ void BrowserScreen::refreshStorageSources() {
     for (const auto& mount : m_storageMounts)
         m_storageLabels.push_back(browser->usbMountLabel(mount));
 
-    m_sidebarIndex = activeSidebarIndex();
+    const bool shortcutFocused = m_focusPane == BrowserFocusPane::Sidebar &&
+        m_sidebarIndex < static_cast<int>(m_folderShortcuts.size());
+    if (!shortcutFocused) m_sidebarIndex = activeSidebarIndex();
     if (m_activeSource == 0 || m_activeSource == 3) {
         m_actionMenuOpen = false;
         m_showDeleteConfirm = false;
         if (m_activeSource == 0 && changed && !m_activeMount.empty() &&
             std::find(m_storageMounts.begin(), m_storageMounts.end(), m_activeMount) == m_storageMounts.end()) {
-            m_sidebarIndex = static_cast<int>(m_storageMounts.size());
+            const int previousRow = m_sidebarIndex;
+            m_sidebarIndex = static_cast<int>(m_folderShortcuts.size() + m_storageMounts.size());
             activateSidebar(false);
+            if (shortcutFocused) m_sidebarIndex = previousRow;
         } else {
             if (m_activeSource == 0 && !m_activeMount.empty()) browser->refresh();
             rebuildItems();
@@ -1408,12 +1453,18 @@ void BrowserScreen::setSource(int sourceIndex) {
     refreshStorageSources();
     if (sourceIndex < 0 || sourceIndex > 4) sourceIndex = 0;
     const int mountCount = static_cast<int>(m_storageMounts.size());
+    const int shortcutCount = static_cast<int>(m_folderShortcuts.size());
     if (sourceIndex == 0 && mountCount == 0)
         sourceIndex = NetworkStorageService::getInstance().getShares().empty() ? 1 : 2;
+    if (sourceIndex == 0 && m_activeSource == 0 && activeSidebarIndex() < shortcutCount) {
+        m_sidebarIndex = activeSidebarIndex();
+        m_focusPane = m_items.empty() ? BrowserFocusPane::Sidebar : BrowserFocusPane::Grid;
+        return;
+    }
     if (sourceIndex == 0)
-        m_sidebarIndex = m_activeSource == 0 ? activeSidebarIndex() : 0;
+        m_sidebarIndex = m_activeSource == 0 ? storageSidebarIndex() : shortcutCount;
     else
-        m_sidebarIndex = mountCount + sourceIndex - 1;
+        m_sidebarIndex = shortcutCount + mountCount + sourceIndex - 1;
     const bool focusGrid = evo_jailbreak_is_open() || sourceIndex >= 2;
     activateSidebar(focusGrid);
 }
@@ -1451,6 +1502,7 @@ void BrowserScreen::onEnter() {
     StatefulScreen::onEnter();
     favorites_load();
     recent_load();
+    refreshFolderShortcuts();
 
     auto browser = Application::getInstance().getFileSystemBrowser();
     if (browser) {
@@ -1605,13 +1657,23 @@ void BrowserScreen::jumpLetter(int direction) {
 void BrowserScreen::activateSidebar(bool focusGrid) {
     auto browser = Application::getInstance().getFileSystemBrowser();
 
+    const int shortcutCount = static_cast<int>(m_folderShortcuts.size());
+    if (m_sidebarIndex < shortcutCount) {
+        if (focusGrid) openFavoriteFolder(m_folderShortcuts[m_sidebarIndex]);
+        else evo_feedback(EVO_FB_MOVE);
+        return;
+    }
+
+    const int driveRow = m_sidebarIndex - shortcutCount;
     const int mountCount = static_cast<int>(m_storageMounts.size());
-    const int source = m_sidebarIndex < mountCount ? 0 : m_sidebarIndex - mountCount + 1;
+    const int source = driveRow < mountCount ? 0 : driveRow - mountCount + 1;
+    const bool fromShortcut = !m_openedFavoritePath.empty();
+    m_openedFavoritePath.clear();
     switch (source) {
         case 0: // USB Drive
-            if (m_activeSource != 0 || m_activeMount != m_storageMounts[m_sidebarIndex] ||
-                (browser && browser->usbMountOf(browser->getCurrentPath()) != m_storageMounts[m_sidebarIndex])) {
-                m_activeMount = m_storageMounts[m_sidebarIndex];
+            if (fromShortcut || m_activeSource != 0 || m_activeMount != m_storageMounts[driveRow] ||
+                (browser && browser->usbMountOf(browser->getCurrentPath()) != m_storageMounts[driveRow])) {
+                m_activeMount = m_storageMounts[driveRow];
                 m_activeSource = 0;
                 m_isSearching = false;
                 m_searchQuery.clear();
@@ -1620,7 +1682,7 @@ void BrowserScreen::activateSidebar(bool focusGrid) {
                     browser->setCurrentPath(m_activeMount);
                 }
                 resetSelection();
-                if (focusGrid) toast("STORAGE", m_storageLabels[m_sidebarIndex].c_str());
+                if (focusGrid) toast("STORAGE", m_storageLabels[driveRow].c_str());
             }
             break;
         case 1: // Internal Storage
@@ -1678,6 +1740,52 @@ void BrowserScreen::activateSidebar(bool focusGrid) {
     }
 }
 
+void BrowserScreen::openFavoriteFolder(int index) {
+    if (index < 0 || index >= favorite_count || !favorite_files[index].is_folder) return;
+    const auto& favorite = favorite_files[index];
+    char path[sizeof(FavoriteEntry::path)];
+    if (!favorites_resolve(&favorite, path, sizeof path)) {
+        if (favorite.volume_id[0]) {
+            m_pendingFolderFavorite = index;
+            m_pendingFavoriteFromSidebar = m_focusPane == BrowserFocusPane::Sidebar;
+            m_pendingFavoriteMs = 8000;
+            evo_ntfs_refresh_async();
+            toast("FAVORITES", "Looking for the drive…");
+        } else {
+            toast("FAVORITES", "Drive unavailable");
+        }
+        return;
+    }
+
+    auto browser = Application::getInstance().getFileSystemBrowser();
+    if (!browser) return;
+    const auto mount = browser->usbMountOf(path);
+    refreshStorageSources();
+    if (std::find(m_storageMounts.begin(), m_storageMounts.end(), mount) == m_storageMounts.end()) {
+        toast("FAVORITES", "Drive unavailable");
+        return;
+    }
+    evo_dir_t* dir = evo_opendir(path);
+    if (!dir) {
+        toast("FAVORITES", "Folder unavailable");
+        return;
+    }
+    evo_closedir(dir);
+
+    m_activeSource = 0;
+    m_activeMount = mount;
+    m_openedFavoritePath = path;
+    m_categoryFilter = -1;
+    m_isSearching = false;
+    m_searchQuery.clear();
+    browser->clearSearch();
+    browser->setCurrentPath(path);
+    resetSelection();
+    m_sidebarIndex = activeSidebarIndex();
+    m_focusPane = m_items.empty() ? BrowserFocusPane::Sidebar : BrowserFocusPane::Grid;
+    evo_feedback(EVO_FB_OPEN);
+}
+
 void BrowserScreen::activateSelection() {
     if (m_activeSource == 2 && !m_networkShareId.empty() && m_netState == NetListState::Failed) {
         evo_feedback(EVO_FB_CONFIRM);   // one retry per press, never automatic
@@ -1693,15 +1801,12 @@ void BrowserScreen::activateSelection() {
         char path[sizeof(FavoriteEntry::path)];
         if (item.favoriteIndex >= favorite_count) return;
         const auto& favorite = favorite_files[item.favoriteIndex];
+        if (favorite.is_folder) {
+            openFavoriteFolder(item.favoriteIndex);
+            return;
+        }
         if (!favorites_resolve(&favorite, path, sizeof path)) {
-            if (favorite.is_folder && favorite.volume_id[0]) {
-                m_pendingFolderFavorite = item.favoriteIndex;
-                m_pendingFavoriteMs = 8000;
-                evo_ntfs_refresh_async();
-                toast("FAVORITES", "Looking for the drive…");
-            } else {
-                toast("FAVORITES", "Drive unavailable");
-            }
+            toast("FAVORITES", "Drive unavailable");
             return;
         }
         item.fullPath = path;
@@ -1715,25 +1820,6 @@ void BrowserScreen::activateSelection() {
     if (!playback || !screenMgr) return;
 
     if (item.category == FileCategory::Folder) {
-        if (m_activeSource == 3 && browser) {
-            const std::string path = item.fullPath;
-            const auto mount = browser->usbMountOf(path);
-            refreshStorageSources();
-            if (std::find(m_storageMounts.begin(), m_storageMounts.end(), mount) == m_storageMounts.end()) {
-                toast("FAVORITES", "Drive unavailable");
-                return;
-            }
-            m_activeSource = 0;
-            m_activeMount = mount;
-            m_sidebarIndex = activeSidebarIndex();
-            m_categoryFilter = -1;
-            m_isSearching = false;
-            m_searchQuery.clear();
-            browser->clearSearch();
-            browser->setCurrentPath(path);
-            resetSelection();
-            return;
-        }
         if (m_activeSource == 2) {
             if (m_networkShareId.empty()) {
                 if (item.fullPath == "netshare://add_server" ||
@@ -2091,7 +2177,7 @@ bool BrowserScreen::handleInput(uint32_t pressed, uint32_t held, uint32_t releas
             return true;
         }
         if (pressed & PadButtons::Down) {
-            if (m_sidebarIndex < static_cast<int>(m_storageMounts.size()) + 3) {
+            if (m_sidebarIndex < static_cast<int>(m_folderShortcuts.size() + m_storageMounts.size()) + 3) {
                 m_sidebarIndex++;
                 activateSidebar(false);
             } else {
@@ -2322,6 +2408,7 @@ bool BrowserScreen::handleInput(uint32_t pressed, uint32_t held, uint32_t releas
             if (item.favoriteIndex >= 0) {
                 favorites_remove_at(item.favoriteIndex);
                 favorites_save();
+                refreshFolderShortcuts();
                 rebuildItems();
                 m_selectedIndex = std::clamp(m_selectedIndex, 0, std::max(0, static_cast<int>(m_items.size()) - 1));
                 toast("FAVORITES", "Removed");
@@ -2330,6 +2417,7 @@ bool BrowserScreen::handleInput(uint32_t pressed, uint32_t held, uint32_t releas
             if (favorites_is_favorite(item.fullPath.c_str())) {
                 favorites_remove(item.fullPath.c_str());
                 favorites_save();
+                refreshFolderShortcuts();
                 item.isFavorite = false;
                 toast("FAVORITES", "Removed");
             } else {
@@ -2358,20 +2446,24 @@ void BrowserScreen::update(double deltaMs) {
     StatefulScreen::update(deltaMs);
     m_browserFsm.update(deltaMs);
 
+    refreshFolderShortcuts();
     refreshStorageSources();
 
     if (m_pendingFolderFavorite >= 0) {
         const int index = m_pendingFolderFavorite;
-        if (m_activeSource != 3 || m_focusPane != BrowserFocusPane::Grid || index >= favorite_count ||
-            m_selectedIndex < 0 || m_selectedIndex >= static_cast<int>(m_items.size()) ||
-            m_items[m_selectedIndex].favoriteIndex != index) {
+        const bool sameShortcut = m_focusPane == BrowserFocusPane::Sidebar && m_sidebarIndex >= 0 &&
+            m_sidebarIndex < static_cast<int>(m_folderShortcuts.size()) && m_folderShortcuts[m_sidebarIndex] == index;
+        const bool sameFavorite = m_activeSource == 3 && m_focusPane == BrowserFocusPane::Grid &&
+            m_selectedIndex >= 0 && m_selectedIndex < static_cast<int>(m_items.size()) &&
+            m_items[m_selectedIndex].favoriteIndex == index;
+        if (index >= favorite_count || !(m_pendingFavoriteFromSidebar ? sameShortcut : sameFavorite)) {
             m_pendingFolderFavorite = -1;
         } else {
             char path[sizeof(FavoriteEntry::path)];
             m_pendingFavoriteMs -= deltaMs;
             if (favorites_resolve(&favorite_files[index], path, sizeof path)) {
                 m_pendingFolderFavorite = -1;
-                activateSelection();
+                openFavoriteFolder(index);
             } else if (m_pendingFavoriteMs <= 0) {
                 m_pendingFolderFavorite = -1;
                 toast("FAVORITES", "Drive unavailable");
@@ -2676,17 +2768,27 @@ void BrowserScreen::render(uint32_t* framebuffer, int width, int height) {
     static constexpr const char* icons[] = {"../icons/icon_folder.png", "../icons/icon_browse_usb.png",
                                             "../icons/icon_favorites.png", "../icons/icon_recent_files.png"};
     const int driveCount = static_cast<int>(m_storageMounts.size());
-    const int sourceCount = driveCount + 4;
+    const int shortcutCount = static_cast<int>(m_folderShortcuts.size());
+    const int sourceCount = shortcutCount + driveCount + 4;
     const int firstSource = std::clamp(m_sidebarIndex - EVO_RMLUI_BROWSER_SOURCES + 1, 0,
                                       std::max(0, sourceCount - EVO_RMLUI_BROWSER_SOURCES));
     params.source_count = std::min(sourceCount, EVO_RMLUI_BROWSER_SOURCES);
     for (int row = 0; row < params.source_count; ++row) {
         const int source = firstSource + row;
-        params.source_labels[row] = source < driveCount ? m_storageLabels[source].c_str()
-                                                         : labels[source - driveCount];
-        params.source_icons[row] = source < driveCount ? "../icons/icon_browse_usb.png"
-                                                        : icons[source - driveCount];
+        if (source < shortcutCount) {
+            const auto& favorite = favorite_files[m_folderShortcuts[source]];
+            params.source_labels[row] = favorite.title[0] ? favorite.title : favorite.path;
+            params.source_icons[row] = "../icons/icon_favorites.png";
+        } else {
+            const int storage = source - shortcutCount;
+            params.source_labels[row] = storage < driveCount ? m_storageLabels[storage].c_str()
+                                                             : labels[storage - driveCount];
+            params.source_icons[row] = storage < driveCount ? "../icons/icon_browse_usb.png"
+                                                            : icons[storage - driveCount];
+        }
     }
+    if (shortcutCount > firstSource && shortcutCount < firstSource + params.source_count)
+        params.source_divider_before = shortcutCount - firstSource;
     params.sidebar_index = m_sidebarIndex - firstSource;
     params.active_source = activeSidebarIndex() - firstSource;
 

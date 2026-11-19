@@ -50,38 +50,47 @@
                 <img id="sb-icon-0" class="sb-icon" src="../icons/icon_browse_usb.png"/>
                 <span id="sb-label-0" class="sb-label"></span>
             </div>
+            <div id="sb-divider-1" class="sb-section-divider"></div>
             <div id="sb-item-1" class="sb-item">
                 <img id="sb-icon-1" class="sb-icon" src="../icons/icon_browse_usb.png"/>
                 <span id="sb-label-1" class="sb-label"></span>
             </div>
+            <div id="sb-divider-2" class="sb-section-divider"></div>
             <div id="sb-item-2" class="sb-item">
                 <img id="sb-icon-2" class="sb-icon" src="../icons/icon_browse_usb.png"/>
                 <span id="sb-label-2" class="sb-label"></span>
             </div>
+            <div id="sb-divider-3" class="sb-section-divider"></div>
             <div id="sb-item-3" class="sb-item">
                 <img id="sb-icon-3" class="sb-icon" src="../icons/icon_browse_usb.png"/>
                 <span id="sb-label-3" class="sb-label"></span>
             </div>
+            <div id="sb-divider-4" class="sb-section-divider"></div>
             <div id="sb-item-4" class="sb-item">
                 <img id="sb-icon-4" class="sb-icon" src="../icons/icon_browse_usb.png"/>
                 <span id="sb-label-4" class="sb-label"></span>
             </div>
+            <div id="sb-divider-5" class="sb-section-divider"></div>
             <div id="sb-item-5" class="sb-item">
                 <img id="sb-icon-5" class="sb-icon" src="../icons/icon_browse_usb.png"/>
                 <span id="sb-label-5" class="sb-label"></span>
             </div>
+            <div id="sb-divider-6" class="sb-section-divider"></div>
             <div id="sb-item-6" class="sb-item">
                 <img id="sb-icon-6" class="sb-icon" src="../icons/icon_browse_usb.png"/>
                 <span id="sb-label-6" class="sb-label"></span>
             </div>
+            <div id="sb-divider-7" class="sb-section-divider"></div>
             <div id="sb-item-7" class="sb-item">
                 <img id="sb-icon-7" class="sb-icon" src="../icons/icon_browse_usb.png"/>
                 <span id="sb-label-7" class="sb-label"></span>
             </div>
+            <div id="sb-divider-8" class="sb-section-divider"></div>
             <div id="sb-item-8" class="sb-item">
                 <img id="sb-icon-8" class="sb-icon" src="../icons/icon_browse_usb.png"/>
                 <span id="sb-label-8" class="sb-label"></span>
             </div>
+            <div id="sb-divider-9" class="sb-section-divider"></div>
             <div id="sb-item-9" class="sb-item">
                 <img id="sb-icon-9" class="sb-icon" src="../icons/icon_browse_usb.png"/>
                 <span id="sb-label-9" class="sb-label"></span>

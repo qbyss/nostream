@@ -1389,6 +1389,8 @@ void EvoRmlApp::UpdateBrowserState(const EvoBrowserState& state) {
     /* 2b. Left Sidebar (Sources) */
     for (int i = 0; i < EVO_RMLUI_BROWSER_SOURCES; ++i) {
         const std::string n = std::to_string(i);
+        if (auto* divider = el("sb-divider-" + n))
+            divider->SetProperty("display", i == state.source_divider_before ? "block" : "none");
         Rml::Element* item = el("sb-item-" + n);
         if (!item) continue;
         const bool visible = i < static_cast<int>(state.sources.size());
