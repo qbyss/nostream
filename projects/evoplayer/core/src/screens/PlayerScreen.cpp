@@ -1,3 +1,4 @@
+#include "evo_media_remote.h"
 #include "evo/screens/PlayerScreen.hpp"
 #include "evo/Application.hpp"
 #include "evo/services/NetworkStorageService.hpp"
@@ -377,7 +378,21 @@ bool PlayerScreen::handleInput(uint32_t pressed, uint32_t held, uint32_t release
     // Scrub hold update
     playback->updateScrubHold(held);
 
-    if (pressed & PadButtons::Cross) {
+    if (pressed & EVO_MEDIA_TRANSPORT) {
+        if (!playback->isActive() || playback->isScrubbing()) return true;
+        if (!(pressed & EVO_MEDIA_PLAY_PAUSE)) {
+            const int steps = !!(pressed & EVO_MEDIA_FORWARD) - !!(pressed & EVO_MEDIA_REWIND);
+            if (steps) playback->seekRelative(steps * 10.0);
+            return true;
+        }
+        if (evo_pb_is_eof() && !playback->isLiveSource()) {
+            playback->seekTo(0.0);
+            playback->setPaused(false);
+            return true;
+        }
+    }
+
+    if (pressed & (PadButtons::Cross | EVO_MEDIA_PLAY_PAUSE)) {
         uint64_t now = NowMs();
         if (now - m_lastPlayPauseToggleMs >= 150) {
             m_lastPlayPauseToggleMs = now;

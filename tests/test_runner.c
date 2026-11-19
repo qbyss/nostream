@@ -712,6 +712,7 @@ extern void test_settings_save_load_roundtrip(void);
 extern void test_settings_legacy_compat(void);
 
 /* SMB client and network storage host tests */
+extern int test_media_remote(void);
 extern void test_smb_split_path(void);
 extern void test_smb_storage_service(void);
 extern void test_smb_url_sanitizer(void);
@@ -738,6 +739,7 @@ int main(void)
     test_clean_media_title_resolution();
     test_cjson_print_roundtrip();
     test_navigation_grid_and_focus();
+    if (!test_media_remote()) return 1;
     test_changelog_model_integrity();
     test_frame_interpolation();
     test_error_reporting();

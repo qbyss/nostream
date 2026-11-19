@@ -4,6 +4,7 @@
 #
 #   PS5_HOST=192.168.1.50 ./scripts/deploy-app.sh
 #   ./scripts/deploy-app.sh --ffpfsc          # upload the PFS image instead
+#   Add --skip-residency-check to upload a test build without an app-closed check.
 #   ./scripts/deploy-app.sh --undeploy        # remove the staged title (+ image)
 #   ./scripts/deploy-app.sh --ffpfsc --fresh  # FRESH INSTALL: wipe every EVO
 #                                             # file first (tools/wipe-evo.py)
@@ -35,18 +36,24 @@ FFPFSC=0
 FORCE=0
 FRESH=0
 SM_RESTART=1
+SKIP_RESIDENCY=0
 while (( $# )); do
     case "$1" in
         --undeploy) ACTION="undeploy" ;;
         --ffpfsc)   FFPFSC=1 ;;
         --force)    FORCE=1 ;;
         --fresh)    FRESH=1 ;;
+        --skip-residency-check) SKIP_RESIDENCY=1 ;;
         --no-sm-restart) SM_RESTART=0 ;;
         -h|--help)  sed -n '2,29p' "$0"; exit 0 ;;
         *) die "unknown option: $1 (try --help)" ;;
     esac
     shift
 done
+
+if (( SKIP_RESIDENCY )) && { (( ! FFPFSC || FRESH )) || [[ "$ACTION" != deploy ]]; }; then
+    die "--skip-residency-check requires --ffpfsc deploy without --fresh"
+fi
 
 FTP_PORT="${FTP_PORT:-2121}"
 
@@ -56,6 +63,7 @@ if ! in_container; then
     (( FFPFSC )) && FWD+=(--ffpfsc)
     (( FORCE )) && FWD+=(--force)
     (( FRESH )) && FWD+=(--fresh)
+    (( SKIP_RESIDENCY )) && FWD+=(--skip-residency-check)
     (( SM_RESTART )) || FWD+=(--no-sm-restart)
     reexec_in_container "deploy-app.sh" "${FWD[@]+"${FWD[@]}"}"
 fi
@@ -239,7 +247,7 @@ PY
 if (( FFPFSC )) && [[ "${ACTION}" == "deploy" ]]; then
     need_file "${FFPFSC_IMG}" "run ./scripts/package-app.sh --ffpfsc first"
     require_ps5_host
-    check_evo_not_resident
+    (( SKIP_RESIDENCY )) || check_evo_not_resident
     if (( FRESH )); then
         # A fresh install: every EVO file goes - the app, /data/nostream
         # (settings, logins, playlists, calibration) and EVO's USB files -

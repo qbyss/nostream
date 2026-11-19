@@ -109,6 +109,7 @@ public:
     virtual const std::string& getCurrentFilePath() const = 0;
 
     virtual void seekTo(double targetSeconds) = 0;
+    virtual void seekRelative(double deltaSeconds) = 0;
     virtual void beginScrub() = 0;
     virtual void moveScrub(double deltaSeconds) = 0;
     virtual bool confirmScrub() = 0;

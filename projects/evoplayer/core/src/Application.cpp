@@ -400,6 +400,7 @@ bool Application::initHardware() {
     int users[4] = {0};
     sceUserServiceGetLoginUserIdList(users);
     g_ps5_user_id = users[0];
+    m_mediaRemote.user = users[0];
 
     m_padHandle = scePadOpen(users[0], 0, 0, nullptr);
     if (m_padHandle < 0) {
@@ -535,6 +536,7 @@ void Application::shutdown() {
 
     m_running = false;
 
+    evo_media_remote_close(&m_mediaRemote);
     evo_boot_log("shutdown: begin");
     evo_boot_log_flush();
 
@@ -1151,19 +1153,16 @@ int Application::run() {
         uint32_t held = 0;
         bool hasInput = false;
 
-        if (m_padHandle >= 0 && scePadReadState(m_padHandle, &padData) == 0) {
-            /*
-             * Synthetic presses from the dev remote (`key <button>`), OR'd in
-             * before anything reads the mask so they are indistinguishable
-             * from a real tap: one frame set, cleared the next, which gives
-             * the press edge here and the release on the following frame.
-             * Compiles to nothing without --usb-remote.
-             */
-            padData.buttons |= evo_usb_remote_take_buttons();
-            padData.buttons |= evo_phone_remote_take_buttons();   /* #238, every build */
-
-            pressed = padData.buttons & ~lastButtons;
-            released = ~padData.buttons & lastButtons;
+        if (m_padHandle < 0 || scePadReadState(m_padHandle, &padData) != 0) {
+            padData = {};
+            padData.leftStick = {128, 128};
+            padData.rightStick = {128, 128};
+        }
+        {
+            const uint32_t standard = padData.buttons | evo_usb_remote_take_buttons() |
+                                      evo_phone_remote_take_buttons();
+            padData.buttons = evo_media_remote_poll(&m_mediaRemote, static_cast<uint64_t>(now_ms()),
+                                                      standard, lastButtons, &pressed, &released);
             held = padData.buttons;
             m_padButtons = padData.buttons;
 
@@ -1345,6 +1344,9 @@ int Application::run() {
                 pressed = 0;
             }
 
+            if (m_screenManager->getCurrentScreenId() != ScreenId::Player)
+                pressed &= ~EVO_MEDIA_TRANSPORT;
+
             if (evo_webui_active()) {
                 /* #101: the system browser is up and owns the controller.
                  * If the user presses Options or Triangle, allow closing the browser
@@ -1357,7 +1359,7 @@ int Application::run() {
             } else if (evo_keyboard_is_open()) {
                 evo_keyboard_update();
                 if (pressed) {
-                    evo_keyboard_handle_input(pressed);
+                    evo_keyboard_handle_input(pressed & ~EVO_MEDIA_TRANSPORT);
                 }
             } else {
                 if (hasInput) {

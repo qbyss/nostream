@@ -1,3 +1,4 @@
+#include "evo_media_remote.h"
 #include "evo/services/PlaybackController.hpp"
 #include "evo/interfaces/IMediaMetadataService.hpp"
 #include "evo/services/NetworkStorageService.hpp"
@@ -1847,17 +1848,26 @@ void PlaybackController::tickScrubAutoCommit() {
 }
 
 void PlaybackController::seekTo(double targetSeconds) {
+    requestSeek(targetSeconds, false);
+}
+
+void PlaybackController::seekRelative(double deltaSeconds) {
+    if (!isActive() || isLiveSource() || isScrubbing() || m_durationSeconds <= 0.0) return;
+    requestSeek(evo_media_seek_target(getPositionSeconds(), m_durationSeconds, deltaSeconds), isPaused());
+}
+
+void PlaybackController::requestSeek(double targetSeconds, bool restorePaused) {
     if (!isActive() || targetSeconds < 0.0) return;
 
     m_resumeBaseOffset = targetSeconds;
     resume_base_offset_seconds = targetSeconds;
 
     int64_t targetUs = static_cast<int64_t>(targetSeconds * 1000000.0);
-    if (!prospero_request_inplace_seek(targetSeconds, 0)) {
+    if (!prospero_request_inplace_seek(targetSeconds, restorePaused)) {
         /* Refused: nothing will run the seek, so nothing would ever restart the
          * clock a scrub paused. Carry on playing where we are instead. */
         evo_boot_log("seek: request to %.1fs refused - resuming", targetSeconds);
-        pp_playback_resume(&g_pp_pb);
+        if (!restorePaused) pp_playback_resume(&g_pp_pb);
         return;
     }
     pp_playback_notify_seek_begin(&g_pp_pb, targetUs);

@@ -53,6 +53,7 @@ public:
     const std::string& getCurrentFilePath() const override { return m_currentFilePath; }
 
     void seekTo(double targetSeconds) override;
+    void seekRelative(double deltaSeconds) override;
     void beginScrub() override;
     void moveScrub(double deltaSeconds) override;
     bool confirmScrub() override;
@@ -88,6 +89,7 @@ public:
 private:
     void initStateMachine();
     void applyViewMode();
+    void requestSeek(double targetSeconds, bool restorePaused);
     double clampScrubTarget(double target) const;
     void resetScrubHold();
 

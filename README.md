@@ -24,7 +24,7 @@ Plays video from USB drives (exFAT, FAT32 and read-only NTFS), internal storage,
 - **Smoother playback and browsing:** no more regular stutter in local and USB playback, and opening a file list no longer freezes for a few seconds when a USB drive is plugged in.
 - **Album art (#232):** FLAC and MP3 files show their cover on the player card, and FLAC files with art no longer freeze at 0:00.
 - **Clearer Settings:** rows are never cut off, every setting has a picture preview and its own icon.
-- **"Did you know" on Home**, **Upmix stereo to 4.0**, **controller phone audio**, **subtitle style** and **library filters** (thanks @Andrea17982).
+- **Rotating tips on Home**, **Upmix stereo to 4.0**, **controller phone audio**, **subtitle style** and **library filters** (thanks @Andrea17982).
 - **Experimental web browser:** Settings → Experimental → **Web browser** (off by default).
 
 Full notes: [CHANGELOG.md](CHANGELOG.md).
@@ -259,6 +259,11 @@ The entire user interface is rendered on the GPU through bare-metal `sceAgc` at 
 ---
 
 ## Controls Reference
+
+The PS5 Media Remote’s D-pad navigates menus. Enter, Back, and Context work
+like Cross, Circle, and Options on a DualSense. On the Player screen,
+Play/Pause toggles playback and restarts a finished file. Rewind and Forward
+seek 10 seconds within the current file while preserving its play or pause state.
 
 | Button | In Menus & File Browser | During Playback | On-Screen Keyboard |
 |---|---|---|---|

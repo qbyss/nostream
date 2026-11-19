@@ -45,6 +45,8 @@ SRCS=(
     "${MEDIA}/src/evo_playlist_sniff.c"
     "${EVO}/src/evo_error.c"
     "${UI}/src/evo_nav.c"
+    "${UI}/src/evo_media_remote.c"
+    "${REPO_ROOT}/tests/test_media_remote.c"
     "${UI}/src/evo_focus.c"
     "${UI}/src/evo_layout.c"
     "${EVO}/src/evo_data_path.c"

@@ -791,7 +791,7 @@ void HomeScreen::draw(DrawList &list, const Context &ctx) const
         list.pop_opacity();
     }
 
-    /* "Did you know": one tip at a time on the hint line's left, 8 s each,
+    /* Show one tip at a time on the left of the hint line, 8 s each,
      * fading between them. Starts after the page's own entrance. */
     if (!tips_.empty())
     {
@@ -808,8 +808,6 @@ void HomeScreen::draw(DrawList &list, const Context &ctx) const
             list.image(bulb, {x, y - 14.0f, 28, 28}, ::hui::gfx::kFullUv, p.accent);
             x += 40.0f;
         }
-        ui::text(list, fonts.semibold, "DID YOU KNOW", x, y + 6.0f, 15, p.accent, Align::left, 2.0f);
-        x += fonts.semibold.measure("DID YOU KNOW", 15, 2.0f) + 18.0f;
         /* Stop well short of the button hints on the right. */
         const float w = 1500.0f - x;
         ui::text(list, fonts.regular, fonts.regular.font->fit(tips_[idx], 21, w), x, y + 7.0f, 21, kWhite.with_alpha(0.85f));

@@ -375,7 +375,7 @@ typedef struct {
     /* "LIBRARY" — the destination shelf */
     int         library_visible;
     evo_rmlui_launch_tile_t library[EVO_RMLUI_TILES];
-    /* "Did you know" line at the foot of Home: one tip at a time, rotating.
+    /* Tips at the foot of Home: one tip at a time, rotating.
      * The strings stay owned by the caller until the next update. */
     const char* tips[EVO_RMLUI_HOME_TIPS];
     int         tip_count;

@@ -410,7 +410,7 @@ void LaunchScreen::render(uint32_t* framebuffer, int width, int height) {
     evo_rmlui_render_launch(framebuffer, width, height);
 }
 
-/* "Did you know" at the foot of Home: what EVO can do that is easy to miss.
+/* Tips at the foot of Home: what EVO can do that is easy to miss.
  * The phone-page tips name this console's real address, and drop out when
  * the phone & log server has no address or port. */
 void LaunchScreen::fillHomeTips(evo_rmlui_launch_params_t& params) {
