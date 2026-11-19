@@ -467,6 +467,7 @@ void HomeScreen::set(const evo_rmlui_launch_params_t &p)
     hero_ = next;
     hero_focused_ = p.hero_focused != 0;
 
+    recent_loading_ = str(p.recent_loading);
     recent_total_ = p.recent_total;
     recent_cursor_ = p.recent_cursor;
     auto tile = [&](const evo_rmlui_launch_tile_t &in) {
@@ -647,6 +648,15 @@ void HomeScreen::draw(DrawList &list, const Context &ctx) const
             draw_hero(list, ctx, hero_, 1.0f, 30.0f * (1.0f - in));
         }
         list.pop_opacity();
+    }
+
+    if (!recent_loading_.empty())
+    {
+        const float x = kHeroAction.x + kHeroAction.w + 48.0f;
+        const float y = kHeroAction.cy();
+        list.arc(x, y, 13.0f, 3.0f, 0.0f, 6.2831853f, kWhite.with_alpha(0.15f));
+        list.arc(x, y, 13.0f, 3.0f, std::fmod(ctx.time * 5.5f, 6.2831853f), 1.6f, p.accent);
+        ui::text(list, fonts.regular, recent_loading_, x + 26.0f, y + 8.0f, 22, p.text_muted);
     }
 
     /* The focus ring's light goes under the cards (a glow fills its inside). */

@@ -51,6 +51,10 @@
                     <span id="hero-chip-label">RESUME</span>
                 </div>
             </div>
+            <div id="recent-loading">
+                <div id="recent-loading-spinner"></div>
+                <span id="recent-loading-label"></span>
+            </div>
         </div>
 
         <!-- ================= Shelves ================= -->

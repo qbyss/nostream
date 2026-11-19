@@ -406,6 +406,7 @@ void evo_rmlui_update_launch(const evo_rmlui_launch_params_t* p) {
     state.hero_art_h = p->hero_art_h;
     state.hero_focused = (p->hero_focused != 0);
 
+    state.recent_loading = p->recent_loading ? p->recent_loading : "";
     state.recent_total = p->recent_total;
     state.recent_cursor = p->recent_cursor;
     for (int i = 0; i < p->recent_visible && i < EVO_RMLUI_TILES; i++)

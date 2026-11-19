@@ -218,6 +218,7 @@ class HomeScreen
     Hero hero_;
     Hero previous_hero_;
     bool hero_focused_ = false;
+    std::string recent_loading_;
     int recent_total_ = 0;
     int recent_cursor_ = -1;
     std::vector<Tile> recent_;

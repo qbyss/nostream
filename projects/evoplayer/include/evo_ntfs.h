@@ -68,6 +68,8 @@ int evo_usb_volume_get(const char *root, evo_usb_volume_info *info);
 int evo_usb_volume_resolve(const char *id, char root[EVO_USB_VOLUME_ROOT_CAP]);
 unsigned evo_usb_volume_generation(void);
 int evo_usb_identity_ready(void);
+/* True while the first asynchronous volume probe is running. */
+int evo_usb_identity_scan_pending(void);
 
 
 /* 1 for a URL with the ntfs:// scheme. */

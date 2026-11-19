@@ -882,6 +882,13 @@ void EvoRmlApp::UpdateLaunchState(const EvoLaunchState& state) {
     Rml::Element* el_eyebrow = m_launch_doc->GetElementById("hero-eyebrow");
     if (el_eyebrow) el_eyebrow->SetProperty("color", accent);
 
+    if (auto* loading = m_launch_doc->GetElementById("recent-loading"))
+        loading->SetProperty("display", state.recent_loading.empty() ? "none" : "flex");
+    if (auto* spinner = m_launch_doc->GetElementById("recent-loading-spinner"))
+        spinner->SetProperty("border-top-color", accent);
+    if (auto* label = set_text("recent-loading-label", state.recent_loading))
+        label->SetProperty("color", text_2);
+
     Rml::Element* el_htitle = set_text("hero-title", state.hero_title);
     if (el_htitle) el_htitle->SetProperty("color", text_1);
 

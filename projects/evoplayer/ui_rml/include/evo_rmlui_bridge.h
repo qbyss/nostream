@@ -368,6 +368,7 @@ typedef struct {
     int         hero_focused;
 
     /* "JUMP BACK IN" — the visible window, already sliced by the caller */
+    const char* recent_loading; /* status beside the hero action, or NULL */
     int         recent_total;      /* full count, for the "n OF m" marker */
     int         recent_cursor;     /* absolute index under the cursor, or -1 */
     int         recent_visible;    /* how many of `recent` are populated */

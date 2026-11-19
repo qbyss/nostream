@@ -288,6 +288,7 @@ struct EvoLaunchState {
     int hero_art_h = 0;
     bool hero_focused = false;
 
+    std::string recent_loading;
     int recent_total = 0;
     int recent_cursor = -1;
     std::vector<EvoLaunchTile> recent;
@@ -300,7 +301,8 @@ struct EvoLaunchState {
                hero_action == o.hero_action && hero_progress == o.hero_progress &&
                hero_art == o.hero_art && hero_art_w == o.hero_art_w &&
                hero_art_h == o.hero_art_h && hero_focused == o.hero_focused &&
-               recent_total == o.recent_total && recent_cursor == o.recent_cursor &&
+               recent_loading == o.recent_loading && recent_total == o.recent_total &&
+               recent_cursor == o.recent_cursor &&
                recent == o.recent && library == o.library;
     }
     bool operator!=(const EvoLaunchState& o) const { return !(*this == o); }

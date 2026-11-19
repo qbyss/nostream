@@ -1553,6 +1553,11 @@ int evo_usb_identity_ready(void)
     return __atomic_load_n(&g_identity_ready, __ATOMIC_ACQUIRE);
 }
 
+int evo_usb_identity_scan_pending(void)
+{
+    return __atomic_load_n(&g_refresh_busy, __ATOMIC_ACQUIRE) && !evo_usb_identity_ready();
+}
+
 static void refresh_locked(void);
 
 int evo_ntfs_refresh(void)

@@ -4,6 +4,7 @@
 #include "evo/Application.hpp"
 #include "evo/services/NetworkStorageService.hpp"
 #include "evo_rmlui_bridge.h"
+#include "evo_ntfs.h"
 #include "evo_recent.h"
 #include "evo_favorites.h"
 #include "evo_error.h"
@@ -314,6 +315,18 @@ void LaunchScreen::render(uint32_t* framebuffer, int width, int height) {
         railFocused = sm->isRailFocused();
     }
     params.hero_focused = (!railFocused && m_selectedRow == 0);
+
+    if (evo_usb_identity_scan_pending()) {
+        for (int i = 0; i < recent_file_count; ++i) {
+            const auto& entry = recent_files[i];
+            char root[EVO_USB_VOLUME_ROOT_CAP];
+            if (evo_usb_volume_root(entry.path, root) &&
+                !hidden_storage::hidesPath(entry.path, entry.volume_id)) {
+                params.recent_loading = "Checking USB storage…";
+                break;
+            }
+        }
+    }
 
     char safeHeroTitle[128];
     char safeRecentTitles[EVO_RMLUI_TILES][128];

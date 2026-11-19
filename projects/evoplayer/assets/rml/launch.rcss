@@ -335,6 +335,36 @@ div, span, p {
     letter-spacing: 2dp;
 }
 
+#recent-loading {
+    display: none;
+    position: absolute;
+    left: 340dp;
+    bottom: 42dp;
+    height: 58dp;
+    flex-direction: row;
+    align-items: center;
+    gap: 12dp;
+}
+
+#recent-loading-spinner {
+    width: 22dp;
+    height: 22dp;
+    border-radius: 11dp;
+    border-width: 3dp;
+    border-color: #ffffff26;
+    border-top-color: #ffcd00;
+    animation: 1.1s linear infinite recent-spin;
+}
+
+#recent-loading-label {
+    font-size: 20dp;
+}
+
+@keyframes recent-spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
 /* =============================== Shelves =============================== */
 
 #shelves {
