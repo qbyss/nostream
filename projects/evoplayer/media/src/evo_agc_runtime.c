@@ -578,6 +578,14 @@ static size_t scanout_tiled_bytes(void)
     return bytes;
 }
 
+static uint32_t scanout_clear_pixel(void)
+{
+    /* Opaque RGB zero in both the HDR and SDR scanout formats. */
+    if (g_agc_dev.is_hdr)
+        return 0xc0000000u;
+    return g_agc_dev.is_player_mode ? 0xff000000u : 0xff100d0du;
+}
+
 /*
  * Copy `height` rows of `row_bytes` from a src pitch to a dst pitch. The dst
  * rows start 16-byte aligned (every staging pitch here is 256-byte aligned),
@@ -1805,13 +1813,7 @@ void evo_agc_runtime_frame_begin(void)
             /* Streamed, not stored-then-flushed: this is the single biggest
              * CPU cost in the menus - 8.3 MB a frame at 1080p, 33 MB at 4K.
              * See evo_agc_runtime_stream_fill. */
-            /* 0xff100d0d is dark grey only as 8-bit BGRA. On a 10:10:10:2
-             * HDR scanout those bits would light one channel near full, so
-             * HDR clears to black with opaque alpha. */
-            evo_agc_runtime_stream_fill(backbuffer,
-                                        g_agc_dev.is_hdr ? 0xc0000000u
-                                        : g_agc_dev.is_player_mode ? 0xff000000u /* true-black letterbox */
-                                                                   : 0xff100d0du,
+            evo_agc_runtime_stream_fill(backbuffer, scanout_clear_pixel(),
                                         scanout_tiled_bytes());
         }
     }
@@ -2474,12 +2476,12 @@ void evo_agc_runtime_set_player_mode(int is_player)
     g_agc_dev.last_video_trc = -1;
     evo_agc_motion_smoothing_reset();
     if (is_player) {
-        /* Clear both scanout buffers once upon entering player mode so letterbox borders are dark */
+        /* The video quad leaves the bars untouched, so start both buffers at black. */
+        const uint32_t black = scanout_clear_pixel();
         for (int b = 0; b < 2; ++b) {
             uint32_t *buf = (uint32_t *)g_agc_dev.scanout_buffers[b];
             if (buf) {
-                evo_agc_runtime_stream_fill(buf, g_agc_dev.is_hdr ? 0xc0000000u : 0xff100d0du,
-                                            scanout_tiled_bytes());
+                evo_agc_runtime_stream_fill(buf, black, scanout_tiled_bytes());
             }
             g_agc_dev.video_pts[b] = INT64_MIN;
         }

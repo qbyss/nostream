@@ -467,9 +467,6 @@ bool Application::initServices() {
     m_fileSystemBrowser->setSortFoldersFirst(m_settingsService->isSortFoldersFirst());
     m_fileSystemBrowser->loadLastFolder();
 
-    toast("NoStream", (EVO_PLAYER_VERSION[0] == 'v' || EVO_PLAYER_VERSION[0] == 'V')
-                         ? EVO_PLAYER_VERSION
-                         : ("v" EVO_PLAYER_VERSION));
     return true;
 }
 
