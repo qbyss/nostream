@@ -102,6 +102,10 @@ fi
 # #217: the NTFS disk helper payload, embedded in EVO (src/generated/).
 bash "${REPO_ROOT}/tools/gen_ntfs_helper.sh" || die "NTFS helper payload did not build"
 
+# The embedded UI asset bundle is generated, not tracked in git, so a fresh
+# checkout has none until this runs. See tools/bundle_rml_assets.py.
+python3 "${REPO_ROOT}/tools/bundle_rml_assets.py" || die "UI asset bundle did not generate"
+
 begin "building EVO Player${STAGE:+ (stage ${STAGE})}"
 BUILD_LOG="${LOG_OUT}/evoplayer-$(date -u +%Y%m%dT%H%M%SZ).log"
 

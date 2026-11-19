@@ -77,8 +77,8 @@ breaks consoles that update:
   place.
 - **Release notes**: `CHANGELOG.md`, the in-app changelog (`projects/evoplayer/include/evo_changelog.h`) and the
   "What's New" part of the README.
-- **Generated files**: `projects/evoplayer/ui_rml/src/evo_rmlui_bundle_data.cpp` is rebuilt by every package build.
-  Leave your copy out.
+- **Generated files**: `projects/evoplayer/ui_rml/src/evo_rmlui_bundle_data.cpp` is rebuilt by every build and
+  is ignored by git.
 - **Submodule pins**: `third_party/ps5-homebrew-ui` may only point at a commit already on the kit's `main`. The pull
   request on the kit comes first; once it is merged, an EVO pull request may move the pin.
 - **Releases and tags.**

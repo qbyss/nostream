@@ -80,7 +80,7 @@ Everything generated is checked in, and each generator says how to re-run it.
 | Tool | Produces |
 |---|---|
 | `build_agc_pipes.py`, `gen_video_pipes.py`, `gen_upscale_pipes.py`, `gen_interp_pipes.py`, `gen_hdr_ui_pipe.py`, `patches/llpc-add-gfx1013.py` | GPU shaders: `.pipe` sources and the compile step, in the amdllpc image ([../hardware/shader-compilation.md](../hardware/shader-compilation.md)) |
-| `bundle_rml_assets.py` | The embedded UI asset bundle, run by `package-app.sh` (`ui_rml/src/evo_rmlui_bundle_data.cpp` is tracked and changes hugely each time) |
+| `bundle_rml_assets.py` | The embedded UI asset bundle, run by every build script (`ui_rml/src/evo_rmlui_bundle_data.cpp` is generated and git-ignored) |
 | `gen_charset_tables.py` | Code-page tables for subtitle decoding (`media/src/evo_charset_tables.inc`) |
 | `gen_app_icon.py`, `gen_app_pics.py`, `gen_app_icon_variants.py`, `gen_power_icon.py`, `ttf_text.py`, `preview-art/` | The title art |
 | `lucide_icon.sh`, `gen_settings_icons.sh`, `gen_surround_icons.py`, `preview_icons.py` | UI icons from Lucide SVGs into `assets/icons/` |

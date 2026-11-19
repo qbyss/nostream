@@ -33,7 +33,7 @@
 - [ ] This pull request does one thing. Unrelated fixes and features are in their own pull requests.
 - [ ] It targets `main` and is rebased on it.
 - [ ] It does not change the version (`VERSION`, `contentVersion`, `EVO_PLAYER_VERSION`), `CHANGELOG.md`,
-      the in-app changelog or the generated `evo_rmlui_bundle_data.cpp`.
+      or the in-app changelog.
 - [ ] New settings are new lines at the end of the settings file, covered by `tests/test_settings.c`.
 
 ## Submodule changes

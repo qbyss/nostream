@@ -371,3 +371,9 @@ $(ELF): $(GPUB_OBJS) $(C_OBJS) $(RMLUI_OBJS) $(CORE_OBJS) $(HUI_OBJS) $(UI_KIT_O
 clean:
 	rm -f $(ELF) $(GPUB_OBJS) $(C_OBJS) $(RMLUI_OBJS) $(CORE_OBJS) $(HUI_OBJS) $(UI_KIT_OBJS) $(ALL_DEPS)
 	rm -rf artifacts/4k_stages ui_kit/obj
+
+# Generated from assets/ and not tracked in git. The build scripts regenerate
+# it first; this only covers a checkout where it does not exist yet. Kept at
+# the end so it never becomes the default goal.
+ui_rml/src/evo_rmlui_bundle_data.cpp:
+	python3 ../../tools/bundle_rml_assets.py

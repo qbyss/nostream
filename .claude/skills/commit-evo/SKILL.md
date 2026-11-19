@@ -21,8 +21,8 @@ git diff --stat
 - Temporary diagnostics (a `PROV_LOG` added only to find a cause) either come out first or are
   named in the reply. A commit should equal what was tested, so removing code means retesting
   or saying it is unverified.
-- `projects/evoplayer/ui_rml/src/evo_rmlui_bundle_data.cpp` is generated and tracked; a huge diff
-  there after packaging is expected, include it only if assets changed.
+- `projects/evoplayer/ui_rml/src/evo_rmlui_bundle_data.cpp` is generated and git-ignored; never
+  commit it (commit the files under `assets/` instead).
 
 ## 2. Split by topic
 

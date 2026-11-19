@@ -25,7 +25,7 @@ the ps5-homebrew-ui kit** ([hui-kit.md](hui-kit.md)); RmlUi remains for:
 | `evo_rmlui_render_agc.cpp` | `EvoRenderInterfaceAGC`: turns RmlUi geometry into `sceAgc` command buffers (stencil clip masks, backdrop blur layers) |
 | `evo_rmlui_render.cpp` | the CPU coverage rasteriser, used by the host preview only |
 | `evo_rmlui_provider.cpp`, `evo_rmlui_provider_art.cpp` | the provider host: data model, focus, events, remote artwork through the `evo:mem/` registry |
-| `evo_rmlui_bundle.cpp`, `evo_rmlui_bundle_data.cpp` | the embedded assets. `tools/bundle_rml_assets.py` generates the `_data.cpp` (tracked, and a huge diff each build) because the app's own `/app0` mount cannot be traversed (`fstatfs`/`getdents` fail with EPERM) |
+| `evo_rmlui_bundle.cpp`, `evo_rmlui_bundle_data.cpp` | the embedded assets. `tools/bundle_rml_assets.py` generates the `_data.cpp` on every build (git-ignored, ~60 MB) because the app's own `/app0` mount cannot be traversed (`fstatfs`/`getdents` fail with EPERM) |
 | `evo_rmlui_fileinterface.cpp` | RmlUi file access to the bundle, `evo:mem/` textures and `/assets/...` paths |
 | `evo_rmlui_devstate.cpp` | the `evo_ui.json` writer for the dev remote |
 | `rmlui_patch/` | RmlUi's corner tessellation with a finer point count, swapped over a build-local copy of `librmlui.a` |

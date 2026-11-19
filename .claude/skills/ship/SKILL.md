@@ -36,7 +36,7 @@ timeout 200 ./tools/evo-remote.sh launch   # waits for ShadowMount idle
 
 - Status line: `evo-remote.sh status` (`build=... fatal=0 parked=0`). Log: `evo-remote.sh log | grep -i hui`.
 - A tool call blocked by the user = they want to drive that part; wait for their word.
-- Generated `projects/evoplayer/ui_rml/src/evo_rmlui_bundle_data.cpp` is tracked and regenerates on package (huge diff, expected).
+- Generated `projects/evoplayer/ui_rml/src/evo_rmlui_bundle_data.cpp` regenerates on every build and is git-ignored.
 - Adding a source file: list it in `projects/evoplayer/Makefile` (media/*.c and ui_kit/*.cpp are listed by hand, not globbed).
 - Assets under `projects/evoplayer/assets/{rml,fonts,icons,wallpaper,hui}` are embedded automatically at package time.
 

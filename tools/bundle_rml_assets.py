@@ -34,9 +34,10 @@ OUTPUT
 USAGE
     python3 tools/bundle_rml_assets.py
     Re-run after adding/removing/editing anything under assets/rml, fonts,
-    icons or wallpaper. package-app.sh and uiview_playback_rml.sh both run this
-    automatically before compiling, so a stale commit only bites a manual
-    build.
+    icons or wallpaper. package-app.sh, build-evoplayer.sh, uiview_playback_rml.sh
+    and prof_rmlui.sh all run this automatically before compiling. The output
+    is not tracked in git (it is ~60 MB); a fresh checkout gets it on the
+    first build.
 
 No third-party dependencies - only the standard library.
 """
