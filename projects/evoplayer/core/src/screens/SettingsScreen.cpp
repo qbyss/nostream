@@ -878,7 +878,8 @@ int fillSection(int section, int expanded, int cursor, evo_rmlui_settings_params
             auto& row = p.rows[i];
             row.title = entry.name.c_str();
             row.detail = "Make this source visible again";
-            row.icon_path = "../icons/icon_browse_usb.png";
+            row.icon_path = entry.id == hidden_storage::NetworkId
+                ? "../icons/icon_network_storage.png" : "../icons/icon_browse_usb.png";
             row.kind = EVO_RMLUI_ROW_VALUE;
             row.badge = "Remove";
             row.is_focused = cursor == first + i;

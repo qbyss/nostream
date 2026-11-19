@@ -1012,6 +1012,10 @@ void BrowserScreen::pollServerStatus(double deltaMs) {
     }
 }
 
+static bool showsInStorage(FileCategory category) {
+    return category == FileCategory::Folder || category == FileCategory::Video;
+}
+
 void BrowserScreen::rebuildItems() {
     m_items.clear();
     auto browser = Application::getInstance().getFileSystemBrowser();
@@ -1021,7 +1025,7 @@ void BrowserScreen::rebuildItems() {
         size_t count = browser->getEntryCount();
         for (size_t i = 0; i < count; ++i) {
             const auto* entry = browser->getEntry(i);
-            if (!entry) continue;
+            if (!entry || !showsInStorage(entry->category)) continue;
 
             if (m_isSearching && !matchesQuery(entry->name, m_searchQuery)) {
                 continue;
@@ -1046,10 +1050,7 @@ void BrowserScreen::rebuildItems() {
                 item.iconPath = "../icons/icon_folder.png";
                 item.detail = "Folder";
             } else {
-                if (entry->category == FileCategory::Video) item.iconPath = "../icons/icon_resume.png";
-                else if (entry->category == FileCategory::Audio) item.iconPath = "../icons/icon_subtitles.png";
-                else if (entry->category == FileCategory::Image) item.iconPath = "../icons/icon_palette.png";
-                else item.iconPath = "../icons/icon_about_support.png";
+                item.iconPath = "../icons/icon_resume.png";
 
                 struct stat st;
                 if (!item.fullPath.empty() && stat(item.fullPath.c_str(), &st) == 0) {
@@ -1135,6 +1136,7 @@ void BrowserScreen::rebuildItems() {
                     m_networkEmptyHint = "Nothing here";
                 }
                 for (const auto& entry : m_netEntries) {
+                    if (!showsInStorage(entry.category)) continue;
                     if (m_isSearching && !matchesQuery(entry.name, m_searchQuery)) {
                         continue;
                     }
@@ -1161,10 +1163,7 @@ void BrowserScreen::rebuildItems() {
                         item.iconPath = "../icons/icon_folder.png";
                         item.detail = "Folder";
                     } else {
-                        if (entry.category == FileCategory::Video) item.iconPath = "../icons/icon_resume.png";
-                        else if (entry.category == FileCategory::Audio) item.iconPath = "../icons/icon_subtitles.png";
-                        else if (entry.category == FileCategory::Image) item.iconPath = "../icons/icon_palette.png";
-                        else item.iconPath = "../icons/icon_about_support.png";
+                        item.iconPath = "../icons/icon_resume.png";
                         item.detail = "Network Media";
                     }
                     m_items.push_back(std::move(item));
@@ -1183,6 +1182,7 @@ void BrowserScreen::rebuildItems() {
 
             FileCategory cat = fav.is_folder ? FileCategory::Folder :
                                (browser ? browser->classifyFile(displayPath, 0) : FileCategory::Video);
+            if (!showsInStorage(cat)) continue;
 
             std::string displayName = fav.title[0] ? fav.title : "";
             if (displayName.empty()) {
@@ -1214,11 +1214,7 @@ void BrowserScreen::rebuildItems() {
                 if (item.progress > 100) item.progress = 100;
             }
 
-            if (cat == FileCategory::Video) item.iconPath = "../icons/icon_resume.png";
-            else if (cat == FileCategory::Audio) item.iconPath = "../icons/icon_subtitles.png";
-            else if (cat == FileCategory::Image) item.iconPath = "../icons/icon_palette.png";
-            else if (cat == FileCategory::Folder) item.iconPath = "../icons/icon_folder.png";
-            else item.iconPath = "../icons/icon_favorites.png";
+            item.iconPath = fav.is_folder ? "../icons/icon_folder.png" : "../icons/icon_resume.png";
 
             struct stat st;
             if (available && !fav.is_folder && stat(path, &st) == 0) {
@@ -1243,6 +1239,7 @@ void BrowserScreen::rebuildItems() {
             if (rec.path[0] == '\0') continue;
 
             FileCategory cat = browser ? browser->classifyFile(rec.path, 0) : FileCategory::Video;
+            if (cat != FileCategory::Video) continue;
 
             std::string displayName = rec.title[0] ? rec.title : "";
             /* The same tidy name Home shows, also for entries saved before the
@@ -1278,10 +1275,7 @@ void BrowserScreen::rebuildItems() {
                 if (item.progress > 100) item.progress = 100;
             }
 
-            if (cat == FileCategory::Video) item.iconPath = "../icons/icon_resume.png";
-            else if (cat == FileCategory::Audio) item.iconPath = "../icons/icon_subtitles.png";
-            else if (cat == FileCategory::Image) item.iconPath = "../icons/icon_palette.png";
-            else item.iconPath = "../icons/icon_recent_files.png";
+            item.iconPath = "../icons/icon_resume.png";
 
             struct stat st;
             if (stat(rec.path, &st) == 0) {
@@ -2829,7 +2823,7 @@ void BrowserScreen::render(uint32_t* framebuffer, int width, int height) {
     params.rail_focused = railFocused ? 1 : 0;
     params.sidebar_focused = (m_focusPane == BrowserFocusPane::Sidebar && !railFocused) ? 1 : 0;
     static constexpr const char* labels[] = {"Internal Storage", "Network Storage", "Favorites", "Recent Media"};
-    static constexpr const char* icons[] = {"../icons/icon_folder.png", "../icons/icon_browse_usb.png",
+    static constexpr const char* icons[] = {"../icons/icon_folder.png", "../icons/icon_network_storage.png",
                                             "../icons/icon_favorites.png", "../icons/icon_recent_files.png"};
     const int driveCount = static_cast<int>(m_storageMounts.size());
     const int shortcutCount = static_cast<int>(m_folderShortcuts.size());
@@ -3154,11 +3148,12 @@ void BrowserScreen::render(uint32_t* framebuffer, int width, int height) {
         params.action_menu_open = 1;
         params.action_menu_count = 1;
         params.action_menu_target = m_actionTargetName.c_str();
+        params.action_target_sub = m_hideMount.empty() ? "Network" : "Drive";
         params.action_menu_eyebrow = "STORAGE";
         auto& item = params.action_menu_items[0];
         item.label = m_hideMount.empty() ? "Hide Network Storage" : "Hide Drive";
         item.desc = m_hideId.empty() ? "The drive could not be identified" : "Restore it from Settings > Hidden Drive";
-        item.icon_path = "../icons/icon_browse_usb.png";
+        item.icon_path = m_hideMount.empty() ? "../icons/icon_network_storage.png" : "../icons/icon_browse_usb.png";
         item.disabled = m_hideId.empty();
     } else {
         params.action_menu_count = static_cast<int>(m_actions.size());
