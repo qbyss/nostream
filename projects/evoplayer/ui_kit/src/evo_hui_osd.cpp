@@ -170,8 +170,6 @@ void OsdScreen::set(const evo_playback_osd_params_t &p)
     badges_[6] = str(p.upscale_badge);
     badges_[7] = str(p.smooth_badge);
     badges_[8] = str(p.deepblack_badge);
-    audio_track_ = str(p.audio_track);
-    sub_track_ = str(p.sub_track);
     music_codec_ = str(p.music_codec);
     chapter_title_ = str(p.chapter_title);
     scrub_chapter_title_ = str(p.scrub_chapter_title);
@@ -387,11 +385,6 @@ void OsdScreen::draw_bottom(DrawList &list, const Context &ctx) const
     }
 
     /* Controls, one row of hints. */
-    char aspect[32];
-    std::snprintf(aspect, sizeof aspect, "Aspect: %s",
-                  raw_.view_mode == 0 ? "Fit" : (raw_.view_mode == 1 ? "Fill" : "Stretch"));
-    const std::string audio = "Audio: " + (audio_track_.empty() ? std::string("Default") : audio_track_);
-    const std::string subs = "Subs: " + (sub_track_.empty() ? std::string("Off") : sub_track_);
     ui::Hint hints[10];
     int n = 0;
     hints[n++] = {ui::Button::cross, raw_.paused ? "Play" : "Pause"};
@@ -403,22 +396,14 @@ void OsdScreen::draw_bottom(DrawList &list, const Context &ctx) const
         hints[n++] = {ui::Button::r1, "Next chapter"};
         hints[n++] = {ui::Button::right_stick, "Chapter list"};
     }
-    hints[n++] = {ui::Button::r2, audio.c_str()};
-    hints[n++] = {ui::Button::square, "Info"};
-    hints[n++] = {ui::Button::triangle, aspect};
-    hints[n++] = {ui::Button::circle, "Back"};
+    hints[n++] = {ui::Button::options, "Video Settings"};
+    const ui::Hint back{ui::Button::circle, "Back"};
     ui::HintLayout layout;
     layout.size = 30;
     layout.text_size = 20;
     layout.cy = 1030;
-    ui::draw_hints(list, fonts, ui::GlyphStyle::dark(), hints, n, 1920 - kMargin, true, layout);
-    ui::text(list, fonts.regular, fit(fonts.regular, subs, 20, 520), kMargin, 1037, 20, kWhite.with_alpha(0.75f));
-    if (raw_.sub_delay_ms != 0)
-    {
-        char sync[40];
-        std::snprintf(sync, sizeof sync, "Sync %+d ms", raw_.sub_delay_ms);
-        ui::text(list, fonts.mono, sync, kMargin + 540, 1037, 18, p.accent);
-    }
+    ui::draw_hints(list, fonts, ui::GlyphStyle::dark(), hints, n, kMargin, false, layout);
+    ui::draw_hints(list, fonts, ui::GlyphStyle::dark(), &back, 1, 1920 - kMargin, true, layout);
 }
 
 void OsdScreen::draw_centre(DrawList &list, const Context &ctx) const
@@ -694,8 +679,35 @@ void OsdScreen::draw(DrawList &list, const Context &ctx) const
         draw_captions(list, ctx, chrome);
         draw_skip(list, ctx);
     }
-    if (hud_on_)
+    if (hud_on_ && raw_.video_settings_row == 0)
         draw_stats(list, ctx);
+    if (raw_.video_settings_row > 0) {
+        const auto& p = ctx.palette;
+        const Rect panel{1260, 210, 568, 564};
+        list.shadow({panel.x, panel.y + 12, panel.w, panel.h}, 24, 34, kBlack.with_alpha(0.6f));
+        list.rounded_rect(panel, 24, p.bg_bottom.with_alpha(0.97f));
+        list.bordered_rect(panel, 24, kBlack.with_alpha(0.0f), 1.0f, kWhite.with_alpha(0.14f));
+        ui::text(list, fonts.display, "Video Settings", panel.x + 30, panel.y + 59, 32, kWhite);
+        const char* const labels[] = {"Audio Track", "Subtitle Track", "Aspect Ratio", "Media Info", "Stats for Nerds"};
+        const char* aspect = raw_.music_mode ? "Unavailable" :
+            (raw_.view_mode == 0 ? "Fit" : raw_.view_mode == 1 ? "Fill" : "Stretch");
+        const char* const values[] = {"", "", aspect, "", raw_.show_stats ? "On" : "Off"};
+        for (int i = 0; i < 5; ++i) {
+            const Rect row{panel.x + 20, panel.y + 85 + i * 80.0f, panel.w - 40, 68};
+            const bool focused = i + 1 == raw_.video_settings_row;
+            list.rounded_rect(row, 12, kWhite.with_alpha(focused ? 0.95f : 0.06f));
+            const auto ink = focused ? kBlack : kWhite;
+            ui::text(list, fonts.semibold, labels[i], row.x + 18, row.cy() + 7, 21, ink);
+            if (values[i][0])
+                ui::text(list, fonts.regular, values[i], row.x + row.w - 18, row.cy() + 7, 20, ink, Align::right);
+        }
+        const ui::Hint hints[] = {{ui::Button::cross, "Select"}, {ui::Button::circle, "Back"}};
+        ui::HintLayout layout;
+        layout.size = 28;
+        layout.text_size = 18;
+        layout.cy = panel.y + panel.h - 40;
+        ui::draw_hints(list, fonts, ui::GlyphStyle::dark(), hints, 2, panel.x + panel.w - 24, true, layout);
+    }
     if (raw_.debug_overlay)
     {
         char fps[24];

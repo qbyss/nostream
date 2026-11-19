@@ -167,7 +167,10 @@ void SubtitleFileScreen::activate() {
     }
     EVO_LOGI("subtitles", "picked %s: %d cues", r.path.c_str(), cues);
     evo_feedback(EVO_FB_CONFIRM);
-    if (auto sm = Application::getInstance().getScreenManager()) sm->navigateTo(ScreenId::Player);
+    if (auto sm = Application::getInstance().getScreenManager()) {
+        if (sm->navigateBack(ScreenId::Player) && sm->getCurrentScreenId() == ScreenId::SubtitlePicker)
+            sm->navigateBack(ScreenId::Player);
+    }
 }
 
 void SubtitleFileScreen::navigate(int delta) {

@@ -460,6 +460,7 @@ void evo_rmlui_update_playback_params(const evo_playback_osd_params_t* p) {
     state.is_live = (p->is_live != 0);
     state.view_mode = p->view_mode;
     state.show_stats = (p->show_stats != 0);
+    state.video_settings_row = p->video_settings_row;
     state.alpha = p->alpha;
     state.subtitle_text = p->subtitle_text ? p->subtitle_text : "";
     state.subtitle_face = p->subtitle_face;

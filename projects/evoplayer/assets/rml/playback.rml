@@ -119,43 +119,42 @@
 
         <!-- Netflix Action Ribbon & Hints -->
         <div id="controls-row">
-            <div class="control-item">
-                <div class="glyph-badge"><img src="icons/btn_cross.png" class="glyph-badge-img"/></div>
-                <span id="label-playpause" class="control-label">PAUSE</span>
-            </div>
-            <div class="control-item" id="item-seek">
-                <div class="glyph-badge"><img src="icons/btn_dpad.png" class="glyph-badge-img"/></div>
-                <span class="control-label">SEEK 10s</span>
-            </div>
-            <div class="control-item" id="item-chapter">
-                <span class="btn-tag">L1 / R1</span>
-                <span class="control-label">CHAPTER</span>
-            </div>
-            <div class="control-item">
-                <span class="btn-tag">R2</span>
-                <span id="label-audio" class="control-label">AUDIO: Stereo</span>
-            </div>
-            <div class="control-item" id="item-subs">
-                <span class="btn-tag">UP / DN</span>
-                <span id="label-subs" class="control-label">SUBS: None</span>
-            </div>
-            <div class="control-item" id="item-subsync">
-                <span class="btn-tag">TRACKPAD &lt; &gt;</span>
-                <span id="label-subsync" class="control-label">SYNC: 0 ms</span>
-            </div>
-            <div class="control-item">
-                <div class="glyph-badge"><img src="icons/btn_square.png" class="glyph-badge-img"/></div>
-                <span class="control-label">INFO</span>
-            </div>
-            <div class="control-item">
-                <div class="glyph-badge"><img src="icons/btn_triangle.png" class="glyph-badge-img"/></div>
-                <span id="label-aspect" class="control-label">ASPECT: FIT</span>
+            <div id="primary-playback-controls">
+                <div class="control-item">
+                    <div class="glyph-badge"><img src="icons/btn_cross.png" class="glyph-badge-img"/></div>
+                    <span id="label-playpause" class="control-label">PAUSE</span>
+                </div>
+                <div class="control-item" id="item-seek">
+                    <div class="glyph-badge"><img src="icons/btn_dpad.png" class="glyph-badge-img"/></div>
+                    <span class="control-label">SEEK 10s</span>
+                </div>
+                <div class="control-item" id="item-chapter">
+                    <span class="btn-tag">L1 / R1</span>
+                    <span class="control-label">CHAPTER</span>
+                </div>
+                <div class="control-item" id="item-chapter-list">
+                    <span class="btn-tag">R3</span>
+                    <span class="control-label">CHAPTER LIST</span>
+                </div>
+                <div class="control-item">
+                    <span class="btn-tag">OPTIONS</span>
+                    <span class="control-label">VIDEO SETTINGS</span>
+                </div>
             </div>
             <div class="control-item">
                 <div class="glyph-badge"><img src="icons/btn_circle.png" class="glyph-badge-img"/></div>
                 <span class="control-label">BACK</span>
             </div>
         </div>
+    </div>
+    <div id="video-settings">
+        <div id="video-settings-title">Video Settings</div>
+        <div id="video-settings-1" class="video-settings-row"><span>Audio Track</span></div>
+        <div id="video-settings-2" class="video-settings-row"><span>Subtitle Track</span></div>
+        <div id="video-settings-3" class="video-settings-row"><span>Aspect Ratio</span><span id="video-settings-value-3"></span></div>
+        <div id="video-settings-4" class="video-settings-row"><span>Media Info</span></div>
+        <div id="video-settings-5" class="video-settings-row"><span>Stats for Nerds</span><span id="video-settings-value-5"></span></div>
+        <div id="video-settings-hints">Cross Select　 Circle Back</div>
     </div>
 </body>
 </rml>

@@ -1209,9 +1209,11 @@ int Application::run() {
             s_stickUp = curStickUp;
             s_stickDown = curStickDown;
 
+            const auto* player = m_screenManager && m_screenManager->getCurrentScreenId() == ScreenId::Player
+                ? static_cast<PlayerScreen*>(m_screenManager->getCurrentScreen()) : nullptr;
+            const bool videoSettingsOpen = player && player->isVideoSettingsOpen();
             uint32_t repeatButtons = padData.buttons & ~EVO_MEDIA_TRANSPORT;
-            if (m_screenManager && m_screenManager->getCurrentScreenId() == ScreenId::Player &&
-                !evo_webui_active() && !evo_keyboard_is_open()) {
+            if (player && !videoSettingsOpen && !evo_webui_active() && !evo_keyboard_is_open()) {
                 const auto seekDirections = [](uint32_t buttons) {
                     uint32_t directions = 0;
                     if (buttons & EVO_MEDIA_REWIND) directions |= PadButtons::Left;
@@ -1306,6 +1308,7 @@ int Application::run() {
              */
             /* #150: on the player, R3 opens the chapter list for a file that
              * has chapters; L3 stays the screenshot there. */
+            if (videoSettingsOpen) pressed &= ~(PadButtons::L3 | PadButtons::R3);
             bool r3IsChapters = false;
             if ((pressed & PadButtons::R3) && m_screenManager &&
                 m_screenManager->getCurrentScreenId() == ScreenId::Player && m_mediaMetadataService &&

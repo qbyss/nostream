@@ -325,7 +325,7 @@ bool skip_press(P& playback, uint64_t now)
 } // namespace
 
 bool PlayerScreen::hasActiveOverlay() const {
-    if (m_osdVisibilityAlpha > 0 || m_showStatsForNerds || g_skip.shown >= 0) {
+    if (isVideoSettingsOpen() || m_osdVisibilityAlpha > 0 || m_showStatsForNerds || g_skip.shown >= 0) {
         return true;
     }
     if (prospero_subtitle_enabled) {
@@ -356,13 +356,65 @@ bool PlayerScreen::hasActiveOverlay() const {
 void PlayerScreen::onEnter() {
     StatefulScreen::onEnter();
     m_osdVisibilityAlpha = 255;
-    g_skip = SkipState();   /* #219: a file played twice offers its skip twice */
+    if (!m_returnToVideoSettings) {
+        closeVideoSettings();
+        g_skip = SkipState();   /* #219: a file played twice offers its skip twice */
+    }
+    m_returnToVideoSettings = false;
     m_controlsLastUsedMs = NowMs();
     m_playerFsm.postEvent(PlayerScreenEvent::ShowOsd);
 }
 
 void PlayerScreen::onExit() {
     StatefulScreen::onExit();
+}
+
+void PlayerScreen::closeVideoSettings() {
+    m_videoSettingsRow = 0;
+    m_returnToVideoSettings = false;
+}
+
+void PlayerScreen::handleVideoSettingsInput(uint32_t pressed) {
+    constexpr int rowCount = 5;
+    if (pressed & (PadButtons::Options | PadButtons::Circle)) {
+        closeVideoSettings();
+        evo_feedback(EVO_FB_CANCEL);
+        return;
+    }
+
+    if (pressed & (PadButtons::Up | PadButtons::Down)) {
+        const int step = (pressed & PadButtons::Up) ? -1 : 1;
+        m_videoSettingsRow = (m_videoSettingsRow - 1 + step + rowCount) % rowCount + 1;
+        evo_feedback(EVO_FB_MOVE);
+        return;
+    }
+
+    auto playback = Application::getInstance().getPlaybackController();
+    if (m_videoSettingsRow == 3 && (pressed & (PadButtons::Left | PadButtons::Right | PadButtons::Cross))) {
+        if (playback && !playback->isMusicMode()) {
+            const int step = (pressed & PadButtons::Left) ? 2 : 1;
+            playback->setViewMode(static_cast<ViewMode>((static_cast<int>(playback->getViewMode()) + step) % 3));
+            evo_feedback(EVO_FB_MOVE);
+        } else {
+            evo_feedback(EVO_FB_BOUNDARY);
+        }
+        return;
+    }
+    if (!(pressed & PadButtons::Cross)) return;
+
+    if (m_videoSettingsRow == 5) {
+        toggleStatsForNerds();
+        evo_feedback(EVO_FB_CONFIRM);
+        return;
+    }
+
+    auto sm = Application::getInstance().getScreenManager();
+    if (!sm) return;
+    const ScreenId target = m_videoSettingsRow == 1 ? ScreenId::AudioTrackPicker :
+                            m_videoSettingsRow == 2 ? ScreenId::SubtitlePicker : ScreenId::MediaInfo;
+    m_returnToVideoSettings = true;
+    sm->navigateTo(target);
+    evo_feedback(EVO_FB_OPEN);
 }
 
 bool PlayerScreen::handleInput(uint32_t pressed, uint32_t held, uint32_t released) {
@@ -373,6 +425,20 @@ bool PlayerScreen::handleInput(uint32_t pressed, uint32_t held, uint32_t release
 
     if (pressed) {
         m_controlsLastUsedMs = NowMs();
+    }
+
+    if (isVideoSettingsOpen()) {
+        handleVideoSettingsInput(pressed);
+        return true;
+    }
+
+    if (pressed & PadButtons::Options) {
+        if (playback->isScrubbing()) playback->confirmScrub();
+        if (playback->isActive()) {
+            m_videoSettingsRow = 1;
+            evo_feedback(EVO_FB_OPEN);
+        }
+        return true;
     }
 
     if (pressed & PadButtons::Circle) {
@@ -403,25 +469,8 @@ bool PlayerScreen::handleInput(uint32_t pressed, uint32_t held, uint32_t release
         }
         return true;
     }
-    if (pressed & PadButtons::Options) {
-        toggleStatsForNerds();
-        toast("STATS", m_showStatsForNerds ? "ON" : "OFF");
-        return true;
-    }
-    if (pressed & PadButtons::Square) {
-        if (screenMgr) {
-            screenMgr->navigateTo(ScreenId::MediaInfo);
-        }
-        return true;
-    }
     if (pressed & PadButtons::Triangle) {
-        /* While the skip button is up (or just after an automatic skip), Triangle is that button. */
-        if (skip_press(playback, NowMs())) return true;
-        /* Aspect ratio, as it has always been on this screen. */
-        playback->cycleViewMode();
-        toast("VIEW MODE", playback->getViewMode() == ViewMode::Fit ? "FIT" :
-                           playback->getViewMode() == ViewMode::Fill ? "FILL" : "STRETCH");
-        return true;
+        return skip_press(playback, NowMs());
     }
     /* Live TV has no timeline: seek and chapter keys are swallowed, not sent
      * to a demuxer that has nothing behind the live edge. */
@@ -452,54 +501,6 @@ bool PlayerScreen::handleInput(uint32_t pressed, uint32_t held, uint32_t release
         playback->moveScrub(10.0);
         return true;
     }
-    /*
-     * Up toggles subtitles, Down opens the picker - the legacy binding. The
-     * picker rather than a next-track cycle because cycling reopens the file
-     * on every step, which on a disc rip with thirty tracks means thirty
-     * reopens to reach the one you want.
-     */
-    if (pressed & PadButtons::Up) {
-        if (!playback->isScrubbing()) {
-            prospero_subtitle_toggle();
-            toast("SUBTITLES", prospero_subtitle_enabled ? "ON" : "OFF");
-        }
-        return true;
-    }
-    if (pressed & PadButtons::Down) {
-        if (!playback->isScrubbing() && screenMgr) {
-            screenMgr->navigateTo(ScreenId::SubtitlePicker);
-        }
-        return true;
-    }
-    if (pressed & PadButtons::R2) {
-        /* Audio track picker. */
-        if (!playback->isScrubbing() && screenMgr) {
-            screenMgr->navigateTo(ScreenId::AudioTrackPicker);
-        }
-        return true;
-    }
-    /*
-     * Subtitle delay sync:
-     * - Trackpad Left (click left half or swipe left) / L2: nudge -100 ms (earlier)
-     * - Trackpad Right (click right half or swipe right): nudge +100 ms (later)
-     */
-    if (pressed & (PadButtons::TouchPadLeft | PadButtons::L2)) {
-        if (!playback->isScrubbing()) {
-            prospero_subtitle_nudge_delay(-100);
-            evo_feedback(EVO_FB_MOVE);
-            m_controlsLastUsedMs = NowMs();
-        }
-        return true;
-    }
-    if (pressed & PadButtons::TouchPadRight) {
-        if (!playback->isScrubbing()) {
-            prospero_subtitle_nudge_delay(+100);
-            evo_feedback(EVO_FB_MOVE);
-            m_controlsLastUsedMs = NowMs();
-        }
-        return true;
-    }
-
     return false;
 }
 
@@ -580,7 +581,7 @@ void PlayerScreen::update(double deltaMs) {
         m_controlsLastUsedMs = now;
     }
 
-    bool wantsControls = playback->isMusicMode() || ended ||
+    bool wantsControls = isVideoSettingsOpen() || playback->isMusicMode() || ended ||
                          ((now - m_controlsLastUsedMs < 3500) || reallyPaused || m_showStatsForNerds) ||
                          playback->isScrubbing() || isBuffering;
 
@@ -777,7 +778,7 @@ void PlayerScreen::render(uint32_t* framebuffer, int width, int height) {
                                             sizeof(secondarySubText));
     }
 
-    if (m_osdVisibilityAlpha > 0 && evo_rmlui_is_initialized()) {
+    if ((m_osdVisibilityAlpha > 0 || isVideoSettingsOpen()) && evo_rmlui_is_initialized()) {
         std::string titleStr, metaStr;
         /*
          * #90 / #9: a provider supplies its own title, and deriving one from
@@ -1051,8 +1052,9 @@ void PlayerScreen::render(uint32_t* framebuffer, int width, int height) {
         p.subtitle_color = prospero_subtitle_color;            /* #231 */
         p.subtitle_lift = prospero_subtitle_lift;
         p.subtitle_background = prospero_subtitle_background;
-        p.chrome_hidden = 0;
-        p.skip_label = g_skip.shown >= 0 ? g_skip.label.c_str() : nullptr;   /* #219 */
+        p.chrome_hidden = isVideoSettingsOpen() ? 1 : 0;
+        p.video_settings_row = m_videoSettingsRow;
+        p.skip_label = !isVideoSettingsOpen() && g_skip.shown >= 0 ? g_skip.label.c_str() : nullptr;   /* #219 */
         p.fps = perf_render_fps;
         p.debug_overlay = evo_fps_counter_enabled();
         p.music_mode = playback->isMusicMode() ? 1 : 0;
@@ -1135,7 +1137,7 @@ void PlayerScreen::render(uint32_t* framebuffer, int width, int height) {
         p.subtitle_lift = prospero_subtitle_lift;
         p.subtitle_background = prospero_subtitle_background;
         p.chrome_hidden = 1;
-        p.skip_label = g_skip.shown >= 0 ? g_skip.label.c_str() : nullptr;   /* #219 */
+        p.skip_label = !isVideoSettingsOpen() && g_skip.shown >= 0 ? g_skip.label.c_str() : nullptr;   /* #219 */
         p.alpha = 255;
         p.fps = perf_render_fps;
         p.debug_overlay = evo_fps_counter_enabled();

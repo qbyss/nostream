@@ -50,11 +50,14 @@ public:
     bool isStatsForNerdsVisible() const { return m_showStatsForNerds; }
     void toggleStatsForNerds();
     bool hasActiveOverlay() const;
+    bool isVideoSettingsOpen() const { return m_videoSettingsRow != 0; }
+    void closeVideoSettings();
     double subtitleClockSeconds() const;
 
 private:
     void initPlayerStateMachine();
     void feedPerformanceHud();
+    void handleVideoSettingsInput(uint32_t pressed);
 
     StateMachine<PlayerScreenState, PlayerScreenEvent> m_playerFsm;
     int m_osdVisibilityAlpha = 255;
@@ -63,6 +66,8 @@ private:
     bool m_scrubThumbActive = false;  /* a scrub preview session is running (baseline taken) */
     uint64_t m_lastPlayPauseToggleMs = 0;
     bool m_showStatsForNerds = false;
+    int m_videoSettingsRow = 0;
+    bool m_returnToVideoSettings = false;
 };
 
 } // namespace evo

@@ -2976,58 +2976,25 @@ void EvoRmlApp::UpdatePlaybackState(const EvoPlaybackState& state) {
         el_pp_label->SetInnerRML(state.paused ? "PLAY" : "PAUSE");
     }
 
-    // 6. Track labels
-    Rml::Element* el_audio = m_playback_doc->GetElementById("label-audio");
-    if (el_audio) {
-        std::string a_txt = "AUDIO: " + (state.audio_track.empty() ? "Stereo" : state.audio_track);
-        el_audio->SetInnerRML(a_txt);
-    }
+    const char* timelineDisplay = state.is_live ? "none" : "flex";
+    for (const char* id : {"item-seek", "progress-container", "time-row"})
+        if (auto* e = m_playback_doc->GetElementById(id))
+            e->SetProperty("display", timelineDisplay);
+    for (const char* id : {"item-chapter", "item-chapter-list"})
+        if (auto* e = m_playback_doc->GetElementById(id))
+            e->SetProperty("display", (!state.is_live && state.chapter_count > 0) ? "flex" : "none");
 
-    Rml::Element* el_subs = m_playback_doc->GetElementById("label-subs");
-    if (el_subs) {
-        std::string s_txt = "SUBS: " + (state.sub_track.empty() ? "None" : state.sub_track);
-        el_subs->SetInnerRML(s_txt);
-    }
-
-    /* Live TV: there is no timeline to show or seek through, and no chapters.
-     * The meta line already reads LIVE. SUBS stays only if the stream has
-     * subtitles to turn on. */
-    {
-        const bool no_subs = state.sub_track.empty() || state.sub_track == "None";
-        const char* live_off = state.is_live ? "none" : "flex";
-        static const char* const k_vod_only[] = {
-            "item-seek", "item-chapter", "progress-container", "time-row" };
-        for (const char* id : k_vod_only)
-            if (Rml::Element* e = m_playback_doc->GetElementById(id))
-                e->SetProperty("display", live_off);
-        /* #150: the chapter hint only for a file that has chapters. */
-        if (Rml::Element* e = m_playback_doc->GetElementById("item-chapter"))
-            e->SetProperty("display", (state.is_live || state.chapter_count == 0) ? "none" : "flex");
-        if (Rml::Element* e = m_playback_doc->GetElementById("item-subs"))
-            e->SetProperty("display", (state.is_live && no_subs) ? "none" : "flex");
-    }
-
-    Rml::Element* el_subsync_item = m_playback_doc->GetElementById("item-subsync");
-    Rml::Element* el_subsync = m_playback_doc->GetElementById("label-subsync");
-    if (el_subsync_item && el_subsync) {
-        if (state.sub_track.empty() || state.sub_track == "None") {
-            el_subsync_item->SetProperty("display", "none");
-        } else {
-            el_subsync_item->SetProperty("display", "flex");
-            char sync_buf[32];
-            if (state.sub_delay_ms == 0) {
-                std::snprintf(sync_buf, sizeof(sync_buf), "SYNC: 0 ms");
-            } else {
-                std::snprintf(sync_buf, sizeof(sync_buf), "SYNC: %+d ms", state.sub_delay_ms);
-            }
-            el_subsync->SetInnerRML(sync_buf);
-        }
-    }
-
-    Rml::Element* el_aspect = m_playback_doc->GetElementById("label-aspect");
-    if (el_aspect) {
-        const char* vm = (state.view_mode == 0) ? "FIT" : ((state.view_mode == 1) ? "FILL" : "STRETCH");
-        el_aspect->SetInnerRML(std::string("ASPECT: ") + vm);
+    if (auto* menu = m_playback_doc->GetElementById("video-settings"))
+        menu->SetProperty("display", state.video_settings_row > 0 ? "flex" : "none");
+    if (state.video_settings_row > 0) {
+        for (int i = 1; i <= 5; ++i)
+            if (auto* row = m_playback_doc->GetElementById("video-settings-" + std::to_string(i)))
+                row->SetClass("focused", i == state.video_settings_row);
+        if (auto* aspect = m_playback_doc->GetElementById("video-settings-value-3"))
+            aspect->SetInnerRML(state.music_mode ? "Unavailable" :
+                (state.view_mode == 0 ? "Fit" : state.view_mode == 1 ? "Fill" : "Stretch"));
+        if (auto* stats = m_playback_doc->GetElementById("video-settings-value-5"))
+            stats->SetInnerRML(state.show_stats ? "On" : "Off");
     }
 
     // 7. Stats for Nerds HUD
@@ -3039,7 +3006,7 @@ void EvoRmlApp::UpdatePlaybackState(const EvoPlaybackState& state) {
 }
 
 /* #81 / #63: the playback diagnostic HUD. Only called while the HUD is visible
- * (OPTIONS on the player), at ~2 Hz, so it writes the elements directly rather
+ * (enabled in Video Settings), at ~2 Hz, so it writes the elements directly rather
  * than going through the state-diff dance. */
 void EvoRmlApp::UpdatePerfHud(const evo_perf_hud_t* h) {
     if (!m_initialized || !m_playback_doc || !h) return;

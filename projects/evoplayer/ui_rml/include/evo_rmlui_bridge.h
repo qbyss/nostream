@@ -43,6 +43,7 @@ typedef struct {
     int is_live;
     int view_mode;
     int show_stats;
+    int video_settings_row; /* 0 closed, 1–5 focused menu row */
     int alpha;
     /* GL-5 (#81): on-video caption overlay, rendered by RmlUi (Unicode) instead
      * of the old ASCII bitmap path. subtitle_text is the active cue as UTF-8,

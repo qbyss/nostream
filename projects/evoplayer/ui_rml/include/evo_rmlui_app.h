@@ -38,6 +38,7 @@ struct EvoPlaybackState {
     bool is_live = false;
     int view_mode = 0; // 0=FIT, 1=FILL, 2=STRETCH
     bool show_stats = false;
+    int video_settings_row = 0;
     int alpha = 255;
     std::string subtitle_text;   // #81: active caption, UTF-8, "\n"-separated
     int subtitle_face = 2;       // EVO_FACE_SUB/MENU/TITLE
@@ -67,7 +68,8 @@ struct EvoPlaybackState {
                loading == o.loading &&
                audio_track == o.audio_track && sub_track == o.sub_track &&
                sub_delay_ms == o.sub_delay_ms && is_live == o.is_live &&
-               view_mode == o.view_mode && show_stats == o.show_stats && alpha == o.alpha &&
+               view_mode == o.view_mode && show_stats == o.show_stats &&
+               video_settings_row == o.video_settings_row && alpha == o.alpha &&
                subtitle_text == o.subtitle_text && subtitle_face == o.subtitle_face &&
                subtitle_raised == o.subtitle_raised && chrome_hidden == o.chrome_hidden &&
                subtitle2_text == o.subtitle2_text &&

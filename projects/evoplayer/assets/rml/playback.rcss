@@ -634,7 +634,13 @@ div, span, p {
     display: flex;
     flex-direction: row;
     align-items: center;
-    justify-content: flex-start;
+    justify-content: space-between;
+}
+
+#primary-playback-controls {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
     gap: 28dp;
 }
 
@@ -723,4 +729,49 @@ div, span, p {
     to {
         transform: rotate(360deg);
     }
+}
+
+#video-settings {
+    display: none;
+    position: absolute;
+    top: 210dp;
+    right: 92dp;
+    width: 568dp;
+    padding: 24dp;
+    background-color: #0c1424f7;
+    border-width: 1dp;
+    border-color: #60728b66;
+    border-radius: 24dp;
+    flex-direction: column;
+    gap: 12dp;
+    z-index: 30;
+}
+
+#video-settings-title {
+    font-size: 32dp;
+    font-weight: bold;
+    margin: 0 6dp 8dp;
+}
+
+.video-settings-row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    height: 68dp;
+    padding: 0 18dp;
+    border-radius: 12dp;
+    font-size: 21dp;
+    background-color: #ffffff12;
+}
+
+.video-settings-row.focused {
+    background-color: #ffffff;
+    color: #101a2a;
+}
+
+#video-settings-hints {
+    align-self: flex-end;
+    margin: 10dp 4dp 0;
+    font-size: 18dp;
 }

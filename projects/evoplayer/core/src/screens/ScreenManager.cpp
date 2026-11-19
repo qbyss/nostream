@@ -1,3 +1,4 @@
+#include "evo/screens/PlayerScreen.hpp"
 #include "evo/screens/ScreenManager.hpp"
 #include "evo/Application.hpp"
 #include "evo_rmlui_bridge.h"
@@ -264,6 +265,8 @@ ScreenId ScreenManager::getPlaybackReturnScreen() const {
 }
 
 void ScreenManager::returnFromPlayback() {
+    if (auto* player = dynamic_cast<PlayerScreen*>(getScreen(ScreenId::Player)))
+        player->closeVideoSettings();
     ScreenId target = getPlaybackReturnScreen();
 
     if (auto current = getCurrentScreen()) {
