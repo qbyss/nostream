@@ -207,13 +207,29 @@ void ToastOverlay::draw(DrawList &list, const Context &ctx) const
 
     list.push_opacity((float)alpha_ / 255.0f);
 
+    constexpr float cardWidth = 560.0f;
+    constexpr float cardRight = 1920.0f - 48.0f;
+    constexpr float cardBottom = 820.0f;
+    constexpr float padding = 24.0f;
+    constexpr float textInset = padding + 6.0f + 16.0f;
+    const auto drawCard = [&](float height, float opacity) {
+        const Rect card{cardRight - cardWidth + slide_, cardBottom - height, cardWidth, height};
+        list.shadow({card.x, card.y + 10, card.w, card.h}, 0, 24, Color::rgb(0x000000, 0.5f));
+        list.rounded_rect(card, 0, p.bg_top.with_alpha(opacity));
+        list.bordered_rect(card, 0, Color::rgb(0, 0), 1.0f, kWhite.with_alpha(0.12f));
+        return card;
+    };
+    const auto drawStripe = [&](const Rect &card) {
+        list.rounded_rect({card.x + padding, card.y + padding, 6.0f, card.h - 2.0f * padding}, 0, acc);
+    };
+
     /* A message with a second line is a card that asks something (the update card,
      * #120): the first line is the detail, wrapped, the second is the button hint. */
     const size_t nl = message_.find('\n');
     if (nl != std::string::npos) {
         const std::string detail = message_.substr(0, nl);
         const std::string hint = message_.substr(nl + 1);
-        const float w = 540.0f, inner = w - 72.0f;
+        const float inner = cardWidth - textInset - padding;
         std::vector<std::string> lines;
         std::string cur;
         size_t at = 0;
@@ -222,7 +238,7 @@ void ToastOverlay::draw(DrawList &list, const Context &ctx) const
             if (sp == std::string::npos) sp = detail.size();
             const std::string word = detail.substr(at, sp - at);
             const std::string trial = cur.empty() ? word : cur + " " + word;
-            if (!cur.empty() && fonts.regular.measure(trial, 18) > inner) {
+            if (!cur.empty() && fonts.regular.measure(trial, 20) > inner) {
                 lines.push_back(cur);
                 cur = word;
             } else {
@@ -231,66 +247,59 @@ void ToastOverlay::draw(DrawList &list, const Context &ctx) const
             at = sp + 1;
         }
         if (!cur.empty() && lines.size() < 3) lines.push_back(cur);
-        const float h = 58.0f + 26.0f * (float)lines.size() + 78.0f;
-        Rect card{1920.0f - w - 40.0f + slide_, 990.0f - h, w, h};
-        list.shadow({card.x, card.y + 10, card.w, card.h}, 20, 24, Color::rgb(0x000000, 0.5f));
-        list.rounded_rect(card, 24, p.bg_top.with_alpha(0.97f));
-        list.bordered_rect(card, 24, Color::rgb(0, 0), 1.0f, kWhite.with_alpha(0.12f));
-        list.rounded_rect({card.x + 20, card.y + 22, 6, h - 44}, 3, acc);
-        float y = card.y + 44;
-        ui::text(list, fonts.semibold, fit(fonts.semibold, title_, 22, inner), card.x + 44, y, 22, kWhite);
-        y += 14;
-        for (const std::string &l : lines) {
-            y += 26;
-            ui::text(list, fonts.regular, l, card.x + 44, y, 18, p.text_muted);
+        const float height = 154.0f + 28.0f * static_cast<float>(lines.size());
+        const Rect card = drawCard(height, 0.97f);
+        drawStripe(card);
+        const float x = card.x + textInset;
+        float y = card.y + 48.0f;
+        ui::text(list, fonts.semibold, fit(fonts.semibold, title_, 24, inner), x, y, 24, kWhite);
+        y += 6.0f;
+        for (const std::string &line : lines) {
+            y += 28.0f;
+            ui::text(list, fonts.regular, fit(fonts.regular, line, 20, inner), x, y, 20, p.text_muted);
         }
         /* The hint is "PRIMARY|SECONDARY": two buttons, Cross and Circle, which the
          * card owns while it is up (Application.cpp reads those two presses). */
         const size_t bar = hint.find('|');
         const std::string labels[2] = {hint.substr(0, bar), bar == std::string::npos ? "" : hint.substr(bar + 1)};
         const ui::Button glyphs[2] = {ui::Button::cross, ui::Button::circle};
-        const float gap = 14.0f, bw = (inner - gap) / 2.0f, bh = 46.0f, by = card.y + h - bh - 20.0f;
+        const float gap = 14.0f, bw = (inner - gap) / 2.0f, bh = 46.0f, by = card.y + card.h - bh - padding;
         for (int i = 0; i < 2; ++i)
         {
             if (labels[i].empty()) continue;
-            const Rect b{card.x + 44 + (float)i * (bw + gap), by, bw, bh};
+            const Rect b{card.x + textInset + (float)i * (bw + gap), by, bw, bh};
             const bool primary = i == 0;
             list.rounded_rect(b, bh / 2, primary ? acc : kWhite.with_alpha(0.10f));
             if (primary)
                 list.bordered_rect(Rect{b.x - 3, b.y - 3, b.w + 6, b.h + 6}, bh / 2 + 3, Color::rgb(0, 0), 2.0f, kWhite.with_alpha(0.9f));
             const float gw = ui::button_width(glyphs[i], 28.0f);
-            const float tw = fonts.semibold.measure(labels[i], 18);
-            float x = b.x + (bw - (gw + 10.0f + tw)) / 2.0f;
-            ui::draw_button(list, fonts, ui::GlyphStyle::dark(), glyphs[i], x, b.y + bh / 2, 28.0f);
-            ui::text(list, fonts.semibold, labels[i], x + gw + 10.0f, b.y + bh / 2 + 6.5f, 18,
+            const std::string label = fit(fonts.semibold, labels[i], 18, bw - gw - 26.0f);
+            const float tw = fonts.semibold.measure(label, 18);
+            const float buttonX = b.x + (bw - (gw + 10.0f + tw)) / 2.0f;
+            ui::draw_button(list, fonts, ui::GlyphStyle::dark(), glyphs[i], buttonX, b.y + bh / 2, 28.0f);
+            ui::text(list, fonts.semibold, label, buttonX + gw + 10.0f, b.y + bh / 2 + 6.5f, 18,
                      primary ? ui::Painter::on(acc) : kWhite);
         }
         list.pop_opacity();
         return;
     }
 
-    /* Busy: a spinner where the accent bar goes, the text moved past it. */
-    const float spin = busy_ ? 40.0f : 0.0f;
-    float text_w = std::max(fonts.semibold.measure(title_, 20), fonts.regular.measure(message_, 18));
-    float w = std::min(620.0f + spin, text_w + 70.0f + spin);
-    float h = 64.0f;
-    Rect card{1920.0f - w - 40.0f + slide_, 990.0f - h, w, h};
-
-    list.shadow({card.x, card.y + 10, card.w, card.h}, 20, 24, Color::rgb(0x000000, 0.5f));
-    list.rounded_rect(card, 32, p.bg_top.with_alpha(0.95f));
-    list.bordered_rect(card, 32, Color::rgb(0,0), 1.0f, kWhite.with_alpha(0.12f));
-
+    const Rect card = drawCard(112.0f, 0.95f);
+    const float inset = busy_ ? 72.0f : textInset;
     if (busy_) {
-        const float sx = card.x + 38.0f, sy = card.y + h / 2.0f;
+        const float sx = card.x + padding + 16.0f, sy = card.cy();
         list.arc(sx, sy, 14.0f, 4.0f, 0.0f, 6.2831853f, kWhite.with_alpha(0.15f));
         list.arc(sx, sy, 14.0f, 4.0f, std::fmod(time_ * 5.5f, 6.2831853f), 1.6f, acc);
     } else {
-        list.rounded_rect({card.x + 16, card.y + 16, 6, 32}, 3, acc);
+        drawStripe(card);
     }
 
-    float cy = card.y + 24;
-    ui::text(list, fonts.semibold, fit(fonts.semibold, title_, 20, w - 60 - spin), card.x + 36 + spin, cy, 20, kWhite);
-    ui::text(list, fonts.regular, fit(fonts.regular, message_, 18, w - 60 - spin), card.x + 36 + spin, cy + 22, 18, p.text_muted);
+    const float x = card.x + inset;
+    const float inner = cardWidth - inset - padding;
+    const float titleY = message_.empty() ? card.cy() + 8.0f : card.y + 48.0f;
+    ui::text(list, fonts.semibold, fit(fonts.semibold, title_, 24, inner), x, titleY, 24, kWhite);
+    if (!message_.empty())
+        ui::text(list, fonts.regular, fit(fonts.regular, message_, 20, inner), x, card.y + 80.0f, 20, p.text_muted);
 
     list.pop_opacity();
 }

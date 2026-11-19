@@ -26,26 +26,18 @@ div, span, p {
     box-sizing: border-box;
 }
 
-/* Top-right floating card, positioned below every screen's own header
- * (checked against launch/list/browser/settings/playback - the deepest
- * clears at ~150dp) rather than the issue's literal top:48dp, which
- * collided with the launch screen's clock/version header at top:72dp -
- * caught via the host preview (rml_toast_over_launch), not on hardware.
- * Opacity and the slide-in transform are pushed from C++ every frame
- * (EvoRmlApp::UpdateToastState) - the same caller-owns-the-animation
- * convention the old evo_toast.c timing used, not an RCSS transition
- * (unproven in this RmlUi build - see evo_rmlui_app.cpp). */
+/* Aligned above the playback controls on the 1920×1080 design canvas. */
 #toast-card {
     position: absolute;
-    top: 172dp;
-    right: 54dp;
-    width: 460dp;
-    min-height: 96dp;
+    bottom: 260dp;
+    right: 48dp;
+    width: 560dp;
+    min-height: 112dp;
     background-color: #10182bf5;
     border-width: 1dp;
     border-color: #2a3c5e;
-    border-radius: 20dp;
-    padding: 22dp 26dp 22dp 22dp;
+    border-radius: 0;
+    padding: 24dp;
     display: flex;
     flex-direction: row;
     align-items: center;
@@ -57,9 +49,9 @@ div, span, p {
  * C++ (theme accent / accent_alt, or a fixed danger red - see
  * UpdateToastState, EvoThemeColors carries no "danger" channel today). */
 #toast-rail {
-    width: 4dp;
+    width: 6dp;
     align-self: stretch;
-    border-radius: 2dp;
+    border-radius: 0;
     background-color: #ffcd00;
 }
 
@@ -89,7 +81,7 @@ div, span, p {
 }
 
 #toast-title {
-    font-size: 17dp;
+    font-size: 24dp;
     font-weight: bold;
     color: #fff3ec;
     letter-spacing: 0.5dp;
@@ -99,7 +91,7 @@ div, span, p {
 }
 
 #toast-message {
-    font-size: 14dp;
+    font-size: 20dp;
     font-weight: normal;
     color: #ccb29f;
     margin-top: 4dp;
@@ -114,4 +106,51 @@ div, span, p {
 .toast-tech #toast-title,
 .toast-tech #toast-message {
     color: #8c715e;
+}
+
+.toast-action #toast-message {
+    white-space: normal;
+    max-height: 84dp;
+    line-height: 28dp;
+}
+
+#toast-actions {
+    display: none;
+    flex-direction: row;
+    gap: 14dp;
+    margin-top: 20dp;
+}
+
+.toast-action #toast-actions {
+    display: flex;
+}
+
+#toast-actions span {
+    flex: 1 1 0;
+    min-width: 0;
+    font-size: 18dp;
+    padding: 8dp;
+    background-color: #ffffff1a;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+#toast-spinner {
+    display: none;
+    flex-shrink: 0;
+    width: 32dp;
+    height: 32dp;
+    border-width: 4dp;
+    border-radius: 16dp;
+    border-color: #ffffff26;
+}
+
+.toast-busy #toast-spinner {
+    display: block;
+}
+
+.toast-busy #toast-rail,
+.toast-busy #toast-icon-wrap {
+    display: none;
 }

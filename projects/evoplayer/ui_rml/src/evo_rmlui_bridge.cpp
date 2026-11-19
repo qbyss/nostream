@@ -585,6 +585,7 @@ void evo_rmlui_update_toast(const evo_rmlui_toast_params_t* p) {
     state.message = p->message ? p->message : "";
     state.kind = p->kind;
     state.visible = (p->visible != 0);
+    state.busy = (p->busy != 0);
     state.alpha = p->alpha;
     state.slide = p->slide;
 

@@ -672,6 +672,7 @@ struct EvoToastState {
     std::string message;
     int kind = 0;        /* 0=info 1=tech 2=error 3=ok - see evo_rmlui_bridge.h */
     bool visible = false;
+    bool busy = false;
     int alpha = 0;        /* 0..255, caller owns the fade (matches the old evo_toast timing) */
     int slide = 0;        /* px still to travel on the way in */
 };
@@ -834,6 +835,7 @@ private:
     std::string m_toast_last_title;
     std::string m_toast_last_message;
     int m_toast_last_kind = -1;
+    bool m_toast_last_busy = false;
 
     /* #81: virtual keyboard - own context (same rationale as the toast). */
     Rml::Context* m_keyboard_context = nullptr;

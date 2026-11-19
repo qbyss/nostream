@@ -3955,12 +3955,13 @@ void EvoRmlApp::UpdateToastState(const EvoToastState& state) {
      * cheap inline-style pushes, fine to always re-apply. */
     bool content_changed = (state.title != m_toast_last_title ||
                             state.message != m_toast_last_message ||
-                            state.kind != m_toast_last_kind);
+                            state.kind != m_toast_last_kind || state.busy != m_toast_last_busy);
 
     if (content_changed) {
         m_toast_last_title = state.title;
         m_toast_last_message = state.message;
         m_toast_last_kind = state.kind;
+        m_toast_last_busy = state.busy;
 
         Rml::Element* el_card = m_toast_doc->GetElementById("toast-card");
         Rml::Element* el_rail = m_toast_doc->GetElementById("toast-rail");
@@ -3968,10 +3969,36 @@ void EvoRmlApp::UpdateToastState(const EvoToastState& state) {
         Rml::Element* el_title = m_toast_doc->GetElementById("toast-title");
         Rml::Element* el_msg = m_toast_doc->GetElementById("toast-message");
 
-        if (el_title) el_title->SetInnerRML(state.title.empty() ? "NoStream" : state.title);
+        const auto escape = [](const std::string& text) {
+            std::string result;
+            for (char c : text) {
+                switch (c) {
+                    case '&': result += "&amp;"; break;
+                    case '<': result += "&lt;"; break;
+                    case '>': result += "&gt;"; break;
+                    default: result += c; break;
+                }
+            }
+            return result;
+        };
+        const size_t newline = state.message.find('\n');
+        const bool actionable = newline != std::string::npos;
+        if (el_title) el_title->SetInnerRML(escape(state.title.empty() ? "NoStream" : state.title));
         if (el_msg) {
-            el_msg->SetInnerRML(state.message);
+            el_msg->SetInnerRML(escape(state.message.substr(0, newline)));
             el_msg->SetProperty("display", state.message.empty() ? "none" : "block");
+        }
+        if (actionable) {
+            const std::string hints = state.message.substr(newline + 1);
+            const size_t bar = hints.find('|');
+            const auto setAction = [&](const char* id, const char* button, const std::string& label) {
+                if (auto* item = m_toast_doc->GetElementById(id)) {
+                    item->SetProperty("display", label.empty() ? "none" : "block");
+                    item->SetInnerRML(escape(std::string(button) + label));
+                }
+            };
+            setAction("toast-primary", "Cross  ", hints.substr(0, bar));
+            setAction("toast-secondary", "Circle  ", bar == std::string::npos ? "" : hints.substr(bar + 1));
         }
 
         /* Same icon/colour pairing evo_widget_toast used: info and error
@@ -4004,7 +4031,13 @@ void EvoRmlApp::UpdateToastState(const EvoToastState& state) {
                 break;
         }
 
-        if (el_card) el_card->SetClass("toast-tech", state.kind == 1);
+        if (el_card) {
+            el_card->SetClass("toast-tech", state.kind == 1);
+            el_card->SetClass("toast-action", actionable);
+            el_card->SetClass("toast-busy", state.busy);
+        }
+        if (auto* spinner = m_toast_doc->GetElementById("toast-spinner"))
+            spinner->SetProperty("border-top-color", accent);
         if (el_rail) el_rail->SetProperty("background-color", accent);
         if (el_icon) {
             el_icon->SetAttribute("src", icon_path);
@@ -4022,6 +4055,12 @@ void EvoRmlApp::UpdateToastState(const EvoToastState& state) {
             "translateX(" + std::to_string(state.slide) + "px)");
     }
 
+    if (state.busy && m_system) {
+        if (auto* spinner = m_toast_doc->GetElementById("toast-spinner")) {
+            const double angle = std::fmod(m_system->GetElapsedTime(), 1.2) * 300.0;
+            spinner->SetProperty("transform", "rotate(" + std::to_string(angle) + "deg)");
+        }
+    }
     m_toast_doc->Show();
 }
 
