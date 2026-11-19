@@ -120,12 +120,12 @@ int evo_vdec_native_can_open(int codec_id, int profile, int bit_depth,
  * FFmpeg instead — this never returns NULL when FFmpeg could have opened. */
 evo_vdec *evo_vdec_open(const evo_vdec_open_params *p, evo_vdec_backend *chosen);
 
-/* Feed one compressed access unit. pts_us is the presentation timestamp in
- * microseconds, or INT64_MIN for "unknown".
+/* Feed one compressed access unit. pts_us and dts_us are the presentation
+ * and decode timestamps in microseconds. Use INT64_MIN for unknown timestamps.
  *   0  = consumed
  *  >0  = not consumed, drain evo_vdec_receive() first then re-send
  *  <0  = fatal (caller falls back / stops) */
-int evo_vdec_send(evo_vdec *v, const uint8_t *data, int size, int64_t pts_us);
+int evo_vdec_send(evo_vdec *v, const uint8_t *data, int size, int64_t pts_us, int64_t dts_us);
 
 /* Pull one decoded frame.
  *   1  = frame written to *out (planes borrow decoder memory — valid until the

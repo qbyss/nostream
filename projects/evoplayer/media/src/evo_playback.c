@@ -704,22 +704,25 @@ int decode_next_video_frame(void)
             }
             if (!s_eof_drained) {
                 s_eof_drained = 1;
-                evo_vdec_send(g_vdec, NULL, 0, INT64_MIN);
+                evo_vdec_send(g_vdec, NULL, 0, INT64_MIN, INT64_MIN);
                 continue;
             }
             return 0;
         }
 
-        int64_t send_pts_us = INT64_MIN;
-        if (video_video_pending_pkt->pts != AV_NOPTS_VALUE && play_fmt &&
-            video_stream_index >= 0)
-            send_pts_us = av_rescale_q(
-                video_video_pending_pkt->pts,
-                play_fmt->streams[video_stream_index]->time_base,
-                (AVRational){ 1, 1000000 });
+        const AVPacket *pkt = video_video_pending_pkt;
+        int64_t pts_us = INT64_MIN;
+        int64_t dts_us = INT64_MIN;
+        if (play_fmt && video_stream_index >= 0) {
+            const AVRational time_base = play_fmt->streams[video_stream_index]->time_base;
+            const AVRational microseconds = {1, 1000000};
+            pts_us = av_rescale_q_rnd(pkt->pts, time_base, microseconds,
+                                     AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX);
+            dts_us = av_rescale_q_rnd(pkt->dts, time_base, microseconds,
+                                     AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX);
+        }
 
-        int send_ret = evo_vdec_send(g_vdec, video_video_pending_pkt->data,
-                                     video_video_pending_pkt->size, send_pts_us);
+        int send_ret = evo_vdec_send(g_vdec, pkt->data, pkt->size, pts_us, dts_us);
 
         if (send_ret == 0) {
             av_packet_free(&video_video_pending_pkt);

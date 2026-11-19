@@ -64,7 +64,7 @@ struct evo_vdec {
  * #8 — decode timing at the seam
  * ------------------------------------------------------------------------ */
 
-static int vdec_send_inner(evo_vdec *v, const uint8_t *data, int size, int64_t pts_us);
+static int vdec_send_inner(evo_vdec *v, const uint8_t *data, int size, int64_t pts_us, int64_t dts_us);
 static int vdec_receive_inner(evo_vdec *v, pp_frame *out);
 
 static evo_vdec_open_result g_last_open_result = EVO_VDEC_OPEN_OK;
@@ -334,12 +334,12 @@ evo_vdec *evo_vdec_open(const evo_vdec_open_params *p, evo_vdec_backend *chosen)
     return v;
 }
 
-int evo_vdec_send(evo_vdec *v, const uint8_t *data, int size, int64_t pts_us)
+int evo_vdec_send(evo_vdec *v, const uint8_t *data, int size, int64_t pts_us, int64_t dts_us)
 {
     if (!v)
         return -1;
     uint64_t t0 = vdec_now_us();
-    int r = vdec_send_inner(v, data, size, pts_us);
+    int r = vdec_send_inner(v, data, size, pts_us, dts_us);
     vdec_note(v, vdec_now_us() - t0, 0);
     v->stats.send_calls++;
     if (r > 0)
@@ -349,7 +349,7 @@ int evo_vdec_send(evo_vdec *v, const uint8_t *data, int size, int64_t pts_us)
     return r;
 }
 
-static int vdec_send_inner(evo_vdec *v, const uint8_t *data, int size, int64_t pts_us)
+static int vdec_send_inner(evo_vdec *v, const uint8_t *data, int size, int64_t pts_us, int64_t dts_us)
 {
     if (v->backend == EVO_VDEC_BACKEND_NATIVE)
         return evo_vdec_native_send(v->nat, data, size, pts_us);
@@ -361,14 +361,13 @@ static int vdec_send_inner(evo_vdec *v, const uint8_t *data, int size, int64_t p
     int flush = !(data && size > 0);
     if (!flush) {
         /* Borrow the caller's buffer (alive for this call); avcodec_send_packet
-         * copies into the decoder's own storage. dts left unset — packets are in
-         * decode order and B-frame pts is non-monotonic; the decoder reorders to
-         * display order and fills best_effort_timestamp from the pts we give it
-         * (microseconds, matching ctx->pkt_timebase). */
+         * copies into its own storage. Keep PTS and DTS separate so FFmpeg
+         * can derive best-effort presentation times from DTS-only streams
+         * (such as MPEG-4 in AVI) and reorder frames when PTS is available. */
         v->pkt->data = (uint8_t *)data;
         v->pkt->size = size;
         v->pkt->pts  = (pts_us == INT64_MIN) ? AV_NOPTS_VALUE : pts_us;
-        v->pkt->dts  = AV_NOPTS_VALUE;
+        v->pkt->dts  = (dts_us == INT64_MIN) ? AV_NOPTS_VALUE : dts_us;
     }
 
     int ret = avcodec_send_packet(v->ctx, flush ? NULL : v->pkt);

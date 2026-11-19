@@ -392,7 +392,7 @@ static bool decodePosterOnHardware(AVFormatContext* fmt, AVStream* st, int vstre
             /* send() > 0 means the reorder buffer is full: drain and retry the
              * same unit, exactly as the play loop does. */
             for (int attempt = 0; attempt < 8; ++attempt) {
-                int sent = evo_vdec_send(dec, pkt->data, pkt->size, pts);
+                int sent = evo_vdec_send(dec, pkt->data, pkt->size, pts, INT64_MIN);
                 if (sent < 0) { packetCount = maxPackets; break; }
                 if (evo_vdec_receive(dec, &pf) == 1) gotFrame = true;
                 if (sent == 0) break;
@@ -403,7 +403,7 @@ static bool decodePosterOnHardware(AVFormatContext* fmt, AVStream* st, int vstre
     }
 
     if (!gotFrame) {          /* flush whatever is still held back */
-        evo_vdec_send(dec, nullptr, 0, INT64_MIN);
+        evo_vdec_send(dec, nullptr, 0, INT64_MIN, INT64_MIN);
         gotFrame = (evo_vdec_receive(dec, &pf) == 1);
     }
 
