@@ -124,7 +124,7 @@ private:
     std::unique_ptr<ScreenManager> m_screenManager;
 
     int m_padHandle = -1;
-    evo_media_remote m_mediaRemote{-1, -1, 0, 0, 0};
+    evo_media_remote m_mediaRemote{-1, -1, 0, 0, 0, 0, 0, 0, 0, 0};
     float m_leftStickX = 0.0f;
     float m_leftStickY = 0.0f;
     float m_rightStickX = 0.0f;

@@ -448,6 +448,12 @@ bool PlayerScreen::handleInput(uint32_t pressed, uint32_t held, uint32_t release
         return true;
     }
 
+    if (pressed & EVO_MEDIA_CHAPTER) {
+        if (playback->isScrubbing()) playback->cancelScrub();
+        playback->jumpChapter((pressed & EVO_MEDIA_NEXT_CHAPTER) ? 1 : -1);
+        return true;
+    }
+
     playback->updateScrubHold(held);
 
     if (pressed & EVO_MEDIA_PLAY_PAUSE) {

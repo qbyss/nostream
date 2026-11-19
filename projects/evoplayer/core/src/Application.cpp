@@ -1160,10 +1160,17 @@ int Application::run() {
             padData.rightStick = {128, 128};
         }
         {
+            const auto* player = m_screenManager && m_screenManager->getCurrentScreenId() == ScreenId::Player
+                ? static_cast<PlayerScreen*>(m_screenManager->getCurrentScreen()) : nullptr;
+            const bool videoSettingsOpen = player && player->isVideoSettingsOpen();
+            const bool playerTransport = player && !videoSettingsOpen && !evo_webui_active() && !evo_keyboard_is_open();
+            const bool chapterGestures = playerTransport && m_playbackController &&
+                m_playbackController->isActive() && !m_playbackController->isLiveSource() &&
+                m_mediaMetadataService && m_mediaMetadataService->getChapterCount() > 0;
             const uint32_t standard = padData.buttons | evo_usb_remote_take_buttons() |
                                       evo_phone_remote_take_buttons();
             padData.buttons = evo_media_remote_poll(&m_mediaRemote, static_cast<uint64_t>(now_ms()),
-                                                      standard, lastButtons, &pressed, &released);
+                                                      standard, lastButtons, chapterGestures, &pressed, &released);
             held = padData.buttons;
             m_padButtons = padData.buttons;
 
@@ -1209,11 +1216,8 @@ int Application::run() {
             s_stickUp = curStickUp;
             s_stickDown = curStickDown;
 
-            const auto* player = m_screenManager && m_screenManager->getCurrentScreenId() == ScreenId::Player
-                ? static_cast<PlayerScreen*>(m_screenManager->getCurrentScreen()) : nullptr;
-            const bool videoSettingsOpen = player && player->isVideoSettingsOpen();
             uint32_t repeatButtons = padData.buttons & ~EVO_MEDIA_TRANSPORT;
-            if (player && !videoSettingsOpen && !evo_webui_active() && !evo_keyboard_is_open()) {
+            if (playerTransport) {
                 const auto seekDirections = [](uint32_t buttons) {
                     uint32_t directions = 0;
                     if (buttons & EVO_MEDIA_REWIND) directions |= PadButtons::Left;

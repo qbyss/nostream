@@ -23,6 +23,9 @@ extern int scePadRead(int handle, remote_sample *samples, int count);
 extern int scePadClose(int handle);
 
 #define INTERCEPTED UINT32_C(0x80000000)
+#define SEEK_KEYS (EVO_MEDIA_REWIND | EVO_MEDIA_FORWARD)
+#define SEEK_HOLD_MS 220
+#define CHAPTER_DOUBLE_TAP_MS 300
 
 static uint32_t map_buttons(const remote_sample *sample)
 {
@@ -49,20 +52,59 @@ static void open_remote(evo_media_remote *remote, uint64_t now_ms)
         remote->handle = scePadOpen(remote->user, 2, 0, NULL);
 }
 
+static void reset_chapter_gesture(evo_media_remote *remote)
+{
+    remote->seek_tap = 0;
+    remote->chapter_key = 0;
+    remote->seek_press_started = 0;
+}
+
+static void update_chapter_gesture(evo_media_remote *remote, uint32_t buttons,
+                                   uint64_t now_ms, uint32_t *pressed)
+{
+    const uint32_t seek = buttons & SEEK_KEYS;
+    const uint32_t old_seek = remote->buttons & SEEK_KEYS;
+    if (seek == old_seek) return;
+
+    if (old_seek && remote->seek_press_started && buttons == 0 &&
+        now_ms >= remote->seek_pressed_at_ms &&
+        now_ms - remote->seek_pressed_at_ms < SEEK_HOLD_MS) {
+        remote->seek_tap = old_seek;
+        remote->seek_tap_at_ms = now_ms;
+    }
+    remote->seek_press_started = 0;
+    remote->chapter_key = 0;
+    if (!seek) return;
+
+    if (!old_seek && seek == remote->seek_tap &&
+        now_ms >= remote->seek_tap_at_ms &&
+        now_ms - remote->seek_tap_at_ms <= CHAPTER_DOUBLE_TAP_MS) {
+        *pressed &= ~seek;
+        *pressed |= seek == EVO_MEDIA_REWIND ? EVO_MEDIA_PREV_CHAPTER : EVO_MEDIA_NEXT_CHAPTER;
+        remote->chapter_key = seek;
+    } else {
+        remote->seek_pressed_at_ms = now_ms;
+        remote->seek_press_started = 1;
+    }
+    remote->seek_tap = 0;
+}
+
 void evo_media_remote_close(evo_media_remote *remote)
 {
     if (remote->handle >= 0) scePadClose(remote->handle);
     remote->handle = -1;
     remote->buttons = 0;
     remote->wait_for_release = 0;
+    reset_chapter_gesture(remote);
 }
 
 uint32_t evo_media_remote_poll(evo_media_remote *remote, uint64_t now_ms,
-                              uint32_t standard, uint32_t previous,
+                              uint32_t standard, uint32_t previous, int chapter_gestures,
                               uint32_t *pressed, uint32_t *released)
 {
     standard &= ~EVO_MEDIA_TRANSPORT;
-    uint32_t merged = standard | (remote->buttons & ~EVO_MEDIA_PLAY_PAUSE);
+    if (!chapter_gestures) reset_chapter_gesture(remote);
+    uint32_t merged = standard | (remote->buttons & ~(EVO_MEDIA_PLAY_PAUSE | remote->chapter_key));
     *pressed = merged & ~previous;
     *released = previous & ~merged;
 
@@ -82,6 +124,7 @@ uint32_t evo_media_remote_poll(evo_media_remote *remote, uint64_t now_ms,
     for (int i = 0; i < count && i < 16; ++i) {
         uint32_t buttons = map_buttons(&samples[i]);
         if (samples[i].buttons & INTERCEPTED) {
+            reset_chapter_gesture(remote);
             remote->wait_for_release = 1;
             buttons = 0;
         } else if (remote->wait_for_release) {
@@ -90,7 +133,12 @@ uint32_t evo_media_remote_poll(evo_media_remote *remote, uint64_t now_ms,
             buttons = 0;
         }
 
-        const uint32_t next = standard | (buttons & ~EVO_MEDIA_PLAY_PAUSE);
+        if (chapter_gestures && !remote->wait_for_release) {
+            if (buttons & ~SEEK_KEYS) remote->seek_tap = 0;
+            const uint64_t sample_ms = samples[i].timestamp_us ? samples[i].timestamp_us / 1000 : now_ms;
+            update_chapter_gesture(remote, buttons, sample_ms, pressed);
+        }
+        const uint32_t next = standard | (buttons & ~(EVO_MEDIA_PLAY_PAUSE | remote->chapter_key));
         *pressed |= (next & ~merged) | (buttons & ~remote->buttons & EVO_MEDIA_PLAY_PAUSE);
         *released |= merged & ~next;
         remote->buttons = buttons;
