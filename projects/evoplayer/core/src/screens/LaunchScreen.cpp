@@ -36,7 +36,7 @@ struct LibTile {
 
 /* Home library shortcuts. */
 constexpr LibTile libraryTiles[] = {
-    {"BROWSE",    "USB drives",      "../icons/icon_browse_usb.png",   0},
+    {"BROWSE",    "USB drives",      "../icons/icon_folder_tree.png",   0},
     {"RECENT",    "Resume watching", "../icons/icon_recent_files.png", 4},
     {"FAVORITES", "Saved for later", "../icons/icon_favorites.png",    3},
 };

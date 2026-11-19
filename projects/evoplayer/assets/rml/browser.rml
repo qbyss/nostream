@@ -18,7 +18,7 @@
         <div id="browser-header">
             <div id="browser-header-left">
                 <div id="browser-badge">
-                    <img id="browser-badge-icon" src="../icons/icon_browse_usb.png"/>
+                    <img id="browser-badge-icon" src="../icons/icon_folder_tree.png"/>
                 </div>
                 <div id="browser-title-row">
                     <span id="browser-title">FILES</span>
@@ -102,7 +102,7 @@
             <!-- Empty state when no items in directory -->
             <div id="browser-empty">
                 <div id="browser-empty-icon-box">
-                    <img id="browser-empty-icon" src="../icons/icon_browse_usb.png"/>
+                    <img id="browser-empty-icon" src="../icons/icon_folder_tree.png"/>
                 </div>
                 <div id="browser-empty-title">FOLDER IS EMPTY</div>
                 <div id="browser-empty-hint">No supported media files found</div>

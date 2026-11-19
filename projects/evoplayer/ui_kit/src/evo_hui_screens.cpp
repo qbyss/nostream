@@ -316,7 +316,7 @@ int rail_items(RailItem *out)
 {
     int n = 0;
     out[n++] = {"Home", "../icons/icon_home.png"};
-    out[n++] = {"Browse", "../icons/icon_browse_usb.png"};
+    out[n++] = {"Browse", "../icons/icon_folder_tree.png"};
     if (evo_settings_web_browser_enabled())
         out[n++] = {"Web", "../icons/icon_globe.png"}; /* #237 */
     out[n++] = {"Settings", "../icons/icon_settings.png"};

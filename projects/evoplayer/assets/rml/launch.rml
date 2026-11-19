@@ -165,7 +165,7 @@
                     <div class="tile tile-destination" id="lib-tile-0">
                         <div class="tile-index">01</div>
                         <div class="tile-icon-box tile-icon-box-lg" id="lib-iconbox-0">
-                            <img class="tile-icon tile-icon-lg" id="lib-icon-0" src="../icons/icon_browse_usb.png"/>
+                            <img class="tile-icon tile-icon-lg" id="lib-icon-0" src="../icons/icon_folder_tree.png"/>
                         </div>
                         <div class="tile-scrim"></div>
                         <div class="tile-status" id="lib-status-0"></div>

@@ -280,7 +280,7 @@ void BrowserScreen::draw(DrawList &list, const Context &ctx) const
     {
         const float cx = kGridX + (kRight - kGridX) * 0.5f;
         list.push_opacity(tween::stagger(age_, 2, 0.08f, 0.5f));
-        const std::uint32_t icon = ctx.textures.icon(raw_.failed ? "../icons/icon_about_support.png" : "../icons/icon_browse_usb.png");
+        const std::uint32_t icon = ctx.textures.icon(raw_.failed ? "../icons/icon_about_support.png" : "../icons/icon_folder_tree.png");
         if (icon)
             list.image(icon, {cx - 44, 360, 88, 88}, ::hui::gfx::kFullUv, raw_.failed ? kDanger : kWhite.with_alpha(0.35f));
         ui::text(list, fonts.display, empty_title_.empty() ? "Folder is empty" : empty_title_, cx, 510, 36,

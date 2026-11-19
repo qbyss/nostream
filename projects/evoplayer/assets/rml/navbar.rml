@@ -45,7 +45,7 @@
         <div class="rail-item-wrap" id="nav-wrap-1">
             <div class="rail-accent-bar" id="nav-bar-1"></div>
             <div class="rail-item" id="nav-item-1">
-                <img src="../icons/icon_browse_usb.png" class="rail-icon" id="nav-icon-1"/>
+                <img src="../icons/icon_folder_tree.png" class="rail-icon" id="nav-icon-1"/>
             </div>
         </div>
         <!-- 2: SETTINGS -->
@@ -98,7 +98,7 @@
                 <span class="rail-exp-label" id="nav-exp-label-0">HOME</span>
             </div>
             <div class="rail-exp-item" id="nav-exp-1">
-                <img id="nav-exp-icon-1" src="../icons/icon_browse_usb.png" class="rail-exp-icon"/>
+                <img id="nav-exp-icon-1" src="../icons/icon_folder_tree.png" class="rail-exp-icon"/>
                 <span class="rail-exp-label" id="nav-exp-label-1">BROWSE</span>
             </div>
             <div class="rail-exp-item" id="nav-exp-2">
