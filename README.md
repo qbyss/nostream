@@ -16,9 +16,20 @@ Plays video from USB drives (exFAT, FAT32 and read-only NTFS), internal storage,
 
 ---
 
-## What's New in v0.13.7
+## What NoStream Changes
 
-- **Cast from the YouTube app:** EVO shows up as a cast target on Android and iOS, no sign-in. The whole video plays in EVO's own player, up to 1080p60, with a loading toast while it starts. Settings → Network → **Cast to EVO Player**.
+- **PS5 Media Remote support:** the official remote drives the menus and playback. Play/Pause, Rewind and Forward work in the player. See [Controls](#controls-reference).
+- **Local media only:** the media providers (Jellyfin, Emby, Plex, Xtream, IPTV, Nuvio) and their menus are removed. NoStream plays files from USB, internal storage, SMB and FTP. YouTube casting and links still work.
+- **USB drives by name:** each mounted USB drive shows in the storage sidebar under its volume label.
+- **Favorite folders in the sidebar:** Options on a USB folder → **Add to Favorites** adds a shortcut to the sidebar. USB favorites follow the drive by its volume serial, even when its mount number changes, and come back at startup.
+- **Thumbnails survive restarts:** local thumbnails are cached in `/data/nostream/thumbnails` (up to 256 MB).
+- **Three rows in the storage browser**, and no rotating tips on Home.
+
+---
+
+## What's New in v0.13.7 (EVO Player)
+
+- **Cast from the YouTube app:** EVO shows up as a cast target on Android and iOS, no sign-in. The whole video plays in EVO's own player, up to 1080p60, with a loading toast while it starts. Settings → Network → **Cast to NoStream**.
 - **Play a YouTube link, whole video:** paste a link in Settings → Interface & Storage → **Play a YouTube link**, or on the phone page.
 - **Your phone as a remote (#238):** open `<console>:9780/remote` for play/pause, seeking, chapters, subtitles, audio tracks and a D-pad for EVO's menus.
 - **Smoother playback and browsing:** no more regular stutter in local and USB playback, and opening a file list no longer freezes for a few seconds when a USB drive is plugged in.
@@ -35,7 +46,6 @@ Full notes: [CHANGELOG.md](CHANGELOG.md).
 - **NTFS USB drives:** open read-only. Browse, play, view pictures and load subtitles from them.
 - **Load subtitles from file:** the subtitle picker browses the video's folder, any USB or NTFS drive, or internal storage.
 - **Add Server flow for SMB and FTP:** address, Guest or Account, a login test with a plain error, a share picker, and Online / Offline status on every server card.
-- **Movie and show detail page:** Overview, Cast and Details tabs, a stream picker, and a resume prompt (Continue / Restart / Cancel).
 - **True HDR colour:** HDR10, HLG and Dolby Vision are no longer washed out, plus an **HDR PEAK** setting that fits Dolby Vision to your TV shot by shot.
 - **Safer network use:** TLS certificate verification, a dead server fails in 3 seconds instead of 75, and no passwords or keys in logs.
 - **Diagnostics:** a phone and PC log viewer with live playback health, a kept log of the last run, and **Report a problem**, which opens a GitHub issue already filled in.
@@ -58,7 +68,6 @@ Full notes: [CHANGELOG.md](CHANGELOG.md).
 
 - **Multiple USB & M.2 Drives:** Detects `/mnt/usb0`–`/mnt/usb7` and `/mnt/ext0`–`/mnt/ext1`. Displays a drive picker when multiple drives are connected and provides cross-drive search.
 - **Keyboard Caret Navigation:** L1 and R1 move a UTF-8 aware cursor to edit text in place without clearing the entire line.
-- **Home Screen Provider Media:** Provider media resumes directly from the Home screen with asynchronous backdrop and poster cover art decodes.
 - **Thai Subtitles & CJK Fallback:** Embedded Noto Sans Thai fonts for subtitle rendering, plus runtime CJK font loading from `/data/nostream/fonts/`.
 
 Full notes: [CHANGELOG.md](CHANGELOG.md).
@@ -213,7 +222,7 @@ Manage your storage directly on the PS5 with native file operations, integrated 
 
 - **Experimental Audio Auto-Sync:** Analyzes spoken audio in real time to calculate acoustic timing offsets and synchronize subtitle tracks automatically.
 - **Concurrent Dual Subtitles:** Display two subtitle languages simultaneously — primary at the bottom, secondary at the top of the screen.
-- **Live Touchpad Sync Nudge:** Swipe horizontally or click left/right on the DualSense trackpad (or press **L2**) during playback to nudge timing in ±50 ms increments without pausing.
+- **Live Sync Nudge:** in the subtitle picker, press **Left / Right** or swipe or click left/right on the DualSense trackpad to move the timing by ±100 ms without pausing. **L1 / R1** do the same for the secondary line.
 - **Broad Format Support:** Styled ASS / SSA with full styling and positioning, SRT, SubRip, WebVTT and PGS picture subtitles.
 - **Load from file:** the picker's **Load from file** row browses the video's folder, any USB or NTFS drive, or internal storage for an `.srt`. Online subtitles can be fetched too.
 - **Preferred languages:** **Settings → Audio** and **Subtitles** pick the audio and subtitle language to start on.
@@ -261,26 +270,40 @@ The entire user interface is rendered on the GPU through bare-metal `sceAgc` at 
 
 ## Controls Reference
 
-The PS5 Media Remote’s D-pad navigates menus. Enter, Back, and Context work
-like Cross, Circle, and Options on a DualSense. On the Player screen,
-Play/Pause toggles playback and restarts a finished file. Rewind and Forward
-seek 10 seconds within the current file while preserving its play or pause state.
+### DualSense
 
 | Button | In Menus & File Browser | During Playback | On-Screen Keyboard |
 |---|---|---|---|
 | **CROSS ✕** | Select / Open | Play / Pause | Type character |
-| **CIRCLE ○** | Back | Stop playback (with prompt) | Cancel |
-| **TRIANGLE △** | Toggle favourite / Web view / Remove network server | **Skip intro / credits** while the button shows, otherwise cycle Aspect Ratio (Fit / Fill / Stretch) | Space |
-| **SQUARE □** | File details / Provider settings | Media Info (Codec, Resolution, Decoder) | Backspace |
-| **OPTIONS** | File operations (Copy, Move, Rename, Delete) / Server options (Edit, Remove) | Playback settings menu | Done |
-| **D-Pad / Left Stick** | Move focus, hold to scroll | Scrub seek bar (hold for high-speed) | Move between keys (up from the top row: the clear X) |
+| **CIRCLE ○** | Back | Stop playback | Cancel |
+| **TRIANGLE △** | Add a file to Favorites / Remove network server | **Skip intro / credits** while the button shows (or undo an automatic skip) | Space |
+| **SQUARE □** | Search | — | Backspace |
+| **OPTIONS** | File operations (Copy, Move, Rename, Delete), Add to Favorites / Server options (Edit, Remove) | Player menu: Audio, Subtitles, View mode (Fit / Fill / Stretch), Media Info, Stats | Done |
+| **D-Pad / Left Stick** | Move focus, hold to scroll | **Left / Right:** seek 10 s (hold to scrub faster) | Move between keys (up from the top row: the clear X) |
 | **LEFT** | Open navigation rail | — | — |
-| **UP** | Instant folder filter chips | Toggle OSD overlay | — |
-| **DOWN** | — | Open subtitle track picker | — |
+| **UP** | Instant folder filter chips | — | — |
 | **L1 / R1** | Page up / Page down | Previous / next chapter (±30 s without chapters) | Move the text cursor left / right |
-| **L2 / R2** | Jump alphabetically (A–Z) | **L2:** Subtitle sync ±50ms<br>**R2:** Live stream quality & audio picker | **L2:** Shift (press again: Caps Lock)<br>**R2:** Done |
-| **Trackpad Swipe** | — | Live subtitle sync offset nudge | — |
+| **L2 / R2** | Jump alphabetically (A–Z) | — | **L2:** Shift (press again: Caps Lock)<br>**R2:** Done |
 | **L3 / R3** | Take screenshot (to `/mnt/usb0`, or `/data/nostream` with no stick) | **L3:** screenshot<br>**R3:** chapter list (a file with chapters) | — |
+
+### PS5 Media Remote
+
+Pair the remote in the PS5's own settings. NoStream finds it without any setting, and it works together with the DualSense.
+
+| Remote button | Does |
+|---|---|
+| **D-pad** | Moves focus in menus; Left / Right seek 10 s in the player |
+| **Enter** | Same as Cross |
+| **Back** | Same as Circle |
+| **Options** | Same as Options |
+| **Play / Pause** | Plays or pauses; restarts a file that has finished |
+| **Rewind / Forward** | Seek 10 s back or forward (hold to keep seeking); a paused video stays paused |
+
+Play/Pause, Rewind and Forward only work in the player.
+
+### Phone
+
+Open `http://<console-ip>:9780/remote` on a phone on the same network for play/pause, seeking, chapters, subtitles, audio tracks and a D-pad for the menus.
 
 ---
 
@@ -346,18 +369,18 @@ docker compose run --rm ps5-dev ./tests/run_tests.sh
 
 ## Community
 
-Questions, bug reports, feature requests and early test builds: join the **[EVO Player Discord](https://discord.gg/47Nc8WtXh)**. Many of 0.11.0's features started as requests there.
+Report NoStream bugs on [GitHub issues](https://github.com/qbyss/nostream/issues). Before you send a pull request, read **[CONTRIBUTING.md](CONTRIBUTING.md)**.
 
-To report a bug or send a pull request, read **[CONTRIBUTING.md](CONTRIBUTING.md)** first.
+For upstream EVO Player questions, use the **[EVO Player Discord](https://discord.gg/47Nc8WtXh)**.
 
 ---
 
 ## Credits & License
 
-EVO Player is licensed under **GPL-3.0-or-later** (see [COPYRIGHT.md](COPYRIGHT.md)). The initial idea came from [ProsperoPlayer](https://github.com/KINGDKAK/ProsperoPlayer) by KINGDKAK; thank you.
+NoStream is a fork of EVO Player and, like it, is licensed under **GPL-3.0-or-later** (see [COPYRIGHT.md](COPYRIGHT.md)). EVO Player's initial idea came from [ProsperoPlayer](https://github.com/KINGDKAK/ProsperoPlayer) by KINGDKAK.
 
-If EVO helps your project, a credit mention would be great: a request, not a licence condition ([details](COPYRIGHT.md#credit-is-appreciated)).
-
+- [EVO Player](https://github.com/sainsaji/EVO-PLAYER-PS5) — the project NoStream is forked from
+- TubeMini — the PS5 Media Remote input code
 - [ps5-payload-dev](https://github.com/ps5-payload-dev) (John Törnblom) — SDK and toolchain
 - [KINGDKAK](https://github.com/KINGDKAK) — ProsperoPlayer
 - [zecoxao/sce_symbols](https://github.com/zecoxao/sce_symbols) — NID symbol database
@@ -365,4 +388,4 @@ If EVO helps your project, a credit mention would be great: a request, not a lic
 - [mihawk-99](https://github.com/mihawk-99) — [PS5_VulkanTemplate](https://github.com/mihawk-99/PS5_VulkanTemplate), whose [1 GiB flexible-memory change](https://github.com/mihawk-99/PS5_VulkanTemplate/commit/04aa411deb9d9d12b40cc2afb479a328394da4ca) EVO's app module uses
 - PS5 developers **Philow**, **sword** and **0xManuel** — for their help and research
 
-*EVO Player is independent homebrew software and is not affiliated with, endorsed by, or associated with Sony Interactive Entertainment. All PlayStation trademarks belong to their respective owners.*
+*NoStream is independent homebrew software and is not affiliated with, endorsed by, or associated with Sony Interactive Entertainment. All PlayStation trademarks belong to their respective owners.*
