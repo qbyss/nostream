@@ -2819,80 +2819,6 @@ void EvoRmlApp::UpdatePlaybackState(const EvoPlaybackState& state) {
         }
     }
 
-    // 2. Badges (Resolution, HDR, Codec, FPS)
-    Rml::Element* el_res = m_playback_doc->GetElementById("badge-res");
-    if (el_res) {
-        if (state.res_badge.empty()) {
-            el_res->SetProperty("display", "none");
-        } else {
-            el_res->SetProperty("display", "inline-block");
-            el_res->SetInnerRML(state.res_badge);
-        }
-    }
-
-    Rml::Element* el_hdr = m_playback_doc->GetElementById("badge-hdr");
-    if (el_hdr) {
-        if (state.hdr_badge.empty()) {
-            el_hdr->SetProperty("display", "none");
-        } else {
-            el_hdr->SetProperty("display", "inline-block");
-            el_hdr->SetInnerRML(state.hdr_badge);
-        }
-    }
-
-    Rml::Element* el_codec = m_playback_doc->GetElementById("badge-codec");
-    if (el_codec) {
-        if (state.codec_badge.empty()) {
-            el_codec->SetProperty("display", "none");
-        } else {
-            el_codec->SetProperty("display", "inline-block");
-            el_codec->SetInnerRML(state.codec_badge);
-        }
-    }
-
-    Rml::Element* el_fps = m_playback_doc->GetElementById("badge-fps");
-    if (el_fps) {
-        if (state.fps_badge.empty()) {
-            el_fps->SetProperty("display", "none");
-        } else {
-            el_fps->SetProperty("display", "inline-block");
-            el_fps->SetInnerRML(state.fps_badge);
-        }
-    }
-
-    // #59: decoder backend badge (Hardware / Software)
-    if (Rml::Element* el_dec = m_playback_doc->GetElementById("badge-decoder")) {
-        if (state.decoder_badge.empty()) {
-            el_dec->SetProperty("display", "none");
-        } else {
-            el_dec->SetProperty("display", "inline-block");
-            el_dec->SetInnerRML(state.decoder_badge);
-            bool hw = state.decoder_badge.find("Hardware") != std::string::npos;
-            el_dec->SetProperty("background-color", hw ? to_hex_rgb(m_theme.accent)
-                                                       : to_hex_rgba(m_theme.surface));
-            el_dec->SetProperty("color", hw ? ink_on(m_theme.accent) : "#e2e8f0");
-        }
-    }
-    // #103: upscaler badge - hidden when upscaling is Off in Settings
-    if (Rml::Element* el_up = m_playback_doc->GetElementById("badge-upscale")) {
-        if (state.upscale_badge.empty()) {
-            el_up->SetProperty("display", "none");
-        } else {
-            el_up->SetProperty("display", "inline-block");
-            el_up->SetInnerRML(state.upscale_badge);
-            el_up->SetClass("active", state.upscale_active);
-        }
-    }
-    // #105: motion smoothing badge - hidden when motion smoothing is Off in Settings
-    if (Rml::Element* el_sm = m_playback_doc->GetElementById("badge-smooth")) {
-        if (state.smooth_badge.empty()) {
-            el_sm->SetProperty("display", "none");
-        } else {
-            el_sm->SetProperty("display", "inline-block");
-            el_sm->SetInnerRML(state.smooth_badge);
-            el_sm->SetClass("active", state.smooth_active);
-        }
-    }
     /* #81: dev FPS pill — independent of the OSD chrome (shows with controls faded). */
     if (Rml::Element* el_fps_pill = m_playback_doc->GetElementById("fps-pill")) {
         el_fps_pill->SetProperty("display", state.debug_overlay ? "block" : "none");
@@ -3001,7 +2927,7 @@ void EvoRmlApp::UpdatePlaybackState(const EvoPlaybackState& state) {
     Rml::Element* el_stats = m_playback_doc->GetElementById("stats-hud");
     if (el_stats) {
         el_stats->SetProperty("display",
-            (state.show_stats && !state.chrome_hidden) ? "flex" : "none");
+            (state.show_stats && state.video_settings_row == 0) ? "flex" : "none");
     }
 }
 

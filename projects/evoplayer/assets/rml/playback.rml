@@ -9,15 +9,6 @@
             <div id="media-title"></div>
             <div id="media-meta"></div>
         </div>
-        <div id="badge-rack">
-            <span id="badge-res" class="badge-res"></span>
-            <span id="badge-hdr" class="badge-hdr"></span>
-            <span id="badge-codec" class="badge-codec"></span>
-            <span id="badge-fps" class="badge-fps"></span>
-            <span id="badge-decoder" class="badge-decoder"></span>
-            <span id="badge-upscale" class="badge-upscale"></span>
-            <span id="badge-smooth" class="badge-smooth"></span>
-        </div>
     </div>
 
     <!-- On-video caption overlay (#81) — RmlUi/Unicode, replaces the ASCII bitmap path -->

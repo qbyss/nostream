@@ -24,7 +24,6 @@ namespace
 {
 
 const Color kWhite = Color::rgb(0xffffff);
-const Color kInk = Color::rgb(0x0b0d16);
 const Color kBlack = Color::rgb(0x000000);
 const Color kClear = Color::rgb(0x000000, 0.0f);
 const Color kCyan = Color::rgb(0x4dd8ff);
@@ -161,15 +160,6 @@ void OsdScreen::set(const evo_playback_osd_params_t &p)
     raw_ = p;
     title_ = str(p.title);
     meta_ = str(p.metadata);
-    badges_[0] = str(p.res_badge);
-    badges_[1] = str(p.hdr_badge);
-    badges_[2] = str(p.codec_badge);
-    badges_[3] = str(p.fps_badge);
-    badges_[4] = str(p.audio_badge);
-    badges_[5] = str(p.decoder_badge);
-    badges_[6] = str(p.upscale_badge);
-    badges_[7] = str(p.smooth_badge);
-    badges_[8] = str(p.deepblack_badge);
     music_codec_ = str(p.music_codec);
     chapter_title_ = str(p.chapter_title);
     scrub_chapter_title_ = str(p.scrub_chapter_title);
@@ -238,13 +228,19 @@ void OsdScreen::update(float dt)
 {
     time_ += dt;
     /* The caller already fades `alpha`; the spring only smooths its steps. */
-    chrome_.target = raw_.chrome_hidden ? 0.0f : static_cast<float>(raw_.alpha) / 255.0f;
-    chrome_.update(dt, 20.0f);
-    paused_.target = (raw_.paused && !raw_.scrub_active && !raw_.loading) ? 1.0f : 0.0f;
+    if (raw_.chrome_hidden) {
+        chrome_.snap(0.0f);
+        paused_.snap(0.0f);
+        scrub_.snap(0.0f);
+    } else {
+        chrome_.target = static_cast<float>(raw_.alpha) / 255.0f;
+        chrome_.update(dt, 20.0f);
+    }
+    paused_.target = (!raw_.chrome_hidden && raw_.paused && !raw_.scrub_active && !raw_.loading) ? 1.0f : 0.0f;
     paused_.update(dt, 16.0f);
     loading_.target = raw_.loading ? 1.0f : 0.0f;
     loading_.update(dt, 14.0f);
-    scrub_.target = raw_.scrub_active ? 1.0f : 0.0f;
+    scrub_.target = !raw_.chrome_hidden && raw_.scrub_active ? 1.0f : 0.0f;
     scrub_.update(dt, 18.0f);
     skip_.target = skip_on_ ? 1.0f : 0.0f;
     skip_.update(dt, 14.0f);
@@ -289,33 +285,11 @@ bool OsdScreen::can_draw(const ui::Fonts &fonts) const
 void OsdScreen::draw_top(DrawList &list, const Context &ctx) const
 {
     const ui::Fonts &fonts = ctx.fonts;
-    const Palette &p = ctx.palette;
     list.gradient_rect({0, 0, 1920, 260}, 0, kBlack.with_alpha(0.75f), kBlack.with_alpha(0.0f));
-    ui::text(list, fonts.display, fit(fonts.display, title_, 44, 1300), kMargin, 110, 44, kWhite);
+    ui::text(list, fonts.display, fit(fonts.display, title_, 44, 1920 - 2 * kMargin), kMargin, 110, 44, kWhite);
     if (!meta_.empty())
         ui::text(list, fonts.regular, fit(fonts.regular, meta_, 22, 1300), kMargin, 148, 22,
                  kWhite.with_alpha(0.7f));
-
-    /* Badges, right-aligned on the title line, as many as clear the title. */
-    const float limit = kMargin + std::min(1300.0f, fonts.display.measure(title_, 44)) + 48.0f;
-    float x = 1920.0f - kMargin;
-    for (int i = 8; i >= 0; --i)
-    {
-        const std::string &b = badges_[i];
-        if (b.empty())
-            continue;
-        const bool accent = (i == 6 && raw_.upscale_active) || (i == 7 && raw_.smooth_active) || i == 8 || i == 1;
-        const float w = fonts.semibold.measure(b, 16, 1.5f) + 24.0f;
-        if (x - w < limit)
-            break;
-        const Rect r{x - w, 82, w, 32};
-        if (accent)
-            list.rounded_rect(r, 8, p.accent);
-        else
-            list.bordered_rect(r, 8, kBlack.with_alpha(0.35f), 1.5f, kWhite.with_alpha(0.45f));
-        ui::text(list, fonts.semibold, b, r.cx(), r.y + 22, 16, accent ? kInk : kWhite, Align::center, 1.5f);
-        x -= w + 10.0f;
-    }
 }
 
 void OsdScreen::draw_bottom(DrawList &list, const Context &ctx) const

@@ -328,9 +328,10 @@ bool PlayerScreen::hasActiveOverlay() const {
     if (isVideoSettingsOpen() || m_osdVisibilityAlpha > 0 || m_showStatsForNerds || g_skip.shown >= 0) {
         return true;
     }
+    auto playback = Application::getInstance().getPlaybackController();
+    if (playback && playback->isMusicMode()) return true;
     if (prospero_subtitle_enabled) {
-        auto playback = Application::getInstance().getPlaybackController();
-        if (playback && !playback->isMusicMode()) {
+        if (playback) {
             double subPos = prospero_subtitle_position(subtitleClockSeconds());
             if (prospero_subtitle_use_external) {
                 const ProsperoSubtitleCue* cue = prospero_subtitle_active_cue(subPos);
@@ -355,14 +356,23 @@ bool PlayerScreen::hasActiveOverlay() const {
 
 void PlayerScreen::onEnter() {
     StatefulScreen::onEnter();
-    m_osdVisibilityAlpha = 255;
-    if (!m_returnToVideoSettings) {
+    const bool returningToSettings = m_returnToVideoSettings;
+    if (!returningToSettings) {
         closeVideoSettings();
         g_skip = SkipState();   /* #219: a file played twice offers its skip twice */
     }
     m_returnToVideoSettings = false;
     m_controlsLastUsedMs = NowMs();
-    m_playerFsm.postEvent(PlayerScreenEvent::ShowOsd);
+
+    auto playback = Application::getInstance().getPlaybackController();
+    if (!returningToSettings && playback && !playback->isMusicMode() && !playback->isPaused()) {
+        hideControlsOnPlay();
+        m_playerFsm.postEvent(PlayerScreenEvent::HideOsd);
+    } else {
+        m_hideControlsAfterPlay = false;
+        m_osdVisibilityAlpha = 255;
+        m_playerFsm.postEvent(PlayerScreenEvent::ShowOsd);
+    }
 }
 
 void PlayerScreen::onExit() {
@@ -417,6 +427,11 @@ void PlayerScreen::handleVideoSettingsInput(uint32_t pressed) {
     evo_feedback(EVO_FB_OPEN);
 }
 
+void PlayerScreen::hideControlsOnPlay() {
+    m_hideControlsAfterPlay = true;
+    m_osdVisibilityAlpha = 0;
+}
+
 bool PlayerScreen::handleInput(uint32_t pressed, uint32_t held, uint32_t released) {
     (void)released;
     auto playback = Application::getInstance().getPlaybackController();
@@ -424,6 +439,7 @@ bool PlayerScreen::handleInput(uint32_t pressed, uint32_t held, uint32_t release
     if (!playback) return false;
 
     if (pressed) {
+        m_hideControlsAfterPlay = false;
         m_controlsLastUsedMs = NowMs();
     }
 
@@ -461,6 +477,7 @@ bool PlayerScreen::handleInput(uint32_t pressed, uint32_t held, uint32_t release
         if (evo_pb_is_eof() && !playback->isLiveSource()) {
             playback->seekTo(0.0);
             playback->setPaused(false);
+            hideControlsOnPlay();
             return true;
         }
     }
@@ -469,9 +486,9 @@ bool PlayerScreen::handleInput(uint32_t pressed, uint32_t held, uint32_t release
         uint64_t now = NowMs();
         if (now - m_lastPlayPauseToggleMs >= 150) {
             m_lastPlayPauseToggleMs = now;
-            // Toggle play / pause
             playback->togglePause();
-            toast("PLAYBACK", playback->isPaused() ? "PAUSED" : "RESUMED");
+            if (!playback->isPaused() && playback->isActive())
+                hideControlsOnPlay();
         }
         return true;
     }
@@ -587,9 +604,15 @@ void PlayerScreen::update(double deltaMs) {
         m_controlsLastUsedMs = now;
     }
 
-    bool wantsControls = isVideoSettingsOpen() || playback->isMusicMode() || ended ||
-                         ((now - m_controlsLastUsedMs < 3500) || reallyPaused || m_showStatsForNerds) ||
-                         playback->isScrubbing() || isBuffering;
+    // The demuxer can reach EOF while the decoded picture is still catching up.
+    const bool showEndControls = ended && !isBuffering &&
+        (!m_hideControlsAfterPlay ||
+         (playback->getDurationSeconds() > 0.0 &&
+          playback->getPositionSeconds() >= playback->getDurationSeconds() - 0.5));
+    const bool wantsControls = isVideoSettingsOpen() || showEndControls ||
+        (!m_hideControlsAfterPlay &&
+         (playback->isMusicMode() || now - m_controlsLastUsedMs < 3500 || reallyPaused ||
+          m_showStatsForNerds || playback->isScrubbing() || isBuffering));
 
     if (playback->isScrubbing()) {
         m_playerFsm.postEvent(PlayerScreenEvent::StartScrub);
@@ -784,7 +807,8 @@ void PlayerScreen::render(uint32_t* framebuffer, int width, int height) {
                                             sizeof(secondarySubText));
     }
 
-    if ((m_osdVisibilityAlpha > 0 || isVideoSettingsOpen()) && evo_rmlui_is_initialized()) {
+    if ((m_osdVisibilityAlpha > 0 || isVideoSettingsOpen() || playback->isMusicMode() ||
+         m_showStatsForNerds) && evo_rmlui_is_initialized()) {
         std::string titleStr, metaStr;
         /*
          * #90 / #9: a provider supplies its own title, and deriving one from
@@ -795,10 +819,11 @@ void PlayerScreen::render(uint32_t* framebuffer, int width, int height) {
          */
         titleStr = playback->getDisplayTitle();
         if (titleStr.empty() && metaService) {
-            metaService->cleanMediaTitle(playback->getCurrentFilePath(), titleStr, metaStr);
-        } else if (playback->isLiveSource()) {
-            metaStr = (!video_frame_loaded) ? "BUFFERING..." : "LIVE";
+            std::string fileFormat;
+            metaService->cleanMediaTitle(playback->getCurrentFilePath(), titleStr, fileFormat);
         }
+        if (playback->isLiveSource())
+            metaStr = !video_frame_loaded ? "BUFFERING..." : "LIVE";
 
         /*
          * A rebuffer parks both decode threads mid-playback, so the picture
@@ -816,179 +841,7 @@ void PlayerScreen::render(uint32_t* framebuffer, int width, int height) {
         std::memset(&p, 0, sizeof(p));
         p.title = titleStr.empty() ? "Video Playback" : titleStr.c_str();
         p.metadata = metaStr.c_str();
-        /*
-         * Derived from the open stream, not assumed. These were hardcoded to
-         * "1080p FHD" / "H.264 / AVC" / "60 FPS", so every file reported the
-         * same thing whatever it actually was.
-         */
-        static char resBuf[32], codecBuf[32], fpsBuf[16];
-        const char* hdrBadge = "";
-        resBuf[0] = codecBuf[0] = fpsBuf[0] = '\0';
-
-        if (play_fmt && video_stream_index >= 0 &&
-            video_stream_index < static_cast<int>(play_fmt->nb_streams)) {
-            AVCodecParameters* cp = play_fmt->streams[video_stream_index]->codecpar;
-            if (cp) {
-                int vh = cp->height, vw = cp->width;
-                if (vh >= 2000)      std::snprintf(resBuf, sizeof(resBuf), "4K UHD");
-                else if (vh >= 1400) std::snprintf(resBuf, sizeof(resBuf), "1440p QHD");
-                else if (vh >= 1000) std::snprintf(resBuf, sizeof(resBuf), "1080p FHD");
-                else if (vh >= 700)  std::snprintf(resBuf, sizeof(resBuf), "720p HD");
-                else if (vh > 0)     std::snprintf(resBuf, sizeof(resBuf), "%dx%d", vw, vh);
-
-                const char* cn = avcodec_get_name(cp->codec_id);
-                switch (cp->codec_id) {
-                    case AV_CODEC_ID_H264: cn = "H.264 / AVC";  break;
-                    case AV_CODEC_ID_HEVC: cn = "H.265 / HEVC"; break;
-                    case AV_CODEC_ID_VP9:  cn = "VP9";          break;
-                    case AV_CODEC_ID_AV1:  cn = "AV1";          break;
-                    default: break;
-                }
-                std::snprintf(codecBuf, sizeof(codecBuf), "%s", cn);
-
-                if (evo_dovi_stream_profile(cp) > 0)          hdrBadge = "DOLBY VISION";
-                else if (cp->color_trc == AVCOL_TRC_SMPTE2084) hdrBadge = "HDR10";
-                else if (cp->color_trc == AVCOL_TRC_ARIB_STD_B67) hdrBadge = "HLG";
-            }
-        }
-
-        double fps = evo_pb_video_fps();
-        if (fps > 1.0)
-            std::snprintf(fpsBuf, sizeof(fpsBuf), "%d FPS", static_cast<int>(fps + 0.5));
-
-        p.res_badge   = resBuf[0]   ? resBuf   : "";
-        p.hdr_badge   = hdrBadge;
-        p.codec_badge = codecBuf[0] ? codecBuf : "";
-        p.fps_badge   = fpsBuf[0]   ? fpsBuf   : "";
-        /*
-         * The two footer labels and the audio badge all told the same lie on
-         * every file.
-         *
-         * `audio_track` and `sub_track` were never assigned at all - the
-         * params are memset, so the bridge saw empty strings and printed its
-         * fallbacks: "AUDIO: Stereo" over a DD+5.1 ATMOS track, and
-         * "SUBS: None" on a file whose Media Info panel said subtitles were
-         * Active. The badge had its own version of the same bug, treating
-         * anything that was not 8 channels as stereo, so 5.1 read as STEREO.
-         */
-        static char audioTrackBuf[80], subTrackBuf[80];
-        audioTrackBuf[0] = subTrackBuf[0] = '\0';
-        const char* chLabel = "";
-
-        if (play_fmt && audio_stream_index >= 0 &&
-            audio_stream_index < static_cast<int>(play_fmt->nb_streams)) {
-            AVStream* ast = play_fmt->streams[audio_stream_index];
-            if (ast && ast->codecpar) {
-                const int ch = ast->codecpar->ch_layout.nb_channels;
-                chLabel = (ch >= 8) ? "7.1" : (ch >= 6) ? "5.1"
-                        : (ch == 2) ? "Stereo" : (ch == 1) ? "Mono" : "";
-                const char* an = avcodec_get_name(ast->codecpar->codec_id);
-                if (chLabel[0] && an && an[0])
-                    std::snprintf(audioTrackBuf, sizeof(audioTrackBuf), "%s %s", an, chLabel);
-                else if (an && an[0])
-                    std::snprintf(audioTrackBuf, sizeof(audioTrackBuf), "%s", an);
-            }
-        }
-
-        if (prospero_subtitle_enabled) {
-            if (prospero_subtitle_use_external) {
-                std::snprintf(subTrackBuf, sizeof(subTrackBuf), "External SRT");
-            } else if (play_fmt && prospero_embedded_subtitle_stream_index >= 0 &&
-                       prospero_embedded_subtitle_stream_index <
-                           static_cast<int>(play_fmt->nb_streams)) {
-                AVStream* sst = play_fmt->streams[prospero_embedded_subtitle_stream_index];
-                const AVDictionaryEntry* lang =
-                    sst ? av_dict_get(sst->metadata, "language", nullptr, 0) : nullptr;
-                std::snprintf(subTrackBuf, sizeof(subTrackBuf), "%s",
-                              (lang && lang->value && lang->value[0]) ? lang->value : "On");
-            }
-            /* Enabled but nothing to show (no external file, no embedded
-             * track): leave it empty, so the OSD says None - and hides SUBS
-             * and SYNC on live TV - instead of claiming subtitles are On. */
-        }
-
-        // #110: name the secondary track next to the primary's.
-        if (prospero_subtitle_enabled && prospero_secondary_subtitle_active()) {
-            const char* second = "SRT";
-            if (!prospero_secondary_use_external && play_fmt &&
-                prospero_secondary_subtitle_stream_index >= 0 &&
-                prospero_secondary_subtitle_stream_index < static_cast<int>(play_fmt->nb_streams)) {
-                AVStream* s2 = play_fmt->streams[prospero_secondary_subtitle_stream_index];
-                const AVDictionaryEntry* l2 =
-                    s2 ? av_dict_get(s2->metadata, "language", nullptr, 0) : nullptr;
-                second = (l2 && l2->value && l2->value[0]) ? l2->value : "2nd";
-            }
-            const size_t used = std::strlen(subTrackBuf);
-            std::snprintf(subTrackBuf + used, sizeof(subTrackBuf) - used,
-                          used ? " + %s" : "+ %s", second);
-        }
-
-        // A stream with several video qualities (an HLS master): show the one
-        // playing beside the audio, so R2 (Quality & Audio) is discoverable.
-        {
-            const auto variants = playback->getVideoVariants();
-            if (variants.size() > 1) {
-                const int activeVideo = playback->getActiveVideoStream();
-                for (const auto& v : variants) {
-                    if (v.streamIndex != activeVideo) continue;
-                    const size_t used = std::strlen(audioTrackBuf);
-                    std::snprintf(audioTrackBuf + used, sizeof(audioTrackBuf) - used,
-                                  used ? "  -  %dp%s" : "%dp%s", v.height,
-                                  playback->isVideoQualityPinned() ? "" : " AUTO");
-                    break;
-                }
-            }
-        }
-
-        p.audio_track = audioTrackBuf[0] ? audioTrackBuf : "";
-        p.sub_track   = subTrackBuf[0]   ? subTrackBuf   : "";
-        p.sub_delay_ms = prospero_subtitle_enabled ? prospero_subtitle_delay_ms : 0;
         p.is_live = playback->isLiveSource() ? 1 : 0;
-        p.audio_badge = chLabel[0] ? chLabel : ((evo_audio_channels == 8) ? "7.1" : "STEREO");
-        p.decoder_badge = (evo_pb_active_backend() == EVO_VDEC_BACKEND_NATIVE) ? "Hardware" : "Software";
-        /* #103: what the upscaler did to the last frame, so it is visible on the
-         * OSD rather than only in Media Info. Plain "Off" = switched off in
-         * Settings -> no badge. */
-        if (!playback->isMusicMode()) {
-            static const struct { const char* label; const char* badge; int active; } k_up[] = {
-                { "Sharp",                  "SHARP UPSCALE",        1 },
-                { "AI (Standard)",          "AI UPSCALE",           1 },
-                { "AI (Large)",             "AI UPSCALE · LARGE",   1 },
-                { "AI (Maximum)",           "AI UPSCALE · MAX",     1 },
-                { "Off (HDR source)",       "UPSCALE OFF · 10-BIT", 0 },
-                { "Off (source >= output)", "UPSCALE OFF · NATIVE", 0 },
-                { "Off (unavailable)",      "UPSCALE OFF",          0 },
-            };
-            const char* up = evo_agc_upscale_label();
-            for (const auto& e : k_up) {
-                if (std::strcmp(up, e.label) == 0) {
-                    p.upscale_badge = e.badge;
-                    p.upscale_active = e.active;
-                    break;
-                }
-            }
-
-            /* #105: what motion smoothing did to the last frame */
-            static const struct { const char* label; const char* badge; int active; } k_sm[] = {
-                { "Low",                    "SMOOTHING · LOW",      1 },
-                { "High",                   "SMOOTHING · HIGH",     1 },
-                { "Off (>= 50 fps)",        "SMOOTH OFF · HIGH FPS", 0 },
-                { "Off (10-bit/HDR)",       "SMOOTH OFF · 10-BIT",  0 },
-                { "Off (source > 1080p)",   "SMOOTH OFF · 4K",      0 },
-                { "Off (unavailable)",      "SMOOTH OFF",           0 },
-                { "Off (scratch alloc failed)", "SMOOTH OFF",       0 },
-                { "Off (GPU over budget)",  "SMOOTH OFF · CAPPED",  0 },
-            };
-            const char* sm = evo_agc_motion_smoothing_label();
-            for (const auto& e : k_sm) {
-                if (std::strcmp(sm, e.label) == 0) {
-                    p.smooth_badge = e.badge;
-                    p.smooth_active = e.active;
-                    break;
-                }
-            }
-        }
-        p.deepblack_badge = evo_agc_deepblack_badge();   /* #119 */
         p.position_sec = playback->getPositionSeconds();
         p.duration_sec = playback->getDurationSeconds();
         p.percentage = playback->getPercentage();
@@ -1048,7 +901,7 @@ void PlayerScreen::render(uint32_t* framebuffer, int width, int height) {
             p.subtitle_image_canvas_h = subImage.canvas_h;
         }
         p.subtitle_face = prospero_subtitle_face;
-        p.subtitle_raised = 1;
+        p.subtitle_raised = m_osdVisibilityAlpha > 0 && !isVideoSettingsOpen();
         p.subtitle_text2 = secondarySubText[0] ? secondarySubText : nullptr;
         p.subtitle2_position = prospero_secondary_position;
         p.subtitle2_color = prospero_secondary_color;
@@ -1058,7 +911,7 @@ void PlayerScreen::render(uint32_t* framebuffer, int width, int height) {
         p.subtitle_color = prospero_subtitle_color;            /* #231 */
         p.subtitle_lift = prospero_subtitle_lift;
         p.subtitle_background = prospero_subtitle_background;
-        p.chrome_hidden = isVideoSettingsOpen() ? 1 : 0;
+        p.chrome_hidden = isVideoSettingsOpen() || m_osdVisibilityAlpha == 0;
         p.video_settings_row = m_videoSettingsRow;
         p.skip_label = !isVideoSettingsOpen() && g_skip.shown >= 0 ? g_skip.label.c_str() : nullptr;   /* #219 */
         p.fps = perf_render_fps;
