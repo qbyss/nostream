@@ -287,7 +287,7 @@ div, span, p {
 }
 
 /*
- * Chip geometry with smooth transitions matching ui.html
+ * Hero action chip
  */
 #hero-chip {
     height: 58dp;
@@ -300,7 +300,6 @@ div, span, p {
     align-items: center;
     padding-left: 14dp;
     padding-right: 20dp;
-    transition: transform 0.2s cubic-out, background-color 0.2s cubic-out, border-color 0.2s cubic-out;
 }
 
 #hero.hero-focused #hero-chip,
@@ -412,7 +411,6 @@ div, span, p {
     border-radius: 18dp;
     position: relative;
     overflow: hidden;
-    transition: transform 0.18s cubic-out, border-color 0.18s cubic-out, background-color 0.18s cubic-out;
 }
 
 .tile-focused {
@@ -483,7 +481,6 @@ div, span, p {
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: background-color 0.18s cubic-out, border-color 0.18s cubic-out;
 }
 
 .tile.tile-focused .tile-icon-box-lg {

@@ -52,15 +52,9 @@ class BrowserScreen
     double tr_progress_ = 0.0;
 
     float age_ = 0.0f;
-    float page_age_ = 1.0f;
-    int last_first_ = -1;
-    hui::ui::SpringRect ring_;
-    bool ring_snapped_ = false;
-    hui::tween::Spring ring_alpha_;
-    hui::ui::SpringRect source_ring_;
+    hui::gfx::Rect ring_{};
     hui::tween::Spring menu_;
-    hui::ui::SpringRect action_ring_;
-    bool action_snapped_ = false;
+    hui::gfx::Rect action_ring_{};
     hui::tween::Spring transfer_;
     hui::tween::Spring transfer_bar_;
     std::vector<float> chip_w_;

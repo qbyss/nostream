@@ -133,8 +133,7 @@ class NavRail
   private:
     evo_rmlui_nav_params_t params_{0, 0, 0, 1, 0, 0, 0};
     hui::tween::Spring expand_;
-    hui::ui::SpringRect cursor_;
-    bool cursor_snapped_ = false;
+    hui::gfx::Rect cursor_{};
 };
 
 /* Shared backdrop: the theme's gradient, slow aurora glows and an optional
@@ -226,9 +225,7 @@ class HomeScreen
 
     float age_ = 0.0f;
     hui::tween::Timer hero_fade_;
-    hui::ui::SpringRect ring_;
-    bool ring_snapped_ = false;
-    hui::tween::Spring row_glow_;
+    hui::gfx::Rect ring_{};
     hui::ui::Scroller recent_scroll_;
 };
 
@@ -276,12 +273,9 @@ class ListScreen
     std::vector<std::pair<std::string, std::string>> panel_; /* label, value */
 
     float age_ = 0.0f;
-    hui::ui::SpringRect ring_;
-    bool ring_snapped_ = false;
-    hui::tween::Spring has_focus_;
+    hui::gfx::Rect ring_{};
     hui::tween::Spring menu_open_;
-    hui::ui::SpringRect menu_ring_;
-    bool menu_ring_snapped_ = false;
+    hui::gfx::Rect menu_ring_{};
 };
 
 /* The Web section (#237): Prospero Browser's UI right of the rail

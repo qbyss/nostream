@@ -234,7 +234,6 @@ div, span, p {
     background-color: transparent;
     border-width: 1.5dp;
     border-color: transparent;
-    transition: background-color 0.15s cubic-out, border-color 0.15s cubic-out, transform 0.15s cubic-out;
 }
 
 .sb-item-active {
@@ -305,7 +304,6 @@ div, span, p {
     flex-direction: column;
     justify-content: space-between;
     position: relative;
-    transition: transform 0.15s cubic-out, border-color 0.15s cubic-out, background-color 0.15s cubic-out;
 }
 
 .grid-card-focused {
@@ -635,7 +633,6 @@ div, span, p {
     font-weight: bold;
     color: #b2c3dc;
     letter-spacing: 0.4dp;
-    transition: background-color 0.15s cubic-out, border-color 0.15s cubic-out;
 }
 
 /* Marker only. The fill and the label are set inline from the theme accent

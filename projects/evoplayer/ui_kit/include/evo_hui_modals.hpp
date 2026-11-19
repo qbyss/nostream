@@ -37,8 +37,7 @@ class SubtitlePicker
     int primary_color_ = 0;
     std::vector<Track> tracks_;
     hui::tween::Spring open_;
-    hui::ui::SpringRect ring_;
-    bool ring_snapped_ = false;
+    hui::gfx::Rect ring_{};
 };
 
 class MediaInfoCard

@@ -126,7 +126,6 @@ div, span, p {
     flex-direction: row;
     align-items: center;
     gap: 14dp;
-    transition: background-color 0.16s cubic-out, border-color 0.16s cubic-out;
 }
 
 /* Current section - the page you are on, sidebar not focused. */
@@ -304,7 +303,6 @@ div, span, p {
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
-    transition: transform 0.18s cubic-out, border-color 0.18s cubic-out, background-color 0.18s cubic-out;
 }
 
 /* Selection is a filled rounded highlight, macOS-style, and swallows the
@@ -337,7 +335,6 @@ div, span, p {
     align-items: center;
     justify-content: center;
     margin-right: 18dp;
-    transition: background-color 0.18s cubic-out, border-color 0.18s cubic-out;
 }
 
 .row-focused .row-icon-box {

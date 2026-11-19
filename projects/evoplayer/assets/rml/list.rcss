@@ -115,7 +115,6 @@ div, span, p {
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
-    transition: transform 0.18s cubic-out, border-color 0.18s cubic-out, background-color 0.18s cubic-out;
 }
 
 .list-row-focused {
@@ -142,7 +141,6 @@ div, span, p {
     align-items: center;
     justify-content: center;
     margin-right: 18dp;
-    transition: background-color 0.18s cubic-out, border-color 0.18s cubic-out;
 }
 
 .list-row-focused .lrow-icon-box {

@@ -133,7 +133,6 @@ div, span {
     background-color: transparent;
     border-width: 0dp;
     border-color: transparent;
-    transition: transform 0.18s cubic-out, background-color 0.18s cubic-out;
 }
 
 .rail-item-active {

@@ -48,7 +48,7 @@ class SettingsScreen
 
     /* Top of a row inside the card, before scrolling. */
     float row_top(int index) const;
-    float row_y(int index) const { return row_top(index) - scroll_.value; }
+    float row_y(int index) const { return row_top(index) - scroll_; }
     void draw_row(hui::gfx::DrawList &list, const Context &ctx, const RowData &row, const hui::gfx::Rect &r, int index) const;
 
     /* #158: the card for the focused setting; kind 0 = none. */
@@ -64,14 +64,12 @@ class SettingsScreen
     float section_age_ = 0.0f;
     float age_ = 0.0f;
 
-    hui::ui::SpringRect sidebar_cursor_;
-    bool sidebar_cursor_snapped_ = false;
+    hui::gfx::Rect sidebar_cursor_{};
 
-    hui::ui::SpringRect row_cursor_;
-    bool row_cursor_snapped_ = false;
+    hui::gfx::Rect row_cursor_{};
 
     hui::tween::Spring toggles_[EVO_RMLUI_SETTINGS_ROWS];
-    hui::tween::Spring scroll_;
+    float scroll_ = 0.0f;
     /* 0 = the section list at full width (sidebar focused), 1 = icons only
      * (the rows have focus), so row text is not cut short by the preview. */
     hui::tween::Spring collapse_;

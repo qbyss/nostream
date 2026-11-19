@@ -304,8 +304,7 @@ void KeyboardOverlay::sync_keys(const evo_keyboard_params_t &p)
                     : p.shift_state == 1 ? ui::KeyboardShift::once : ui::KeyboardShift::off);
     const bool on_keys = focus_row_ >= 0 && focus_row_ < EVO_KB_ROWS;
     keys_.set_active(on_keys);
-    if (on_keys) keys_.set_focus(focus_row_, focus_col_, !keys_ready_);
-    keys_ready_ = true;
+    if (on_keys) keys_.set_focus(focus_row_, focus_col_, true);
 }
 
 void KeyboardOverlay::enter()
@@ -314,8 +313,6 @@ void KeyboardOverlay::enter()
     enter_scale_.target = 1.0f;
     enter_fade_.snap(0.0f);
     enter_fade_.target = 1.0f;
-    clear_focus_.snap(0.0f);
-    keys_ready_ = false;
     keys_.enter();
 }
 
@@ -323,8 +320,6 @@ void KeyboardOverlay::update(float dt)
 {
     enter_scale_.update(dt, 16.0f);
     enter_fade_.update(dt, 20.0f);
-    clear_focus_.target = (focus_row_ == EVO_KB_CLEAR_ROW) ? 1.0f : 0.0f;
-    clear_focus_.update(dt, 24.0f);
     keys_.update(dt);
 }
 
@@ -366,9 +361,9 @@ void KeyboardOverlay::draw(DrawList &list, const Context &ctx) const
      * is text), the counter, then the L1 / R1 icons that move the caret. */
     float right = well.x + well.w - 20.0f;
     if (clear_visible_) {
-        const float f = clear_focus_.value;
-        list.circle(kClearX, kClearY, kClearR, kWhite.with_alpha(0.10f + 0.90f * f));
-        const Color x = f > 0.5f ? kInk : kWhite.with_alpha(0.75f);
+        const bool focused = focus_row_ == EVO_KB_CLEAR_ROW;
+        list.circle(kClearX, kClearY, kClearR, kWhite.with_alpha(focused ? 1.0f : 0.10f));
+        const Color x = focused ? kInk : kWhite.with_alpha(0.75f);
         const float a = 8.0f;
         list.line(kClearX - a, kClearY - a, kClearX + a, kClearY + a, 3.0f, x);
         list.line(kClearX - a, kClearY + a, kClearX + a, kClearY - a, 3.0f, x);

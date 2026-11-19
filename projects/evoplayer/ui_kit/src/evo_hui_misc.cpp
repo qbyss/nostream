@@ -35,6 +35,35 @@ std::string fit(const ui::FontRef &font, const std::string &text, float size, fl
 
 /* ----------------------------------------------------------- DialogOverlay */
 
+void draw_options_panel(DrawList &list, const Context &ctx, const std::string &title,
+                        const OptionsRow *rows, int count, int focused)
+{
+    const auto &fonts = ctx.fonts;
+    const auto black = Color::rgb(0x000000);
+    const Rect panel{1260, 210, 568, 164.0f + count * 80.0f};
+    list.shadow({panel.x, panel.y + 12, panel.w, panel.h}, 24, 34, black.with_alpha(0.6f));
+    list.rounded_rect(panel, 24, ctx.palette.bg_bottom.with_alpha(0.97f));
+    list.bordered_rect(panel, 24, black.with_alpha(0.0f), 1.0f, kWhite.with_alpha(0.14f));
+    ui::text(list, fonts.display, title, panel.x + 30, panel.y + 59, 32, kWhite);
+    for (int i = 0; i < count; ++i)
+    {
+        const Rect row{panel.x + 20, panel.y + 85 + i * 80.0f, panel.w - 40, 68};
+        const bool selected = i == focused;
+        const auto ink = selected ? black : kWhite;
+        list.rounded_rect(row, 12, kWhite.with_alpha(selected ? 0.95f : 0.06f));
+        ui::text(list, fonts.semibold, rows[i].label, row.x + 18, row.cy() + 7, 21, ink);
+        if (rows[i].value[0])
+            ui::text(list, fonts.regular, rows[i].value, row.x + row.w - 18, row.cy() + 7, 20, ink, Align::right);
+    }
+
+    const ui::Hint hints[] = {{ui::Button::cross, "Select"}, {ui::Button::circle, "Back"}};
+    ui::HintLayout layout;
+    layout.size = 28;
+    layout.text_size = 18;
+    layout.cy = panel.y + panel.h - 40;
+    ui::draw_hints(list, fonts, ui::GlyphStyle::dark(), hints, 2, panel.x + panel.w - 24, true, layout);
+}
+
 void DialogOverlay::set(const evo_rmlui_dialog_params_t &p)
 {
     auto str = [](const char *s) { return std::string(s ? s : ""); };
@@ -43,6 +72,7 @@ void DialogOverlay::set(const evo_rmlui_dialog_params_t &p)
     detail_ = str(p.detail);
     progress_pct_ = p.progress_pct;
     focused_action_ = p.focused_action;
+    side_panel_ = p.side_panel != 0;
     actions_.clear();
     for (int i = 0; i < p.action_count && i < 3; ++i)
     {
@@ -70,6 +100,15 @@ void DialogOverlay::update(float dt)
 
 void DialogOverlay::draw(DrawList &list, const Context &ctx) const
 {
+    if (side_panel_)
+    {
+        OptionsRow rows[3];
+        for (std::size_t i = 0; i < actions_.size(); ++i)
+            rows[i].label = actions_[i].label.c_str();
+        draw_options_panel(list, ctx, title_, rows, static_cast<int>(actions_.size()), focused_action_);
+        return;
+    }
+
     const float alpha = enter_fade_.value;
     if (alpha < 0.01f)
         return;
@@ -461,7 +500,7 @@ void ChangelogScreen::set(const evo_rmlui_changelog_params_t &p)
 
 void ChangelogScreen::enter()
 {
-    ring_snapped_ = false;
+    ring_ = {};
 }
 
 void ChangelogScreen::update(float dt)
@@ -469,24 +508,14 @@ void ChangelogScreen::update(float dt)
     if (stick_ != 0.0f)
         scroll_.scroll_by(0.0f, stick_ * std::fabs(stick_) * 1500.0f * dt);
     scroll_.update(dt);
-    Rect target;
+    ring_ = {};
     for (size_t i = 0; i < releases_.size(); ++i)
     {
         if (releases_[i].focused)
         {
-            target = {NavRail::kWidth + 64, 260.0f + i * 80.0f, 400.0f, 70.0f};
+            ring_ = {NavRail::kWidth + 64, 260.0f + i * 80.0f, 400.0f, 70.0f};
             break;
         }
-    }
-    if (target.w > 0)
-    {
-        if (!ring_snapped_)
-        {
-            ring_.snap(target);
-            ring_snapped_ = true;
-        }
-        ring_.target(target);
-        ring_.update(dt, 20.0f);
     }
 }
 
@@ -499,9 +528,9 @@ void ChangelogScreen::draw(DrawList &list, const Context &ctx) const
     float lx = page::kLeft;
     draw_page_title(list, ctx, title_, subtitle_, lx);
 
-    if (ring_snapped_)
+    if (ring_.w > 0.0f)
     {
-        list.rounded_rect(ring_.value(), page::kRadiusTile, kWhite);
+        list.rounded_rect(ring_, page::kRadiusTile, kWhite);
     }
 
     for (size_t i = 0; i < releases_.size(); ++i)

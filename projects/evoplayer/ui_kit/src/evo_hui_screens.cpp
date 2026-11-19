@@ -3,8 +3,8 @@
  *
  * The look follows the kit's Aurora Shelf design (third_party/ps5-homebrew-ui
  * src/concepts/aurora.cpp): a hero block for the title you were watching, 16:9
- * shelves under it, one focus ring that glides between whatever has the
- * cursor, and entrances that stagger in rather than pop.
+ * shelves under it, an outline around the focused item, and staggered
+ * screen entrances.
  */
 #include "evo_hui_screens.hpp"
 #include "evo_hui_cover.hpp"
@@ -342,20 +342,13 @@ float rail_item_y(int index, int count)
 void NavRail::update(float dt)
 {
     expand_.target = params_.rail_focused ? 1.0f : 0.0f;
-    expand_.update(dt, 16.0f);
+    expand_.update(dt, 32.0f);
     RailItem items[8];
     const int count = rail_items(items);
     const int at = params_.rail_focused ? params_.cursor_index : params_.active_section;
     const int index = std::clamp(at, 0, count - 1);
     const float width = tween::lerp(72.0f, kRailExpanded - 56.0f, expand_.value);
-    const Rect target{28.0f, rail_item_y(index, count), width, 72.0f};
-    if (!cursor_snapped_)
-    {
-        cursor_.snap(target);
-        cursor_snapped_ = true;
-    }
-    cursor_.target(target);
-    cursor_.update(dt, 22.0f);
+    cursor_ = {28.0f, rail_item_y(index, count), width, 72.0f};
 }
 
 void NavRail::draw(DrawList &list, const Context &ctx) const
@@ -389,9 +382,7 @@ void NavRail::draw(DrawList &list, const Context &ctx) const
         list.pop_opacity();
     }
 
-    /* The highlight: a pill that glides to the cursor (rail open) or rests on
-     * the active section (rail closed). */
-    const Rect pill = cursor_.value();
+    const Rect pill = cursor_;
     if (params_.rail_focused)
     {
         list.glow(pill, 36, 18, p.accent.with_alpha(0.45f));
@@ -501,7 +492,6 @@ void HomeScreen::set(const evo_rmlui_launch_params_t &p)
 void HomeScreen::enter()
 {
     age_ = 0.0f;
-    ring_snapped_ = false;
 }
 
 Rect HomeScreen::recent_rect(int index) const
@@ -522,10 +512,7 @@ Rect HomeScreen::focus_rect() const
     for (std::size_t i = 0; i < recent_.size(); ++i)
         if (recent_[i].focused)
         {
-            /* Where the card lands once the shelf stops, not where it is: the
-             * ring would otherwise trail the scroll. */
-            Rect r = recent_rect(static_cast<int>(i));
-            r.x += recent_scroll_.offset() - recent_scroll_.position.target;
+            const Rect r = recent_rect(static_cast<int>(i));
             return {r.x - 10, r.y - 10, r.w + 20, r.h + 20};
         }
     for (std::size_t i = 0; i < library_.size(); ++i)
@@ -544,19 +531,8 @@ void HomeScreen::update(float dt)
         const float limit = static_cast<float>(recent_.size()) * (kCardW + kCardGap) - kCardGap;
         recent_scroll_.reveal(start, start + kCardW, kShelfView, kCardW * 0.6f, limit);
     }
-    recent_scroll_.update(dt, 12.0f);
-    const Rect target = focus_rect();
-    if (!ring_snapped_ && target.w > 0.0f)
-    {
-        ring_.snap(target);
-        recent_scroll_.position.snap(recent_scroll_.position.target);
-        ring_snapped_ = true;
-    }
-    if (target.w > 0.0f)
-        ring_.target(target);
-    ring_.update(dt, 20.0f);
-    row_glow_.target = target.w > 0.0f ? 1.0f : 0.0f;
-    row_glow_.update(dt, 10.0f);
+    recent_scroll_.position.snap(recent_scroll_.position.target);
+    ring_ = focus_rect();
 }
 
 std::uint32_t HomeScreen::art_texture(const Context &ctx, const std::uint32_t *art, int w, int h,
@@ -674,11 +650,9 @@ void HomeScreen::draw(DrawList &list, const Context &ctx) const
     }
 
     /* The focus ring's light goes under the cards (a glow fills its inside). */
-    if (row_glow_.value > 0.01f && !hero_focused_)
+    if (ring_.w > 0.0f && !hero_focused_)
     {
-        list.push_opacity(row_glow_.value);
-        list.glow(ring_.value(), 24, 22, p.accent.with_alpha(0.35f + 0.12f * ui::breathe(ctx.time)));
-        list.pop_opacity();
+        list.glow(ring_, 24, 22, p.accent.with_alpha(0.35f + 0.12f * ui::breathe(ctx.time)));
     }
 
     /* Jump back in. Clipped at the rail: the shelf scrolls under it. */
@@ -770,13 +744,9 @@ void HomeScreen::draw(DrawList &list, const Context &ctx) const
         list.pop_opacity();
     }
 
-    /* The focus ring glides between hero button, covers and library tiles. */
-    if (row_glow_.value > 0.01f && !hero_focused_)
+    if (ring_.w > 0.0f && !hero_focused_)
     {
-        const Rect ring = ring_.value();
-        list.push_opacity(row_glow_.value);
-        list.bordered_rect(ring.inset(-5), page::kRadiusTile + 5, Color::rgb(0x000000, 0.0f), 4, kWhite);
-        list.pop_opacity();
+        list.bordered_rect(ring_.inset(-5), page::kRadiusTile + 5, Color::rgb(0x000000, 0.0f), 4, kWhite);
     }
 
     /* Hints. */
@@ -844,7 +814,6 @@ void ListScreen::set(const evo_rmlui_list_params_t &p)
     if (str(p.title) != title_)
     {
         age_ = 0.0f; /* a different list: run the entrance again */
-        ring_snapped_ = false;
     }
     title_ = str(p.title);
     subtitle_ = str(p.subtitle);
@@ -886,8 +855,6 @@ void ListScreen::set(const evo_rmlui_list_params_t &p)
         if (b != ui::Button::none)
             hints_.emplace_back(static_cast<int>(b), title_case(str(p.hints[i].label)));
     }
-    if (menu_.empty() && p.menu_count > 0)
-        menu_ring_snapped_ = false;
     menu_.clear();
     for (int i = 0; i < p.menu_count && i < EVO_RMLUI_LIST_MENU_ROWS; ++i)
     {
@@ -917,7 +884,6 @@ void ListScreen::set(const evo_rmlui_list_params_t &p)
 void ListScreen::enter()
 {
     age_ = 0.0f;
-    ring_snapped_ = false;
     menu_open_.snap(menu_.empty() ? 0.0f : 1.0f);
 }
 
@@ -941,36 +907,16 @@ void ListScreen::update(float dt)
 {
     age_ += dt;
     loading_age_ += dt;
-    int focused = -1;
+    ring_ = {};
     for (std::size_t i = 0; i < rows_.size(); ++i)
         if (rows_[i].focused)
-            focused = static_cast<int>(i);
-    if (focused >= 0)
-    {
-        const Rect target = row_rect(focused);
-        if (!ring_snapped_)
-        {
-            ring_.snap(target);
-            ring_snapped_ = true;
-        }
-        ring_.target(target);
-    }
-    ring_.update(dt, 22.0f);
-    has_focus_.target = focused >= 0 ? 1.0f : 0.0f;
-    has_focus_.update(dt, 12.0f);
+            ring_ = row_rect(static_cast<int>(i));
 
     menu_open_.target = menu_.empty() ? 0.0f : 1.0f;
     menu_open_.update(dt, 18.0f);
     if (!menu_.empty())
     {
-        const Rect target = menu_item_rect(std::clamp(menu_focus_, 0, static_cast<int>(menu_.size()) - 1));
-        if (!menu_ring_snapped_)
-        {
-            menu_ring_.snap(target);
-            menu_ring_snapped_ = true;
-        }
-        menu_ring_.target(target);
-        menu_ring_.update(dt, 24.0f);
+        menu_ring_ = menu_item_rect(std::clamp(menu_focus_, 0, static_cast<int>(menu_.size()) - 1));
     }
 }
 
@@ -1014,11 +960,9 @@ void ListScreen::draw(DrawList &list, const Context &ctx) const
     else
     {
         /* The highlight's light goes under the rows. */
-        if (has_focus_.value > 0.01f)
+        if (ring_.w > 0.0f)
         {
-            list.push_opacity(has_focus_.value);
-            list.glow(ring_.value(), 20, 18, p.accent.with_alpha(0.3f));
-            list.pop_opacity();
+            list.glow(ring_, 20, 18, p.accent.with_alpha(0.3f));
         }
         for (std::size_t i = 0; i < rows_.size(); ++i)
         {
@@ -1097,10 +1041,10 @@ void ListScreen::draw(DrawList &list, const Context &ctx) const
             }
             list.pop_opacity();
         }
-        if (has_focus_.value > 0.01f && menu_open_.value < 0.99f)
+        if (ring_.w > 0.0f && menu_open_.value < 0.99f)
         {
-            list.push_opacity(has_focus_.value * (1.0f - menu_open_.value));
-            list.bordered_rect(ring_.value().inset(-3), page::kRadiusTile + 3, Color::rgb(0x000000, 0.0f), 3, kWhite);
+            list.push_opacity(1.0f - menu_open_.value);
+            list.bordered_rect(ring_.inset(-3), page::kRadiusTile + 3, Color::rgb(0x000000, 0.0f), 3, kWhite);
             list.pop_opacity();
         }
 
@@ -1197,7 +1141,7 @@ void ListScreen::draw(DrawList &list, const Context &ctx) const
         ui::text(list, fonts.regular, fit(fonts.regular, menu_sub_, 19, card.w - 64), card.x + 32,
                  card.y + 144, 19, p.text_muted);
 
-        list.rounded_rect(menu_ring_.value(), 20, kWhite);
+        list.rounded_rect(menu_ring_, 20, kWhite);
         for (std::size_t i = 0; i < menu_.size(); ++i)
         {
             const MenuItem &item = menu_[i];

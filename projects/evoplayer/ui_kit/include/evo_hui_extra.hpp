@@ -73,7 +73,6 @@ class KeyboardOverlay
     void draw_pad(hui::gfx::DrawList &list, const Context &ctx) const;
     hui::ui::Keyboard keys_;
     bool layouts_built_ = false;
-    bool keys_ready_ = false;
     bool visible_ = false;
     bool native_only_ = false;
     bool clear_visible_ = false;
@@ -100,7 +99,6 @@ class KeyboardOverlay
 
     hui::tween::Spring enter_scale_;
     hui::tween::Spring enter_fade_;
-    hui::tween::Spring clear_focus_; /* 0..1: the clear button's focus fill */
 };
 
 } // namespace evo::kit

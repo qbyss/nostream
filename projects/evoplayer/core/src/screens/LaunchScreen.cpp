@@ -26,30 +26,20 @@ namespace evo {
 
 namespace {
 
-enum LibAction { LIB_BROWSE, LIB_RECENT, LIB_FAVORITES, LIB_SETTINGS, LIB_ABOUT };
-
 struct LibTile {
     const char* title;
     const char* detail;
     const char* icon;
-    LibAction   action;
+    int         source;
 };
 
 /* Home library shortcuts. */
-const LibTile* libraryTiles() {
-    static const LibTile tiles[] = {
-        {"BROWSE",    "USB drives",           "../icons/icon_browse_usb.png",    LIB_BROWSE},
-        {"RECENT",    "Resume watching",      "../icons/icon_recent_files.png",  LIB_RECENT},
-        {"FAVORITES", "Saved for later",      "../icons/icon_favorites.png",     LIB_FAVORITES},
-        {"SETTINGS",  "Video & audio",        "../icons/icon_settings.png",      LIB_SETTINGS},
-        {"ABOUT",     "Credits & info",       "../icons/icon_about_support.png", LIB_ABOUT},
-    };
-    return tiles;
-}
-
-int libraryTileCount() {
-    return 5;
-}
+constexpr LibTile libraryTiles[] = {
+    {"BROWSE",    "USB drives",      "../icons/icon_browse_usb.png",   0},
+    {"RECENT",    "Resume watching", "../icons/icon_recent_files.png", 4},
+    {"FAVORITES", "Saved for later", "../icons/icon_favorites.png",    3},
+};
+constexpr int libraryTileCount = sizeof(libraryTiles) / sizeof(libraryTiles[0]);
 
 } // namespace
 
@@ -97,6 +87,7 @@ void LaunchScreen::onEnter() {
 }
 
 void LaunchScreen::onExit() {
+    m_recentMenuPath.clear();
     evo::animation::AnimationManager::getInstance().setContinuousAnimation(false);
     StatefulScreen::onExit();
 }
@@ -158,7 +149,7 @@ void LaunchScreen::navigate(int dx, int dy) {
     } else if (m_selectedRow == 1) {
         maxCol = (recent_file_count > 0) ? std::min(recent_file_count - 1, EVO_RMLUI_TILES - 1) : 0;
     } else if (m_selectedRow == 2) {
-        maxCol = 5;
+        maxCol = libraryTileCount - 1;
     }
 
     if (dx != 0) {
@@ -199,34 +190,49 @@ void LaunchScreen::activateSelection() {
                 screenMgr->navigateTo(ScreenId::Player);
         }
     } else if (m_selectedRow == 2) {
-        // Library shelf navigation. Dispatch on the tile's action rather than
-        // its column, so hiding a tile cannot silently shift what the ones
-        // after it do.
-        if (m_selectedCol < 0 || m_selectedCol >= libraryTileCount())
+        if (m_selectedCol < 0 || m_selectedCol >= libraryTileCount)
             return;
-        switch (libraryTiles()[m_selectedCol].action) {
-            case LIB_BROWSE:
-            case LIB_RECENT:
-            case LIB_FAVORITES: {
-                const int src = (libraryTiles()[m_selectedCol].action == LIB_BROWSE) ? 0
-                              : (libraryTiles()[m_selectedCol].action == LIB_RECENT) ? 4
-                              : 3;
-                if (auto bs = dynamic_cast<BrowserScreen*>(screenMgr->getScreen(ScreenId::UsbBrowser))) {
-                    bs->setSource(src);
-                }
-                screenMgr->navigateTo(ScreenId::UsbBrowser);
-                break;
-            }
-            case LIB_SETTINGS: screenMgr->navigateTo(ScreenId::Settings); break;
-            case LIB_ABOUT:    screenMgr->navigateTo(ScreenId::AboutSupport); break;
-            default: break;
+        if (auto bs = dynamic_cast<BrowserScreen*>(screenMgr->getScreen(ScreenId::UsbBrowser))) {
+            bs->setSource(libraryTiles[m_selectedCol].source);
         }
+        screenMgr->navigateTo(ScreenId::UsbBrowser);
     }
 }
 
 bool LaunchScreen::handleInput(uint32_t pressed, uint32_t held, uint32_t released) {
     (void)held;
     (void)released;
+
+    if (!m_recentMenuPath.empty()) {
+        if (pressed & (PadButtons::Circle | PadButtons::Options)) {
+            m_recentMenuPath.clear();
+            evo_feedback(EVO_FB_CANCEL);
+        } else if (pressed & (PadButtons::Up | PadButtons::Down)) {
+            m_recentMenuFocused = 1 - m_recentMenuFocused;
+            evo_feedback(EVO_FB_MOVE);
+        } else if (pressed & PadButtons::Cross) {
+            if (m_recentMenuFocused == 0) {
+                const int removed = recent_forget(m_recentMenuPath.c_str());
+                if (recent_file_count == 0) m_selectedRow = 2;
+                m_selectedCol = std::clamp(m_selectedCol, 0, std::max(0, recent_file_count - 1));
+                evo_feedback(removed ? EVO_FB_CONFIRM : EVO_FB_BOUNDARY);
+            } else {
+                evo_feedback(EVO_FB_CANCEL);
+            }
+            m_recentMenuPath.clear();
+        }
+        return true;
+    }
+
+    if (pressed & PadButtons::Options) {
+        if (m_selectedRow != 2 && m_selectedCol >= 0 && m_selectedCol < recent_file_count) {
+            m_recentMenuPath = recent_files[m_selectedCol].path;
+            m_recentMenuFocused = 0;
+            evo_feedback(EVO_FB_OPEN);
+            return true;
+        }
+        return false;
+    }
 
     if (pressed & PadButtons::Up) {
         navigate(0, -1);
@@ -391,13 +397,12 @@ void LaunchScreen::render(uint32_t* framebuffer, int width, int height) {
     }
 
     // Library shelf
-    const LibTile* lib = libraryTiles();
-    params.library_visible = libraryTileCount();
+    params.library_visible = libraryTileCount;
 
     for (int i = 0; i < params.library_visible; ++i) {
-        params.library[i].title = lib[i].title;
-        params.library[i].detail = lib[i].detail;
-        params.library[i].icon_path = lib[i].icon;
+        params.library[i].title = libraryTiles[i].title;
+        params.library[i].detail = libraryTiles[i].detail;
+        params.library[i].icon_path = libraryTiles[i].icon;
         params.library[i].progress = -1;
         params.library[i].art = nullptr;
         params.library[i].is_focused = (!railFocused && m_selectedRow == 2 && m_selectedCol == i);
@@ -405,6 +410,19 @@ void LaunchScreen::render(uint32_t* framebuffer, int width, int height) {
 
     evo_rmlui_update_launch(&params);
     evo_rmlui_render_launch(framebuffer, width, height);
+
+    if (!m_recentMenuPath.empty()) {
+        evo_rmlui_dialog_params_t menu{};
+        menu.title = "Continue Watching";
+        menu.progress_pct = -1.0;
+        menu.action_count = 2;
+        menu.focused_action = m_recentMenuFocused;
+        menu.actions[0] = {"../icons/icon_recent_files.png", "Remove from Continue Watching", 0};
+        menu.actions[1] = {"../icons/btn_circle.png", "Close", 0};
+        menu.side_panel = 1;
+        evo_rmlui_update_dialog(&menu);
+        evo_rmlui_render_dialog(framebuffer, width, height);
+    }
 }
 
 } // namespace evo

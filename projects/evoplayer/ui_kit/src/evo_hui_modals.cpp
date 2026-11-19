@@ -94,7 +94,6 @@ void SubtitlePicker::set(const evo_rmlui_subtitles_params_t &p)
 void SubtitlePicker::enter()
 {
     open_.snap(0.0f);
-    ring_snapped_ = false;
 }
 
 Rect SubtitlePicker::track_rect(int i) const
@@ -106,19 +105,14 @@ void SubtitlePicker::update(float dt)
 {
     open_.target = 1.0f;
     open_.update(dt, 16.0f);
+    ring_ = {};
     for (std::size_t i = 0; i < tracks_.size(); ++i)
     {
         if (!tracks_[i].focused)
             continue;
-        const Rect t = track_rect(static_cast<int>(i));
-        if (!ring_snapped_)
-        {
-            ring_.snap(t);
-            ring_snapped_ = true;
-        }
-        ring_.target(t);
+        ring_ = track_rect(static_cast<int>(i));
+        break;
     }
-    ring_.update(dt, 22.0f);
 }
 
 void SubtitlePicker::draw(DrawList &list, const Context &ctx) const
@@ -168,7 +162,8 @@ void SubtitlePicker::draw(DrawList &list, const Context &ctx) const
     if (!cue_str_.empty())
         pill("DIALOGUE", cue_str_);
 
-    list.rounded_rect(ring_.value(), page::kRadiusTile, kWhite);
+    if (ring_.w > 0.0f)
+        list.rounded_rect(ring_, page::kRadiusTile, kWhite);
     for (std::size_t i = 0; i < tracks_.size(); ++i)
     {
         const Track &t = tracks_[i];

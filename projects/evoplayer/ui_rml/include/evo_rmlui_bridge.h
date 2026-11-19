@@ -148,6 +148,7 @@ typedef struct {
         const char* label;
         int is_primary;
     } actions[3];
+    int side_panel;
 } evo_rmlui_dialog_params_t;
 
 /* #75: toast notifications. kind: 0=info 1=tech 2=error 3=ok. alpha/slide

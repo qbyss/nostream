@@ -3,6 +3,7 @@
  */
 #include "evo_hui_osd.hpp"
 #include "evo_hui_cover.hpp"
+#include "evo_hui_misc.hpp"
 
 #include "ui/glyphs.hpp"
 
@@ -656,31 +657,13 @@ void OsdScreen::draw(DrawList &list, const Context &ctx) const
     if (hud_on_ && raw_.video_settings_row == 0)
         draw_stats(list, ctx);
     if (raw_.video_settings_row > 0) {
-        const auto& p = ctx.palette;
-        const Rect panel{1260, 210, 568, 564};
-        list.shadow({panel.x, panel.y + 12, panel.w, panel.h}, 24, 34, kBlack.with_alpha(0.6f));
-        list.rounded_rect(panel, 24, p.bg_bottom.with_alpha(0.97f));
-        list.bordered_rect(panel, 24, kBlack.with_alpha(0.0f), 1.0f, kWhite.with_alpha(0.14f));
-        ui::text(list, fonts.display, "Video Settings", panel.x + 30, panel.y + 59, 32, kWhite);
-        const char* const labels[] = {"Audio Track", "Subtitle Track", "Aspect Ratio", "Media Info", "Stats for Nerds"};
         const char* aspect = raw_.music_mode ? "Unavailable" :
             (raw_.view_mode == 0 ? "Fit" : raw_.view_mode == 1 ? "Fill" : "Stretch");
-        const char* const values[] = {"", "", aspect, "", raw_.show_stats ? "On" : "Off"};
-        for (int i = 0; i < 5; ++i) {
-            const Rect row{panel.x + 20, panel.y + 85 + i * 80.0f, panel.w - 40, 68};
-            const bool focused = i + 1 == raw_.video_settings_row;
-            list.rounded_rect(row, 12, kWhite.with_alpha(focused ? 0.95f : 0.06f));
-            const auto ink = focused ? kBlack : kWhite;
-            ui::text(list, fonts.semibold, labels[i], row.x + 18, row.cy() + 7, 21, ink);
-            if (values[i][0])
-                ui::text(list, fonts.regular, values[i], row.x + row.w - 18, row.cy() + 7, 20, ink, Align::right);
-        }
-        const ui::Hint hints[] = {{ui::Button::cross, "Select"}, {ui::Button::circle, "Back"}};
-        ui::HintLayout layout;
-        layout.size = 28;
-        layout.text_size = 18;
-        layout.cy = panel.y + panel.h - 40;
-        ui::draw_hints(list, fonts, ui::GlyphStyle::dark(), hints, 2, panel.x + panel.w - 24, true, layout);
+        const OptionsRow rows[] = {
+            {"Audio Track"}, {"Subtitle Track"}, {"Aspect Ratio", aspect},
+            {"Media Info"}, {"Stats for Nerds", raw_.show_stats ? "On" : "Off"},
+        };
+        draw_options_panel(list, ctx, "Video Settings", rows, 5, raw_.video_settings_row - 1);
     }
     if (raw_.debug_overlay)
     {

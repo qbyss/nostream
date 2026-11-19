@@ -406,8 +406,6 @@ bool Application::initHardware() {
     m_padHandle = scePadOpen(users[0], 0, 0, nullptr);
     if (m_padHandle < 0) {
         toast("PAD OPEN FAIL", "Could not open controller");
-    } else {
-        toast("PAD OPEN OK", "Controller connected");
     }
 
     evo_rmlui_init(DisplayWidth, DisplayHeight);

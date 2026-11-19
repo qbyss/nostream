@@ -19,6 +19,15 @@
 namespace evo::kit
 {
 
+struct OptionsRow
+{
+    const char *label;
+    const char *value = "";
+};
+
+void draw_options_panel(hui::gfx::DrawList &list, const Context &ctx, const std::string &title,
+                        const OptionsRow *rows, int count, int focused);
+
 class DialogOverlay
 {
   public:
@@ -41,6 +50,7 @@ class DialogOverlay
     std::string detail_;
     double progress_pct_ = -1.0;
     int focused_action_ = -1;
+    bool side_panel_ = false;
     std::vector<Action> actions_;
 
     hui::tween::Spring enter_scale_;
@@ -119,8 +129,7 @@ class ChangelogScreen
     float stick_ = 0.0f;
     mutable hui::ui::ScrollArea scroll_;
 
-    hui::ui::SpringRect ring_;
-    bool ring_snapped_ = false;
+    hui::gfx::Rect ring_{};
 };
 
 class ClosedScreen

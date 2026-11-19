@@ -57,6 +57,8 @@ private:
     StateMachine<LaunchScreenState, LaunchScreenEvent> m_launchFsm;
     int m_selectedRow = 0;
     int m_selectedCol = 0;
+    std::string m_recentMenuPath;
+    int m_recentMenuFocused = 0;
 
     /*
      * Hero backdrop resolution is debounced. ensureHeroArt() decodes a video

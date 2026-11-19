@@ -86,8 +86,7 @@ void SettingsScreen::set(const evo_rmlui_settings_params_t &p)
     if (new_title != title_ && !title_.empty())
     {
         section_age_ = 0.0f;
-        scroll_.snap(0.0f);
-        row_cursor_snapped_ = false;
+        scroll_ = 0.0f;
     }
     title_ = new_title;
     subtitle_ = str(p.subtitle);
@@ -158,9 +157,7 @@ void SettingsScreen::enter()
 {
     age_ = 0.0f;
     section_age_ = 0.0f;
-    scroll_.snap(0.0f);
-    sidebar_cursor_snapped_ = false;
-    row_cursor_snapped_ = false;
+    scroll_ = 0.0f;
 }
 
 /* The card spans y 130..950; its header takes the first 160. */
@@ -204,19 +201,12 @@ void SettingsScreen::update(float dt)
         collapse_.snap(collapse_.target);
         collapse_snapped_ = true;
     }
-    collapse_.update(dt, 16.0f);
+    collapse_.update(dt, 32.0f);
 
     int sec_active = std::clamp(params_.section_active, 0, 5);
-    Rect sidebar_target{kLeft, 210.0f + sec_active * (64.0f + 8.0f), side_w(), 64.0f};
-    if (!sidebar_cursor_snapped_)
-    {
-        sidebar_cursor_.snap(sidebar_target);
-        sidebar_cursor_snapped_ = true;
-    }
-    sidebar_cursor_.target(sidebar_target);
-    sidebar_cursor_.update(dt, 20.0f);
+    sidebar_cursor_ = {kLeft, 210.0f + sec_active * (64.0f + 8.0f), side_w(), 64.0f};
 
-    Rect row_target;
+    row_cursor_ = {};
     int focus_idx = -1;
     for (size_t i = 0; i < rows_.size(); ++i)
     {
@@ -240,7 +230,7 @@ void SettingsScreen::update(float dt)
         float h = row_h(rows_[focus_idx].kind);
         /* Scroll the least that keeps the focused row inside the card. */
         const float top = row_top(focus_idx);
-        float want = scroll_.target;
+        float want = scroll_;
         if (top - want < kRowsTop)
             want = top - kRowsTop;
         /* An expanded value row lists its options right below it; bring the
@@ -252,25 +242,14 @@ void SettingsScreen::update(float dt)
             bottom = row_top(static_cast<int>(j)) + 56.0f;
         if (bottom - want > rows_bottom())
             want = std::min(bottom - rows_bottom(), top - kRowsTop);
-        scroll_.target = std::clamp(want, 0.0f, max_scroll);
-        if (!row_cursor_snapped_)
-            scroll_.snap(scroll_.target);
-        row_target = {pane_left() + 24.0f, top - scroll_.target, 1824.0f - pane_left() - 48.0f - (preview_.kind ? kPreviewW + 24.0f : 0.0f), h};
+        scroll_ = std::clamp(want, 0.0f, max_scroll);
+        row_cursor_ = {pane_left() + 24.0f, top - scroll_,
+                       1824.0f - pane_left() - 48.0f - (preview_.kind ? kPreviewW + 24.0f : 0.0f), h};
     }
     else
     {
-        scroll_.target = std::clamp(scroll_.target, 0.0f, max_scroll);
+        scroll_ = std::clamp(scroll_, 0.0f, max_scroll);
     }
-
-    if (!row_cursor_snapped_ && row_target.w > 0)
-    {
-        row_cursor_.snap(row_target);
-        row_cursor_snapped_ = true;
-    }
-    if (row_target.w > 0)
-        row_cursor_.target(row_target);
-    row_cursor_.update(dt, 20.0f);
-    scroll_.update(dt, 16.0f);
 }
 
 void SettingsScreen::draw_row(DrawList &list, const Context &ctx, const RowData &row, const Rect &r, int index) const
@@ -368,7 +347,7 @@ void SettingsScreen::draw(DrawList &list, const Context &ctx) const
         list.pop_opacity();
     }
 
-    Rect sc = sidebar_cursor_.value();
+    const Rect sc = sidebar_cursor_;
     if (params_.sidebar_focused)
     {
         list.glow(sc, page::kRadiusTile, 18, p.accent.with_alpha(0.45f));
@@ -428,10 +407,9 @@ void SettingsScreen::draw(DrawList &list, const Context &ctx) const
     ui::text(list, fonts.semibold, fit(fonts.semibold, ui::upper(subtitle_), 18, pane.w - 96.0f, 3.0f), px, py + 70, 18,
              p.text_muted, Align::left, 3.0f);
 
-    if (!params_.sidebar_focused && row_cursor_snapped_)
+    if (!params_.sidebar_focused && row_cursor_.w > 0.0f)
     {
-        Rect rc = row_cursor_.value();
-        list.glow(rc, page::kRadiusTile, 20, p.accent.with_alpha(0.4f));
+        list.glow(row_cursor_, page::kRadiusTile, 20, p.accent.with_alpha(0.4f));
     }
 
     const float rb = rows_bottom();
@@ -464,7 +442,7 @@ void SettingsScreen::draw(DrawList &list, const Context &ctx) const
         const float max_scroll = std::max(0.0f, content_bottom - rb);
         if (max_scroll > 1.0f)
         {
-            const float s = std::clamp(scroll_.value, 0.0f, max_scroll);
+            const float s = std::clamp(scroll_, 0.0f, max_scroll);
             const bool more_above = s > 2.0f, more_below = s < max_scroll - 2.0f;
             const float fx = pane.x + 12.0f, fw = rows_w + 24.0f;
             if (more_below)
@@ -497,10 +475,9 @@ void SettingsScreen::draw(DrawList &list, const Context &ctx) const
         }
     }
 
-    if (!params_.sidebar_focused && row_cursor_snapped_)
+    if (!params_.sidebar_focused && row_cursor_.w > 0.0f)
     {
-        Rect rc = row_cursor_.value();
-        list.bordered_rect(rc, page::kRadiusTile, Color::rgb(0x000000, 0.0f), 3.0f, kWhite);
+        list.bordered_rect(row_cursor_, page::kRadiusTile, Color::rgb(0x000000, 0.0f), 3.0f, kWhite);
     }
 
     list.pop_clip();
@@ -581,7 +558,7 @@ bool SettingsScreen::focus(FocusInfo *out) const
                 out->text = t;
                 out->index = focus_idx + 1;
                 out->total = static_cast<int>(rows_.size());
-                out->rect = row_cursor_.value();
+                out->rect = row_cursor_;
                 for (size_t i = 0; i < rows_.size(); ++i)
                 {
                     out->focusable.push_back({"row-" + std::to_string(i), rows_[i].title});

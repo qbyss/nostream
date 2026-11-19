@@ -49,14 +49,6 @@ std::string fit(const ui::FontRef &font, const std::string &text, float size, fl
     return font.font->fit(text, size, width);
 }
 
-std::uint64_t hash_of(const std::string &s)
-{
-    std::uint64_t h = 1469598103934665603ull;
-    for (char c : s)
-        h = (h ^ static_cast<unsigned char>(c)) * 1099511628211ull;
-    return h;
-}
-
 } // namespace
 
 void BrowserScreen::set(const evo_rmlui_browser_params_t &p)
@@ -94,8 +86,6 @@ void BrowserScreen::set(const evo_rmlui_browser_params_t &p)
     empty_title_ = str(p.empty_title);
     empty_hint_ = str(p.empty_hint);
     loading_text_ = str(p.loading_text);
-    if (!p.action_menu_open)
-        action_snapped_ = false;
     act_target_ = str(p.action_menu_target);
     act_sub_ = str(p.action_target_sub);
     act_clip_ = str(p.action_clipboard_info);
@@ -108,22 +98,11 @@ void BrowserScreen::set(const evo_rmlui_browser_params_t &p)
     tr_progress_ = p.transfer_progress_pct;
     /* Strings in raw_ are dangling after this call: never read them. */
     raw_.path = raw_.title = nullptr;
-
-    /* A new page (or folder) re-runs the cards' entrance. */
-    const std::string key = path_ + "#" + std::to_string(p.first_item_index) + "#" + std::to_string(p.active_source);
-    if (static_cast<int>(hash_of(key) & 0x7fffffff) != last_first_)
-    {
-        last_first_ = static_cast<int>(hash_of(key) & 0x7fffffff);
-        page_age_ = 0.0f;
-    }
 }
 
 void BrowserScreen::enter()
 {
     age_ = 0.0f;
-    page_age_ = 0.0f;
-    ring_snapped_ = false;
-    action_snapped_ = false;
 }
 
 Rect BrowserScreen::card_rect(int i) const
@@ -166,58 +145,24 @@ Rect BrowserScreen::action_rect(int i) const
 void BrowserScreen::update(float dt)
 {
     age_ += dt;
-    page_age_ += dt;
 
-    Rect target{};
-    bool any = false;
-    if (raw_.sidebar_focused)
-    {
-        target = source_rect(raw_.sidebar_index);
-        any = true;
-    }
-    else if (raw_.filter_focused && !chips_.empty())
-    {
-        target = chip_rect(std::clamp(raw_.filter_selected, 0, static_cast<int>(chips_.size()) - 1), nullptr);
-        any = true;
-    }
-    else
+    ring_ = {};
+    if (!raw_.sidebar_focused && !raw_.filter_focused && !raw_.rail_focused)
     {
         for (std::size_t i = 0; i < cards_.size(); ++i)
             if (cards_[i].focused)
             {
                 const Rect r = card_rect(static_cast<int>(i));
-                target = {r.x - 8, r.y - 8, r.w + 16, r.h + 16};
-                any = true;
+                ring_ = {r.x - 8, r.y - 8, r.w + 16, r.h + 16};
+                break;
             }
     }
-    if (any)
-    {
-        if (!ring_snapped_)
-        {
-            ring_.snap(target);
-            ring_snapped_ = true;
-        }
-        ring_.target(target);
-    }
-    ring_.update(dt, 22.0f);
-    ring_alpha_.target = (any && !raw_.rail_focused) ? 1.0f : 0.0f;
-    ring_alpha_.update(dt, 14.0f);
-
-    source_ring_.target(source_rect(raw_.active_source));
-    source_ring_.update(dt, 18.0f);
 
     menu_.target = raw_.action_menu_open ? 1.0f : 0.0f;
     menu_.update(dt, 18.0f);
     if (raw_.action_menu_open && raw_.action_menu_count > 0)
     {
-        const Rect t = action_rect(raw_.action_menu_focused);
-        if (!action_snapped_)
-        {
-            action_ring_.snap(t);
-            action_snapped_ = true;
-        }
-        action_ring_.target(t);
-        action_ring_.update(dt, 24.0f);
+        action_ring_ = action_rect(raw_.action_menu_focused);
     }
     transfer_.target = raw_.transfer_modal_open ? 1.0f : 0.0f;
     transfer_.update(dt, 16.0f);
@@ -265,7 +210,8 @@ void BrowserScreen::draw(DrawList &list, const Context &ctx) const
             list.rounded_rect({next.x + 12.0f, next.y - 9.0f, next.w - 24.0f, 1.0f},
                               0.0f, kWhite.with_alpha(0.20f));
         }
-        list.rounded_rect(source_ring_.value(), page::kRadiusTile, kWhite.with_alpha(raw_.sidebar_focused || raw_.active_source < 0 ? 0.0f : 0.10f));
+        if (!raw_.sidebar_focused && raw_.active_source >= 0)
+            list.rounded_rect(source_rect(raw_.active_source), page::kRadiusTile, kWhite.with_alpha(0.10f));
         for (int i = 0; i < static_cast<int>(sources_.size()); ++i)
         {
             const float in = tween::stagger(age_, i + 1, 0.04f, 0.4f);
@@ -356,19 +302,14 @@ void BrowserScreen::draw(DrawList &list, const Context &ctx) const
     }
     else
     {
-        if (ring_alpha_.value > 0.01f && !raw_.sidebar_focused && !raw_.filter_focused)
+        if (ring_.w > 0.0f)
         {
-            list.push_opacity(ring_alpha_.value);
-            list.glow(ring_.value(), page::kRadiusTile + 2, 22, p.accent.with_alpha(0.35f + 0.1f * ui::breathe(ctx.time)));
-            list.pop_opacity();
+            list.glow(ring_, page::kRadiusTile + 2, 22, p.accent.with_alpha(0.35f + 0.1f * ui::breathe(ctx.time)));
         }
         for (std::size_t i = 0; i < cards_.size(); ++i)
         {
             const Card &c = cards_[i];
-            const float in = tween::stagger(page_age_, static_cast<int>(i), 0.035f, 0.38f);
-            list.push_opacity(in);
             Rect r = card_rect(static_cast<int>(i));
-            r.y += 20.0f * (1.0f - tween::cubic_out(in));
             if (c.focused)
                 r = {r.x - 8, r.y - 8, r.w + 16, r.h + 16};
             list.shadow({r.x, r.y + 12, r.w, r.h}, page::kRadiusTile, 22, Color::rgb(0x000000, 0.45f));
@@ -425,16 +366,12 @@ void BrowserScreen::draw(DrawList &list, const Context &ctx) const
                      r.x + (c.focused ? 8.0f : 0.0f), r.y + r.h + 32, 21, c.focused ? kWhite : kWhite.with_alpha(0.85f));
             ui::text(list, fonts.regular, fit(fonts.regular, c.detail, 16, kCardW), r.x + (c.focused ? 8.0f : 0.0f),
                      r.y + r.h + 56, 16, p.text_faint);
-            list.pop_opacity();
         }
     }
-    if (ring_alpha_.value > 0.01f && !raw_.action_menu_open)
+    if (ring_.w > 0.0f && !raw_.action_menu_open)
     {
-        list.push_opacity(ring_alpha_.value);
         const float radius = page::kRadiusTile + 5.0f;
-        if (!raw_.sidebar_focused && !raw_.filter_focused)
-            list.bordered_rect(ring_.value().inset(-5), radius, kClear, 3.5f, kWhite);
-        list.pop_opacity();
+        list.bordered_rect(ring_.inset(-5), radius, kClear, 3.5f, kWhite);
     }
 
     /* ---- hints ---- */
@@ -486,7 +423,7 @@ void BrowserScreen::draw(DrawList &list, const Context &ctx) const
         if (!act_clip_.empty())
             ui::text(list, fonts.regular, fit(fonts.regular, act_clip_, 16, card.w - 64), card.x + 32,
                      card.y + 150, 16, p.text_faint);
-        list.rounded_rect(action_ring_.value(), page::kRadiusTile, kWhite);
+        list.rounded_rect(action_ring_, page::kRadiusTile, kWhite);
         for (int i = 0; i < nActions; ++i)
         {
             const Rect r = action_rect(i);
