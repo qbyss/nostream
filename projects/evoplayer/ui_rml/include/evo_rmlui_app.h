@@ -419,6 +419,7 @@ struct EvoBrowserState {
     int source_divider_before = 0;
     int active_source = 0;
     std::vector<std::pair<std::string, std::string>> sources;
+    std::vector<std::pair<std::string, float>> source_space;
 
     /* Folder filter chips. `filter_labels` holds only the chips this folder
      * earned - "All" plus one per category actually present - so the row is
@@ -491,7 +492,7 @@ struct EvoBrowserState {
     bool operator==(const EvoBrowserState& o) const {
         return path == o.path && title == o.title && at_root == o.at_root && rail_focused == o.rail_focused &&
                sidebar_focused == o.sidebar_focused && sidebar_index == o.sidebar_index && active_source == o.active_source &&
-               source_divider_before == o.source_divider_before && sources == o.sources &&
+               source_divider_before == o.source_divider_before && sources == o.sources && source_space == o.source_space &&
                filter_labels == o.filter_labels && filter_selected == o.filter_selected &&
                filter_focused == o.filter_focused &&
                total_count == o.total_count && cursor_index == o.cursor_index &&

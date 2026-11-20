@@ -59,8 +59,9 @@ void BrowserScreen::set(const evo_rmlui_browser_params_t &p)
     path_ = str(p.path);
     title_ = str(p.title);
     sources_.clear();
-    for (int i = 0; i < p.source_count; ++i)
-        sources_.emplace_back(str(p.source_labels[i]), str(p.source_icons[i]));
+    for (int i = 0; i < p.source_count && i < EVO_RMLUI_BROWSER_SOURCES; ++i)
+        sources_.push_back({str(p.source_labels[i]), str(p.source_icons[i]),
+                            str(p.source_space_labels[i]), p.source_used_fractions[i]});
     chips_.clear();
     for (int i = 0; i < p.filter_count && i < 4; ++i)
         chips_.push_back(str(p.filter_labels[i]));
@@ -245,11 +246,25 @@ void BrowserScreen::draw(DrawList &list, const Context &ctx)
             if (active && !focused)
                 list.rounded_rect({r.x + 4, r.y + 16, 4, r.h - 32}, 2, p.accent);
             const Color ink = focused ? kInk : (active ? kWhite : kWhite.with_alpha(0.6f));
-            const std::uint32_t icon = ctx.textures.icon(sources_[i].second.c_str());
+            const auto& source = sources_[i];
+            const std::uint32_t icon = ctx.textures.icon(source.icon.c_str());
             if (icon)
                 list.image(icon, {r.x + 20, r.cy() - 13, 26, 26}, ::hui::gfx::kFullUv, focused ? kInk : (active ? p.accent : ink));
             const auto& font = focused || active ? fonts.semibold : fonts.regular;
-            ui::text(list, font, fit(font, sources_[i].first, 21, r.w - 72), r.x + 62, r.cy() + 8, 21, ink);
+            const float textX = r.x + 62;
+            const float textW = r.w - 74;
+            const float labelY = source.space.empty() ? r.cy() + 8 : r.y + 22;
+            ui::text(list, font, fit(font, source.label, 21, textW), textX, labelY, 21, ink);
+            if (!source.space.empty()) {
+                if (source.used_fraction >= 0.0f) {
+                    list.rounded_rect({textX, r.y + 30, textW, 4}, 2, ink.with_alpha(0.22f));
+                    const float fill = textW * std::min(1.0f, source.used_fraction);
+                    if (fill > 0.0f)
+                        list.rounded_rect({textX, r.y + 30, fill, 4}, std::min(2.0f, fill * 0.5f),
+                                          focused ? kInk : p.accent);
+                }
+                ui::text(list, fonts.regular, source.space, textX, r.y + 50, 14, ink);
+            }
             list.pop_opacity();
         }
     }
@@ -534,10 +549,10 @@ bool BrowserScreen::focus(FocusInfo *out) const
     if (raw_.sidebar_focused && !sources_.empty())
     {
         for (int i = 0; i < static_cast<int>(sources_.size()); ++i)
-            out->focusable.emplace_back("source-" + std::to_string(i), sources_[i].first);
+            out->focusable.emplace_back("source-" + std::to_string(i), sources_[i].label);
         const int at = raw_.sidebar_index;
         out->id = "source-" + std::to_string(at);
-        out->text = sources_[at].first;
+        out->text = sources_[at].label;
         out->index = at + 1;
         out->total = static_cast<int>(sources_.size());
         out->rect = source_rect(at);

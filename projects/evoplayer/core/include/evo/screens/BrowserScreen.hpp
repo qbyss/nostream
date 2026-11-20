@@ -12,6 +12,7 @@
 namespace evo {
 
 struct NetListJob;
+struct StorageSpaceJob;
 
 /**
  * @brief Discrete functional states for storage browsing and media inspection.
@@ -97,6 +98,7 @@ private:
     bool openFavoriteFolder(int index, bool focusGrid = true);
     int storageSidebarIndex() const;
     void refreshStorageSources();
+    void refreshStorageSpace(double deltaMs);
     int activeSidebarIndex() const;
     void applyFolderFilter();
     void applyFilterChange();
@@ -141,6 +143,9 @@ private:
     int m_scrollOffset = 0;
     double m_settleMs = 0.0;
     unsigned m_usbVolumeGeneration = 0;
+    double m_storageSpaceRefreshMs = 0;
+    std::shared_ptr<StorageSpaceJob> m_storageSpaceJob;
+    std::shared_ptr<StorageSpaceJob> m_storageSpace;
     int m_pendingFolderFavorite = -1;
     double m_pendingFavoriteMs = 0;
     bool m_pendingFavoriteFromSidebar = false;

@@ -5,6 +5,10 @@ into the GitHub release notes, so keep the headings in the form `## 0.1.0`.
 
 ---
 
+## 0.4.0
+
+- The Browse sidebar shows how much space is used on each drive and how much is free.
+
 ## 0.3.0
 
 - Confirmation buttons have less rounded corners and a thin focus outline that follows the button edge.

@@ -33,10 +33,10 @@ NoStream carries a small payload, `helpers/ntfs_helper.c`, built by
 `tools/gen_ntfs_helper.sh` and embedded as `src/generated/evo_ntfs_helper_elf.c`:
 
 - When the set of USB devices NoStream can see (`/dev/ugen*`) changes, and once per
-  launch, NoStream asks the helper on `127.0.0.1:9796` for the disks (`LIST`). If it
+  launch, NoStream asks the helper on `127.0.0.1:9797` for the disks (`LIST`). If it
   is not running, NoStream sends it to the ELF loader on `127.0.0.1:9021` (at most 3
   tries per change) and asks again on the next refresh.
-- The helper reports the backing partition for each `/mnt/usbN` mount. NoStream uses it to read FAT32 and exFAT labels and serials.
+- The helper reports the backing partition for each `/mnt/usbN` mount. NoStream uses it to read FAT32 and exFAT labels and serials. The same helper reports total and available capacity for Internal Storage and mounted drives.
 - The helper runs as root, lists `/dev/daN`, opens a disk read-only on `OPEN daN`
   and answers 4 KiB-aligned block reads. It listens on loopback only, refuses any
   name but `daN`/`daNsM`/`daNpM`, and exits 30 s after its last client.

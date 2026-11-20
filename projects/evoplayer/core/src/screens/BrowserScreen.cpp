@@ -25,6 +25,11 @@
 #include <atomic>
 #include <map>
 #include <pthread.h>
+#ifndef EVO_APP_MODULE
+#include <fcntl.h>
+#include <sys/statvfs.h>
+#include <unistd.h>
+#endif
 #include <sys/stat.h>
 #include <sys/time.h>
 
@@ -1425,6 +1430,104 @@ int BrowserScreen::storageSidebarIndex() const {
         (source == builtins.end() ? 0 : static_cast<int>(source - builtins.begin()));
 }
 
+struct StorageSpace {
+    std::string label = "Space unavailable";
+    float usedFraction = -1.0f;
+};
+
+struct StorageSpaceJob {
+    unsigned generation = 0;
+    std::vector<std::string> mounts;
+    std::map<std::string, StorageSpace> readings;
+    std::atomic<bool> done{false};
+};
+
+static bool readStorageSpace(const std::string& path, uint64_t& total, uint64_t& available) {
+    if (evo_ntfs_is_url(path.c_str()))
+        return evo_ntfs_space(path.c_str(), &total, &available) == 0;
+
+#ifdef EVO_APP_MODULE
+    // The app can open the files, but the PS5 denies its filesystem capacity query.
+    return evo_mounted_storage_space(path.c_str(), &total, &available) == 0;
+#else
+    const int fd = open(path.c_str(), O_RDONLY | O_DIRECTORY);
+    if (fd < 0) return false;
+    struct statvfs info{};
+    const int result = fstatvfs(fd, &info);
+    close(fd);
+    const uint64_t blockSize = info.f_frsize;
+    if (result != 0 || blockSize == 0 || info.f_blocks == 0 || info.f_blocks > UINT64_MAX / blockSize)
+        return false;
+    total = info.f_blocks * blockSize;
+    available = std::min<uint64_t>(info.f_bavail, info.f_blocks) * blockSize;
+    return true;
+#endif
+}
+
+static void* readStorageSpaceJob(void* arg) {
+    const std::unique_ptr<std::shared_ptr<StorageSpaceJob>> owner(
+        static_cast<std::shared_ptr<StorageSpaceJob>*>(arg));
+    auto& job = **owner;
+    for (const auto& path : job.mounts) {
+        // A mounted NTFS volume is read-only and its bitmap can take seconds to read.
+        if (evo_ntfs_is_url(path.c_str()) && job.readings.count(path)) continue;
+        StorageSpace reading;
+        uint64_t total, available;
+        if (readStorageSpace(path, total, available) && total != 0) {
+            const uint64_t used = total - std::min(available, total);
+            reading.usedFraction = static_cast<float>(static_cast<double>(used) / total);
+            double amount = static_cast<double>(available);
+            static constexpr const char* units[] = {"B", "KiB", "MiB", "GiB", "TiB"};
+            size_t unit = 0;
+            while (amount >= 1024 && unit + 1 < sizeof(units) / sizeof(units[0])) {
+                amount /= 1024;
+                ++unit;
+            }
+            char label[40];
+            std::snprintf(label, sizeof(label), unit >= 3 ? "%.1f %s free" : "%.0f %s free", amount, units[unit]);
+            reading.label = label;
+        }
+        job.readings[path] = std::move(reading);
+    }
+    job.done.store(true);
+    return nullptr;
+}
+
+void BrowserScreen::refreshStorageSpace(double deltaMs) {
+    m_storageSpaceRefreshMs -= deltaMs;
+    if (m_storageSpaceJob) {
+        if (!m_storageSpaceJob->done.load()) return;
+        if (m_storageSpaceJob->generation == m_usbVolumeGeneration &&
+            m_storageSpaceJob->mounts.size() == m_storageMounts.size() + 1 &&
+            std::equal(m_storageMounts.begin(), m_storageMounts.end(), m_storageSpaceJob->mounts.begin() + 1))
+            m_storageSpace = std::move(m_storageSpaceJob);
+        m_storageSpaceJob.reset();
+    }
+    if (m_storageSpaceRefreshMs > 0 || !evo_jailbreak_is_open()) return;
+
+    m_storageSpaceRefreshMs = 5000;
+    auto job = std::make_shared<StorageSpaceJob>();
+    job->generation = m_usbVolumeGeneration;
+    job->mounts.push_back("/data");
+    job->mounts.insert(job->mounts.end(), m_storageMounts.begin(), m_storageMounts.end());
+    if (m_storageSpace) {
+        for (const auto& path : m_storageMounts) {
+            if (!evo_ntfs_is_url(path.c_str())) continue;
+            const auto old = m_storageSpace->readings.find(path);
+            if (old != m_storageSpace->readings.end() && old->second.usedFraction >= 0)
+                job->readings.emplace(path, old->second);
+        }
+    }
+    auto* arg = new std::shared_ptr<StorageSpaceJob>(job);
+    pthread_t worker;
+    if (pthread_create(&worker, nullptr, readStorageSpaceJob, arg) == 0) {
+        pthread_detach(worker);
+        m_storageSpaceJob = std::move(job);
+    } else {
+        delete arg;
+    }
+}
+
 void BrowserScreen::refreshStorageSources() {
     auto browser = Application::getInstance().getFileSystemBrowser();
     if (!browser) return;
@@ -1435,6 +1538,8 @@ void BrowserScreen::refreshStorageSources() {
     if (generation != m_usbVolumeGeneration) {
         if (auto* cover = Application::getInstance().getCoverArtService()) cover->clearCache();
     }
+    m_storageSpace.reset();
+    m_storageSpaceRefreshMs = 0;
     m_usbVolumeGeneration = generation;
     m_storageMounts = std::move(mounts);
     m_storageLabels.clear();
@@ -2465,6 +2570,7 @@ void BrowserScreen::update(double deltaMs) {
 
     refreshFolderShortcuts();
     refreshStorageSources();
+    refreshStorageSpace(deltaMs);
 
     if (m_pendingFolderFavorite >= 0) {
         const int index = m_pendingFolderFavorite;
@@ -2575,6 +2681,7 @@ void BrowserScreen::update(double deltaMs) {
     if (transferService && m_showTransferDialog && !transferService->isBusy()) {
         TransferProgress prog = transferService->getProgress();
         if (prog.status == TransferStatus::Completed) {
+            m_storageSpaceRefreshMs = 0;
             m_showTransferDialog = false;
             if (!m_pendingForgetPath.empty()) {
                 /* #233: a deleted file must not stay in Recent / Jump back in. */
@@ -2808,6 +2915,15 @@ void BrowserScreen::render(uint32_t* framebuffer, int width, int height) {
                                                              : labels[builtins[storage - driveCount] - 1];
             params.source_icons[row] = storage < driveCount ? "../icons/icon_browse_usb.png"
                                                             : icons[builtins[storage - driveCount] - 1];
+            const char* disk = storage < driveCount ? m_storageMounts[storage].c_str()
+                : (builtins[storage - driveCount] == 1 ? "/data" : nullptr);
+            if (disk && m_storageSpace) {
+                const auto reading = m_storageSpace->readings.find(disk);
+                if (reading != m_storageSpace->readings.end()) {
+                    params.source_space_labels[row] = reading->second.label.c_str();
+                    params.source_used_fractions[row] = reading->second.usedFraction;
+                }
+            }
         }
     }
     if (shortcutCount > firstSource && shortcutCount < firstSource + params.source_count)

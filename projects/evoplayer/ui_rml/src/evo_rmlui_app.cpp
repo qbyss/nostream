@@ -1431,6 +1431,18 @@ void EvoRmlApp::UpdateBrowserState(const EvoBrowserState& state) {
             icon->SetAttribute("src", iconPath);
             SetImageColor(icon, focused || active ? accent : text_3);
         }
+        const auto& [space, usedFraction] = state.source_space[i];
+        item->SetClass("sb-item-with-space", !space.empty());
+        if (auto* text = el("sb-space-" + n)) {
+            text->SetProperty("display", space.empty() ? "none" : "block");
+            text->SetInnerRML(space);
+        }
+        if (auto* track = el("sb-space-track-" + n))
+            track->SetProperty("display", space.empty() || usedFraction < 0.0f ? "none" : "block");
+        if (auto* fill = el("sb-space-fill-" + n)) {
+            fill->SetProperty("width", evo_fmt("%.2f%%", std::clamp(usedFraction, 0.0f, 1.0f) * 100.0f));
+            fill->SetProperty("background-color", accent);
+        }
     }
 
     /* 3. Empty State & Media Grid Cards */

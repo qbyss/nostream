@@ -37,6 +37,7 @@
 #define MAX_DEPTH    32          /* index tree depth / path components */
 #define ROOT_RECORD  5
 #define VOLUME_RECORD 3
+#define BITMAP_RECORD 6
 
 enum {
     AT_ATTRIBUTE_LIST = 0x20, AT_FILE_NAME = 0x30, AT_VOLUME_NAME = 0x60, AT_DATA = 0x80,
@@ -90,8 +91,6 @@ static void runs_sort(runs_t *rs)
  */
 typedef struct { int fd, sock; } rawdev_t;
 
-#define HELPER_PORT 9796          /* MOUNTS protocol, separate from the legacy helper on 9786 */
-
 static int sock_all(int s, void *p, size_t n, int out)
 {
     uint8_t *b = (uint8_t *)p;
@@ -133,7 +132,7 @@ static int rawdev_open(const char *dev, int remote, rawdev_t *d)
         d->fd = open(dev, O_RDONLY);
         return d->fd >= 0 ? 0 : -1;
     }
-    d->sock = loopback_connect(HELPER_PORT);
+    d->sock = loopback_connect(EVO_NTFS_HELPER_PORT);
     if (d->sock < 0) return -1;
     char line[64];
     const int n = snprintf(line, sizeof line, "OPEN %s\n", dev);
@@ -186,6 +185,7 @@ typedef struct ntfs_vol {
     uint64_t base;               /* volume start inside the device */
     uint8_t serial[8];
     uint32_t cluster, rec_size;
+    uint64_t cluster_count;
     runs_t mft;
     pthread_mutex_t io;
     uint8_t *bounce;
@@ -865,6 +865,57 @@ int evo_ntfs_stat(const char *url, int *is_dir, uint64_t *size)
     return 0;
 }
 
+int evo_ntfs_space(const char *url, uint64_t *total, uint64_t *available)
+{
+    const char *path;
+    ntfs_vol_t *v = vol_of(url, &path);
+    if (!v) return -1;
+
+    // Each set bit in $Bitmap marks one occupied cluster. Ignore trailing padding.
+    const uint64_t clusters = v->cluster_count;
+    const uint64_t bytes = clusters / 8 + (clusters % 8 != 0);
+    attr_t bitmap = {0};
+    uint8_t *buf = NULL;
+    uint64_t used = 0;
+    int rc = -1;
+    const size_t chunk_size = 64 * 1024;
+    if (!clusters || clusters > UINT64_MAX / v->cluster ||
+        load_attr(v, BITMAP_RECORD, AT_DATA, NULL, &bitmap) != 0 ||
+        !bitmap.found || bitmap.init_size < bytes ||
+        (bitmap.flags & (ATTR_COMPRESSED | ATTR_ENCRYPTED)))
+        goto out;
+
+    buf = (uint8_t *)malloc(chunk_size);
+    if (!buf) goto out;
+
+    int hint = 0;
+    for (uint64_t offset = 0; offset < bytes;) {
+        const size_t count = bytes - offset < chunk_size ? (size_t)(bytes - offset) : chunk_size;
+        const uint8_t *chunk = buf;
+        if (bitmap.resident) {
+            chunk = bitmap.res + offset;
+        } else if (runs_read(v, &bitmap.runs, offset, buf, count, &hint) != 0) {
+            goto out;
+        }
+        const unsigned tail_bits = (offset + count == bytes) ? (unsigned)(clusters % 8) : 0;
+        const size_t full_count = count - (tail_bits != 0);
+        for (size_t i = 0; i < full_count; ++i)
+            used += (unsigned)__builtin_popcount((unsigned)chunk[i]);
+        if (tail_bits)
+            used += (unsigned)__builtin_popcount(chunk[full_count] & ((1u << tail_bits) - 1));
+        offset += count;
+    }
+
+    *total = clusters * v->cluster;
+    *available = (clusters - used) * v->cluster;
+    rc = 0;
+out:
+    free(buf);
+    attr_free(&bitmap);
+    vol_put(v);
+    return rc;
+}
+
 /* ---- finding volumes ---- */
 
 /* One aligned 4 KiB block of a device into buf. */
@@ -1147,7 +1198,7 @@ static void refresh_mounted_usb(void)
     static time_t last;
     const time_t now = time(NULL);
     if (now >= last && now - last < 3) return;
-    const int sock = loopback_connect(HELPER_PORT);
+    const int sock = loopback_connect(EVO_NTFS_HELPER_PORT);
     if (sock < 0) return;
     char line[512];
     const int ok = sock_all(sock, "MOUNTS\n", 7, 1) == 0 && recv_line(sock, line, sizeof line) == 0;
@@ -1197,7 +1248,7 @@ static void refresh_mounted_usb(void)
 
 /* An NTFS boot sector at `base`: fills the geometry. */
 static int probe_boot(rawdev_t *fd, uint64_t base, uint8_t *tmp, uint32_t *cluster, uint32_t *rec,
-                      uint64_t *mft_lcn, uint8_t serial[8])
+                      uint64_t *mft_lcn, uint64_t *cluster_count, uint8_t serial[8])
 {
     uint8_t b[512];
     if (raw_sector(fd, base, b, tmp) != 0) return -1;
@@ -1213,6 +1264,7 @@ static int probe_boot(rawdev_t *fd, uint64_t base, uint8_t *tmp, uint32_t *clust
     *cluster = (uint32_t)cl;
     *rec = (uint32_t)rs;
     *mft_lcn = rd64(b + 0x30);
+    if (cluster_count) *cluster_count = rd64(b + 0x28) / spcv;
     memcpy(serial, b + 0x48, 8);
     return 0;
 }
@@ -1234,7 +1286,7 @@ static ntfs_vol_t *mount_volume(const char *dev, int remote, uint64_t base, cons
     uint64_t mft_lcn = 0;
     uint8_t *rec = NULL;
     if (opened != 0 || !v->bounce ||
-        probe_boot(&v->raw, base, v->bounce, &v->cluster, &v->rec_size, &mft_lcn, v->serial) != 0)
+        probe_boot(&v->raw, base, v->bounce, &v->cluster, &v->rec_size, &mft_lcn, &v->cluster_count, v->serial) != 0)
         goto fail;
 
     /* $MFT's own runs: record 0 sits at the MFT start; its $DATA maps the rest. */
@@ -1307,7 +1359,7 @@ static int add_device_disk(const char *path, const char *name, int disk, int rem
     char vname[24];
     if (!tmp || raw_sector(fd, 0, s0, tmp) != 0) goto done;
 
-    if (probe_boot(fd, 0, tmp, &cl, &rs, &lcn, ser) == 0) {   /* a volume on the whole disk */
+    if (probe_boot(fd, 0, tmp, &cl, &rs, &lcn, NULL, ser) == 0) {   /* a volume on the whole disk */
         ntfs_vol_t *v = mount_volume(path, remote, 0, name, disk);
         if (v) added += add_vol(v);
         goto done;
@@ -1319,7 +1371,7 @@ static int add_device_disk(const char *path, const char *name, int disk, int rem
         if (e[4] == 0xEE) gpt = 1;
         if (e[4] != 0x07) continue;   /* NTFS / exFAT: the boot sector says which */
         const uint64_t base = (uint64_t)rd32(e + 8) * 512;
-        if (probe_boot(fd, base, tmp, &cl, &rs, &lcn, ser) != 0) continue;
+        if (probe_boot(fd, base, tmp, &cl, &rs, &lcn, NULL, ser) != 0) continue;
         snprintf(vname, sizeof vname, "%sp%d", name, i + 1);
         ntfs_vol_t *v = mount_volume(path, remote, base, vname, disk);
         if (v) added += add_vol(v);
@@ -1345,7 +1397,7 @@ static int add_device_disk(const char *path, const char *name, int disk, int rem
                 for (int j = 0; j < 16; ++j) used |= e[j];
                 if (!used) continue;
                 const uint64_t base = rd64(e + 32) * lb;
-                if (probe_boot(fd, base, tmp, &cl, &rs, &lcn, ser) != 0) continue;
+                if (probe_boot(fd, base, tmp, &cl, &rs, &lcn, NULL, ser) != 0) continue;
                 snprintf(vname, sizeof vname, "%sp%u", name, i + 1);
                 ntfs_vol_t *v = mount_volume(path, remote, base, vname, disk);
                 if (v) added += add_vol(v);
@@ -1449,11 +1501,35 @@ static int helper_start(void)
 
 static int helper_list(char *out, size_t cap)
 {
-    int s = loopback_connect(HELPER_PORT);
+    int s = loopback_connect(EVO_NTFS_HELPER_PORT);
     if (s < 0) return -1;
     const int rc = (sock_all(s, "LIST\n", 5, 1) == 0 && recv_line(s, out, cap) == 0) ? 0 : -1;
     close(s);
     return rc;
+}
+
+int evo_mounted_storage_space(const char *path, uint64_t *total, uint64_t *available)
+{
+    int s = loopback_connect(EVO_NTFS_HELPER_PORT);
+    if (s < 0) {
+        evo_ntfs_refresh_async();
+        return -1;
+    }
+
+    char request[32], reply[64];
+    const int n = snprintf(request, sizeof request, "SPACE %s\n", path);
+    const int ok = n > 0 && (size_t)n < sizeof request &&
+        sock_all(s, request, (size_t)n, 1) == 0 && recv_line(s, reply, sizeof reply) == 0;
+    close(s);
+
+    unsigned long long capacity, free_bytes;
+    char trailing;
+    if (!ok || sscanf(reply, "OK %llu %llu%c", &capacity, &free_bytes, &trailing) != 2 ||
+        capacity == 0 || free_bytes > capacity)
+        return -1;
+    *total = (uint64_t)capacity;
+    *available = (uint64_t)free_bytes;
+    return 0;
 }
 
 /* The USB devices EVO can see (ugen nodes): plugging or pulling a drive

@@ -86,6 +86,18 @@ void evo_ntfs_closedir(evo_ntfs_dir_t *d);
 /* 0 and fills what exists; -1 when the path is not there. */
 int evo_ntfs_stat(const char *url, int *is_dir, uint64_t *size);
 
+/* Reads the volume allocation bitmap. May block on the drive, so call from a worker.
+ * Returns 0 with allocated capacity and available bytes, or -1 on failure. */
+int evo_ntfs_space(const char *url, uint64_t *total, uint64_t *available);
+
+/* Loopback disk helper protocol. This port includes the mounted-space request. */
+#define EVO_NTFS_HELPER_PORT 9797
+
+#ifdef EVO_APP_MODULE
+/* Capacity for /data or a mounted USB or extended storage root. Worker only. */
+int evo_mounted_storage_space(const char *path, uint64_t *total, uint64_t *available);
+#endif
+
 /* Files. read returns the bytes read (0 at the end) or -1. */
 typedef struct evo_ntfs_file evo_ntfs_file_t;
 evo_ntfs_file_t *evo_ntfs_open(const char *url);

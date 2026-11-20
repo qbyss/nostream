@@ -259,6 +259,39 @@ div, span, p {
     letter-spacing: 0.8dp;
 }
 
+.sb-item-with-space {
+    height: 58dp;
+}
+
+.sb-item-body {
+    display: flex;
+    flex-direction: column;
+    width: 180dp;
+    min-width: 0;
+}
+
+.sb-space-track {
+    display: none;
+    width: 100%;
+    height: 4dp;
+    margin-top: 4dp;
+    border-radius: 2dp;
+    background-color: #7897c34d;
+}
+
+.sb-space-fill {
+    width: 0;
+    height: 4dp;
+    border-radius: 2dp;
+}
+
+.sb-space-label {
+    display: none;
+    font-size: 11dp;
+    color: #bacbdf;
+    margin-top: 3dp;
+}
+
 .sb-item-active .sb-label {
     color: #ffffff;
 }

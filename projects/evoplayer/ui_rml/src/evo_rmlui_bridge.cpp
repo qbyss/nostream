@@ -197,9 +197,11 @@ void evo_rmlui_update_browser(const evo_rmlui_browser_params_t* p) {
     state.sidebar_index = p->sidebar_index;
     state.source_divider_before = p->source_divider_before;
     state.active_source = p->active_source;
-    state.sources.clear();
-    for (int i = 0; i < p->source_count && i < EVO_RMLUI_BROWSER_SOURCES; ++i)
+    for (int i = 0; i < p->source_count && i < EVO_RMLUI_BROWSER_SOURCES; ++i) {
         state.sources.emplace_back(p->source_labels[i], p->source_icons[i]);
+        state.source_space.emplace_back(p->source_space_labels[i] ? p->source_space_labels[i] : "",
+                                        p->source_used_fractions[i]);
+    }
     state.filter_focused = (p->filter_focused != 0);
     state.filter_selected = p->filter_selected;
     state.filter_labels.clear();

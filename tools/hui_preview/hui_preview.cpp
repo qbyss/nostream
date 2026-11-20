@@ -238,7 +238,7 @@ int main(int argc, char **argv)
 
     evo_rmlui_launch_params_t launch{};
     launch.app_name = "NOSTREAM";
-    launch.version = "VERSION 0.3.0";
+    launch.version = "VERSION 0.4.0";
     launch.clock = "21:47";
     launch.theme_name = "MIDNIGHT";
     launch.hero_eyebrow = "CONTINUE WATCHING";
@@ -294,6 +294,21 @@ int main(int argc, char **argv)
     bp.title = "USB Drive";
     bp.active_source = 0;
     bp.sidebar_index = 0;
+    bp.source_count = 5;
+    bp.source_labels[0] = "USB Drive";
+    bp.source_icons[0] = "../icons/icon_browse_usb.png";
+    bp.source_space_labels[0] = "186.2 GiB free";
+    bp.source_used_fractions[0] = 0.6f;
+    bp.source_labels[1] = "Internal Storage";
+    bp.source_icons[1] = "../icons/icon_folder.png";
+    bp.source_space_labels[1] = "421.8 GiB free";
+    bp.source_used_fractions[1] = 0.35f;
+    bp.source_labels[2] = "Network Storage";
+    bp.source_icons[2] = "../icons/icon_network_storage.png";
+    bp.source_labels[3] = "Favorites";
+    bp.source_icons[3] = "../icons/icon_favorites.png";
+    bp.source_labels[4] = "Recent Media";
+    bp.source_icons[4] = "../icons/icon_recent_files.png";
     bp.filter_count = 3;
     bp.filter_selected = 0;
     bp.filter_labels[0] = "All";
@@ -807,7 +822,7 @@ int main(int argc, char **argv)
         {"settings_pv_quit", 3, [&] { clear_focus(); fill_settings_pv_fixture(sp, "quit"); }},
         {"settings_pv_web", 3, [&] { clear_focus(); fill_settings_pv_fixture(sp, "web"); }},
         {"browser", 2, [&] { clear_focus(); bp.rows[3].is_focused = 1; bp.cursor_index = 3; }},
-        {"browser_sources", 2, [&] { clear_focus(); bp.sidebar_focused = 1; bp.sidebar_index = 3; }},
+        {"browser_sources", 2, [&] { clear_focus(); bp.sidebar_focused = 1; bp.sidebar_index = 1; }},
         {"browser_menu", 2, [&] { clear_focus(); bp.rows[3].is_focused = 1; bp.cursor_index = 3;
                                    bp.action_menu_open = 1; bp.action_menu_focused = 3; }},
         {"browser_transfer", 2, [&] { clear_focus(); bp.rows[3].is_focused = 1; bp.cursor_index = 3;

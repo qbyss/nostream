@@ -507,6 +507,8 @@ typedef struct {
     int         source_divider_before; /* visible row index, or 0 for no divider */
     const char* source_labels[EVO_RMLUI_BROWSER_SOURCES];
     const char* source_icons[EVO_RMLUI_BROWSER_SOURCES];
+    const char* source_space_labels[EVO_RMLUI_BROWSER_SOURCES];
+    float       source_used_fractions[EVO_RMLUI_BROWSER_SOURCES]; /* negative means unavailable */
 
     /* Folder filter chips. Only the chips this folder earned are sent:
      * "All" plus one per category actually present, so an empty list means
@@ -891,7 +893,7 @@ void evo_rmlui_render_settings(uint32_t* framebuffer, int width, int height);
 /* About & Support Screen API */
 typedef struct {
     const char* app_name;        /* "NoStream" */
-    const char* version;         /* "v0.3.0" */
+    const char* version;         /* "v0.4.0" */
     const char* build_tag;       /* "PS5 HOMEBREW" */
     const char* tagline;         /* "CINEMATIC MEDIA PLAYER FOR PLAYSTATION 5 HOMEBREW" */
     const char* themes_info;     /* "X AVAILABLE - DROP .THEME FILES ON USB0" */

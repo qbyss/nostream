@@ -43,7 +43,13 @@ class BrowserScreen
     evo_rmlui_browser_params_t raw_{}; /* ints only; strings live below */
     std::string path_, title_;
     std::vector<std::string> chips_;
-    std::vector<std::pair<std::string, std::string>> sources_;
+    struct Source {
+        std::string label;
+        std::string icon;
+        std::string space;
+        float used_fraction;
+    };
+    std::vector<Source> sources_;
     std::vector<Card> cards_;
     std::string empty_title_, empty_hint_;
     std::string loading_text_;

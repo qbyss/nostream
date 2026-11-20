@@ -9,6 +9,9 @@
  *
  * Protocol on 127.0.0.1:EVO_NTFS_HELPER_PORT, one request per connection:
  *   "LIST\n"     -> "da1 da2\n"   whole USB disks (daN), then close
+ *   "MOUNTS\n"   -> USB mount slots and their backing devices
+ *   "SPACE /data\n" (or a media mount root) -> "OK <total> <available>\n"
+ *        or "ERR <errno>\n", then close. The values are bytes.
  *   "OPEN daN\n" -> "OK\n" or "ERR <errno>\n"; then any number of reads:
  *        request  u64 offset, u32 length (little-endian, 4 KiB aligned,
  *                 length <= 1 MiB + 4 KiB)
@@ -19,6 +22,8 @@
  * itself 30 s after its last client is gone, so it does not outlive EVO.
  * Built by tools/gen_ntfs_helper.sh and embedded in EVO.
  */
+#include "../include/evo_ntfs.h"
+
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -35,9 +40,6 @@
 #include <time.h>
 #include <unistd.h>
 
-#ifndef EVO_NTFS_HELPER_PORT
-#define EVO_NTFS_HELPER_PORT 9796
-#endif
 #define MAX_READ  ((1u << 20) + 4096u)
 #define IDLE_EXIT_SECS 30
 
@@ -152,6 +154,37 @@ static void do_mounts(int s)
     send_all(s, out, used);
 }
 
+static void do_space(int s, const char *path)
+{
+    const int internal = strcmp(path, "/data") == 0;
+    const int usb = strncmp(path, "/mnt/usb", 8) == 0 &&
+        path[8] >= '0' && path[8] <= '7' && path[9] == 0;
+    const int extended = strcmp(path, "/mnt/ext0") == 0 || strcmp(path, "/mnt/ext1") == 0;
+    struct statfs fs;
+    int error = 0;
+    if (!internal && !usb && !extended)
+        error = EINVAL;
+    else if (statfs(path, &fs) != 0)
+        error = EIO;
+    else if (!internal && strcmp(path, fs.f_mntonname) != 0)
+        error = ENOENT;  /* A vacant USB mount can resolve to its parent filesystem. */
+    else if (!fs.f_bsize || !fs.f_blocks || fs.f_blocks > UINT64_MAX / fs.f_bsize)
+        error = EIO;
+
+    char reply[64];
+    int n;
+    if (error) {
+        n = snprintf(reply, sizeof reply, "ERR %d\n", error);
+    } else {
+        uint64_t available = fs.f_bavail > 0 ? (uint64_t)fs.f_bavail : 0;
+        if (available > fs.f_blocks) available = fs.f_blocks;
+        n = snprintf(reply, sizeof reply, "OK %llu %llu\n",
+                     (unsigned long long)(fs.f_blocks * fs.f_bsize),
+                     (unsigned long long)(available * fs.f_bsize));
+    }
+    if (n > 0 && (size_t)n < sizeof reply) send_all(s, reply, (size_t)n);
+}
+
 static void do_open(int s, const char *name)
 {
     char path[64], reply[32];
@@ -204,6 +237,7 @@ static void *client(void *arg)
     if (read_line(s, line, sizeof line) == 0) {
         if (!strcmp(line, "LIST")) do_list(s);
         else if (!strcmp(line, "MOUNTS")) do_mounts(s);
+        else if (!strncmp(line, "SPACE ", 6)) do_space(s, line + 6);
         else if (!strncmp(line, "OPEN ", 5)) do_open(s, line + 5);
     }
     close(s);
