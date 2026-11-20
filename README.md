@@ -20,7 +20,7 @@ NoStream is a fork of [EVO Player](https://github.com/sainsaji/EVO-PLAYER-PS5), 
 - **Favorite folders in the sidebar:** Options on a USB folder → **Add to Favorites** adds a shortcut to the sidebar. USB favorites follow the drive by its volume serial, even when its mount number changes, and come back at startup.
 - **Thumbnails survive restarts:** local thumbnails are cached in `/data/nostream/thumbnails` (up to 256 MB).
 - **Three rows in the storage browser**, and no rotating tips on Home.
-- **Scheduled Night Shift:** in **Settings → Video & Display**, enable Night Shift and pick a start and stop hour using the PS5’s local clock. NoStream warms its menus during the first 30 minutes and returns to normal over the last 30 minutes. True HDR output keeps its original colors.
+- **Scheduled Night Shift:** in **Settings → Video & Display**, enable Night Shift and pick a start and stop hour using the PS5’s local clock. NoStream warms its menus and SDR video during the first 30 minutes and returns to normal over the last 30 minutes. True HDR output keeps its original colors.
 
 ---
 

@@ -3320,6 +3320,11 @@ void evo_agc_runtime_apply_night_shift(void)
     if (draw_screen_quad(g_agc_dev.width, g_agc_dev.height, white.gpu_addr, 1, 1, 256,
                          g_agc_dev.night_shift_rgb, EVO_AGC_BLEND_MULTIPLY)) {
         g_agc_dev.applied_night_shift[buffer] = g_agc_dev.night_shift_rgb;
+        static int playback_logged;
+        if (g_agc_dev.is_player_mode && !playback_logged) {
+            playback_logged = 1;
+            EVO_LOGI("agc", "Night Shift playback pass queued (SDR)");
+        }
     }
 }
 

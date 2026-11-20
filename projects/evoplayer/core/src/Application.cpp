@@ -1588,7 +1588,9 @@ int Application::run() {
 
         const auto nightShift = m_settingsService ? m_settingsService->getNightShiftSchedule() : NightShiftSchedule{};
         float warmth = 0.0f;
-        if (!isPlayer && nightShift.enabled) {
+        // Ordinary playback always records sweep statistics. Only an explicit
+        // developer color comparison should suppress the scheduled filter.
+        if (nightShift.enabled && !(isPlayer && s_upcmp.state != 0)) {
             static time_t sampledTime = static_cast<time_t>(-1);
             static int localSecond = -1;
             const time_t now = time(nullptr);
@@ -1700,7 +1702,9 @@ int Application::run() {
 
             bool smoothing_active = evo_agc_motion_smoothing_is_active() && !is_paused && !is_scrubbing && !g_pp_pb.seek_discarding;
 
-            bool should_render = wasOledBlank || (have && new_frame) || buffer_stale || overlay_active ||
+            bool should_render = wasOledBlank || nightShiftChanged ||
+                (warmth > 0.0f && (evo_keyboard_is_open() || m_keyboardDrawn)) ||
+                (have && new_frame) || buffer_stale || overlay_active ||
                 is_paused || is_scrubbing || toast_visible || g_pp_pb.seek_discarding || (have && smoothing_active);
 
             /* #103 `upcompare`: capture what the previous iteration presented,

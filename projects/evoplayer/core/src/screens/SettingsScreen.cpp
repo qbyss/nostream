@@ -419,7 +419,7 @@ SettingDef makeDef(SettingKey key, ISettingsService* settings) {
         break;
 
     case SettingKey::NightShift:
-        d = toggleDef(key, "NIGHT SHIFT", "GRADUALLY WARMS NOSTREAM MENUS",
+        d = toggleDef(key, "NIGHT SHIFT", "GRADUALLY WARMS MENUS AND SDR VIDEO",
                       "../icons/icon_sun_medium.png", settings->getNightShiftSchedule().enabled);
         break;
 
@@ -976,7 +976,7 @@ int fillSection(int section, int expanded, int cursor, evo_rmlui_settings_params
                           schedule.stopMinute / 60, schedule.stopMinute % 60);
             row.preview = EVO_RMLUI_PREVIEW_NIGHT_SHIFT;
             row.preview_index = schedule.enabled ? 1 : 0;
-            row.benefit = "Warms menus over 30 minutes at each end of the schedule.";
+            row.benefit = "Warms SDR output over 30 minutes at each end of the schedule. HDR keeps its original colors.";
             row.choice_count = 1;
             row.choice[0] = hours;
         }
