@@ -460,6 +460,7 @@ extern "C" void test_settings_legacy_compat(void)
     TEST_ASSERT(svc45.isCastNativePlayerEnabled() == false, "45-line legacy castNativePlayer mismatch");
     TEST_ASSERT(svc45.getSecondarySubtitleSize() == 1, "Missing 46th line must keep default MEDIUM (1)");
     TEST_ASSERT(svc45.getSecondarySubtitleBackground() == 0, "Missing 47th line must keep default BOX (0)");
+    TEST_ASSERT(!svc45.getNightShiftSchedule().enabled, "Legacy settings must leave Night Shift off");
     TEST_ASSERT(svc45.getOledScreenSaverMinutes() == 0, "Legacy settings must leave the OLED screen saver disabled");
 
     TEST_PASS();
@@ -477,5 +478,32 @@ extern "C" void test_settings_oled_screen_saver(void) {
         TEST_ASSERT(reloaded.loadSettings(), "OLED timeout load failed");
         TEST_ASSERT(reloaded.getOledScreenSaverMinutes() == minutes, "OLED timeout did not round-trip");
     }
+    TEST_PASS();
+}
+
+extern "C" void test_settings_night_shift(void) {
+    TEST_START("Settings: Night Shift schedule and persistence");
+    using evo::NightShiftSchedule;
+    evo::SettingsService settings;
+    TEST_ASSERT(!settings.getNightShiftSchedule().enabled, "Night Shift should default to off");
+
+    const NightShiftSchedule overnight{true, 22 * 60, 7 * 60};
+    TEST_ASSERT(overnight.warmth(22 * 3600) == 0.0f, "Warmth begins at zero");
+    TEST_ASSERT(overnight.warmth(22 * 3600 + 900) == 0.5f, "Warmth ramps in");
+    TEST_ASSERT(overnight.warmth(0) == 1.0f, "An overnight schedule covers midnight");
+    TEST_ASSERT(overnight.warmth(7 * 3600 - 900) == 0.5f, "Warmth ramps out");
+    TEST_ASSERT(overnight.warmth(7 * 3600) == 0.0f, "Warmth ends at zero");
+    const NightShiftSchedule brief{true, 12 * 60, 12 * 60 + 10};
+    TEST_ASSERT(brief.warmth(12 * 3600 - 1) == 0.0f, "Same-day schedule excludes earlier times");
+    TEST_ASSERT(brief.warmth(12 * 3600 + 300) == 1.0f, "Short ramps meet in the middle");
+    TEST_ASSERT(brief.warmth(12 * 3600 + 600) == 0.0f, "Same-day schedule ends on time");
+    settings.setNightShiftSchedule(overnight);
+    settings.setNightShiftSchedule({true, 600, 600});
+    TEST_ASSERT(settings.saveSettings(), "Night Shift save failed");
+    evo::SettingsService reloaded;
+    TEST_ASSERT(reloaded.loadSettings(), "Night Shift load failed");
+    const auto saved = reloaded.getNightShiftSchedule();
+    TEST_ASSERT(saved.enabled && saved.startMinute == overnight.startMinute && saved.stopMinute == overnight.stopMinute,
+                "Invalid edit must preserve the saved overnight schedule");
     TEST_PASS();
 }

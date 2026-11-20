@@ -285,6 +285,9 @@ int evo_agc_writer_set_blend(SceAgcCommandBuffer *cb, SceAgcRegister *gpu_regs, 
     case EVO_AGC_BLEND_PREMULTIPLIED:
         blend_ctrl = UINT32_C(0x40000501); /* ONE, ONE_MINUS_SRC_ALPHA */
         break;
+    case EVO_AGC_BLEND_MULTIPLY:
+        blend_ctrl = UINT32_C(0x40000200); /* ZERO, SRC_COLOR */
+        break;
     case EVO_AGC_BLEND_ADDITIVE:
         blend_ctrl = UINT32_C(0x40000101); /* ONE, ONE */
         break;
@@ -295,7 +298,7 @@ int evo_agc_writer_set_blend(SceAgcCommandBuffer *cb, SceAgcRegister *gpu_regs, 
     }
 
     gpu_regs[0] = (SceAgcRegister){0x01e0, blend_ctrl};
-    gpu_regs[1] = (SceAgcRegister){0x008e, UINT32_C(0x0000000f)}; /* Target mask RGBA */
+    gpu_regs[1] = (SceAgcRegister){0x008e, blend_mode == EVO_AGC_BLEND_MULTIPLY ? 0x7u : 0xfu}; /* Preserve alpha in multiply pass. */
 
     sceAgcDcbSetCxRegistersIndirect(cb, gpu_regs, 2);
     return 0;

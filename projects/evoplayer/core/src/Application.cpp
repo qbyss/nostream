@@ -1586,9 +1586,25 @@ int Application::run() {
             continue;
         }
 
+        const auto nightShift = m_settingsService ? m_settingsService->getNightShiftSchedule() : NightShiftSchedule{};
+        float warmth = 0.0f;
+        if (!isPlayer && nightShift.enabled) {
+            static time_t sampledTime = static_cast<time_t>(-1);
+            static int localSecond = -1;
+            const time_t now = time(nullptr);
+            if (now != sampledTime) {
+                sampledTime = now;
+                struct tm local{};
+                localSecond = now != static_cast<time_t>(-1) && localtime_r(&now, &local)
+                    ? local.tm_hour * 3600 + local.tm_min * 60 + local.tm_sec : -1;
+            }
+            warmth = nightShift.warmth(localSecond);
+        }
+        const bool nightShiftChanged = evo_agc_runtime_set_night_shift(warmth);
+
         bool hasAnim = evo::animation::AnimationManager::getInstance().hasActiveAnimations();
         int uiActive = (frame < 10) || isPlayer || isSurround || hasInput || hasAnim ||
-                       wasOledBlank || evo_rmlui_needs_frame() || (jb_repaint > 0);
+                       wasOledBlank || nightShiftChanged || evo_rmlui_needs_frame() || (jb_repaint > 0);
         if (jb_repaint > 0) jb_repaint--;
         evo_rmlui_set_active(uiActive);
 
@@ -1912,6 +1928,7 @@ int Application::run() {
                 evo_boot_log_flush();
             }
             g_pace.mark(5);   /* draw: blit, UI, toast, keyboard */
+            evo_agc_runtime_apply_night_shift();
             const auto present_t0 = PaceTrace::clk::now();
             evo_agc_runtime_present();
             g_pace.mark(6);   /* present, incl. the flip wait */

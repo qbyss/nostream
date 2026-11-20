@@ -87,6 +87,11 @@ public:
     void setRefreshRateMode(RefreshRateMode mode) override { m_refreshRateMode = mode; }
     const char* getRefreshRateModeName(RefreshRateMode mode) const override;
 
+    NightShiftSchedule getNightShiftSchedule() const override { return m_nightShift; }
+    void setNightShiftSchedule(NightShiftSchedule schedule) override {
+        if (schedule.valid()) m_nightShift = schedule;
+    }
+
     int getOledScreenSaverMinutes() const override { return m_oledScreenSaverMinutes; }
     void setOledScreenSaverMinutes(int minutes) override {
         m_oledScreenSaverMinutes = (minutes >= 1 && minutes <= 5) ? minutes : 0;
@@ -175,6 +180,7 @@ private:
     MotionSmoothing m_motionSmoothing = MotionSmoothing::Off;
     DeepBlacks m_deepBlacks = DeepBlacks::Off;
     RefreshRateMode m_refreshRateMode = RefreshRateMode::Off;
+    NightShiftSchedule m_nightShift;
     int m_oledScreenSaverMinutes = 0;
     HdrOutputMode m_hdrOutputMode = HdrOutputMode::Auto;
     AudioOutputChannels m_audioOutputChannels = AudioOutputChannels::Auto;

@@ -143,7 +143,7 @@ void SettingsScreen::detect_preview()
     preview_.kind = f.preview;
     preview_.index = f.preview_index;
     preview_.toggle = rows_[owner].kind == EVO_RMLUI_ROW_TOGGLE;
-    preview_.title = rows_[owner].title;
+    preview_.title = f.preview == EVO_RMLUI_PREVIEW_NIGHT_SHIFT ? "NIGHT SHIFT" : rows_[owner].title;
     preview_.icon = rows_[owner].icon_path;
     preview_.benefit = f.benefit;
     preview_.detail = rows_[owner].detail;

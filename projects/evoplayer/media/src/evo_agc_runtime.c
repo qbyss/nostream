@@ -297,7 +297,6 @@ typedef struct evo_agc_device {
     uint16_t               *quad_indices;
     uint8_t                *composite_pixels;   /* 256-aligned, pitched */
     uint32_t                composite_pitch;
-    void                   *composite_quad;     /* 4 verts, Rml::Vertex layout */
     uint8_t                *stencil_base;
     uint8_t                *depth_base;
     /* RmlUi layer surfaces (backdrop-filter / filter composition). Each is an
@@ -323,6 +322,8 @@ typedef struct evo_agc_device {
     int                     frame_active;
     /* Whether any draw was emitted into the current frame's DCB. */
     int                     frame_has_draws;
+    uint32_t                night_shift_rgb;
+    uint32_t                applied_night_shift[2];
     /* Health counters. Content silently vanishing as a frame gets busier looks
      * like "a black area creeping across the screen while things load", so each
      * way a draw can be dropped is counted rather than ignored. */
@@ -1076,8 +1077,6 @@ static int evo_agc_apply_render_size(void *agc_defaults, int w, int h)
     g_agc_dev.height = h;
 
     g_agc_dev.composite_pitch = ((uint32_t)w * 4u + 255u) & ~255u;
-    g_agc_dev.composite_quad  = g_agc_dev.composite_pixels +
-        ((((size_t)g_agc_dev.composite_pitch * (size_t)h) + 255u) & ~(size_t)255);
 
     int ct0 = setup_color_target(g_agc_dev.gpu_regs->color_targets[0], agc_defaults,
                                  g_agc_dev.scanout_buffers[0], w, h, 1);
@@ -1196,7 +1195,7 @@ int evo_agc_runtime_init(int width, int height, int hdr)
         g_agc_dev.pipelines[i].uc_regs = g_agc_dev.gpu_regs->pipes[i].uc_regs;
     }
 
-    /* OSD composite staging texture + its quad. 256-byte aligned because a
+    /* OSD composite staging texture. 256-byte aligned because a
      * GFX10 image descriptor stores address>>8. */
     {
         uint8_t *comp = g_agc_dev.direct_mem_base + cur_offset;
@@ -1204,9 +1203,6 @@ int evo_agc_runtime_init(int width, int height, int hdr)
         g_agc_dev.composite_pitch =
             ((uint32_t)g_agc_dev.width * 4u + 255u) & ~255u;
         g_agc_dev.composite_pixels = comp;
-        g_agc_dev.composite_quad = comp +
-            ((size_t)g_agc_dev.composite_pitch * (size_t)g_agc_dev.height + 255u
-             & ~(size_t)255);
         cur_offset += EVO_AGC_COMPOSITE_SIZE;
     }
 
@@ -1810,6 +1806,7 @@ static void agc_frame_begin(int clear_black)
     if (clear_black || !g_agc_dev.is_player_mode ||
         g_agc_dev.ui_dirty[g_agc_dev.active_backbuffer]) {
         g_agc_dev.ui_dirty[g_agc_dev.active_backbuffer] = 0;
+        g_agc_dev.applied_night_shift[g_agc_dev.active_backbuffer] = 0;
         g_agc_dev.video_pts[g_agc_dev.active_backbuffer] = INT64_MIN;
         uint32_t *backbuffer = (uint32_t *)g_agc_dev.scanout_buffers[g_agc_dev.active_backbuffer];
         if (backbuffer) {
@@ -2475,7 +2472,9 @@ int evo_agc_runtime_video_slot_stale(int64_t pts_us)
 {
     if (!g_agc_dev.initialized)
         return 0;
-    return g_agc_dev.video_pts[g_agc_dev.active_backbuffer] != pts_us;
+    const int buffer = g_agc_dev.active_backbuffer;
+    return g_agc_dev.video_pts[buffer] != pts_us ||
+           g_agc_dev.applied_night_shift[buffer] != g_agc_dev.night_shift_rgb;
 }
 
 void evo_agc_runtime_note_video_pts(int64_t pts_us)
@@ -2483,6 +2482,7 @@ void evo_agc_runtime_note_video_pts(int64_t pts_us)
     if (!g_agc_dev.initialized)
         return;
     g_agc_dev.video_pts[g_agc_dev.active_backbuffer] = pts_us;
+    g_agc_dev.applied_night_shift[g_agc_dev.active_backbuffer] = 0;
 }
 
 void evo_agc_runtime_set_player_mode(int is_player)
@@ -3193,6 +3193,80 @@ static int stage_planar_uv_to_rg16(evo_agc_transient_ring_t *ring, uint32_t slot
  * `upload` is main.c's "the OSD actually changed" hint: the 8 MB copy is skipped
  * when it has not, and the previous contents are drawn again.
  */
+static int draw_screen_quad(int w, int h, uint64_t texture, uint32_t tex_w,
+                            uint32_t tex_h, uint32_t pitch, uint32_t color, int blend)
+{
+    evo_agc_transient_ring_t *ring = &g_agc_dev.transient_ring;
+    const uint32_t slot = g_agc_dev.current_slot;
+
+    evo_agc_transient_slice_t vertices, cons, cons_d, vsh, tex_d;
+    if (evo_agc_transient_ring_alloc(ring, slot, 80, 256, &vertices) != EVO_AGC_TRANSIENT_OK ||
+        evo_agc_transient_ring_alloc(ring, slot, 128, 16, &cons) != EVO_AGC_TRANSIENT_OK ||
+        evo_agc_transient_ring_alloc(ring, slot, 16, 16, &cons_d) != EVO_AGC_TRANSIENT_OK ||
+        evo_agc_transient_ring_alloc(ring, slot, 16, 16, &vsh) != EVO_AGC_TRANSIENT_OK ||
+        evo_agc_transient_ring_alloc(ring, slot, 48, 16, &tex_d) != EVO_AGC_TRANSIENT_OK) {
+        g_agc_dev.ring_alloc_fail++;
+        return 0;
+    }
+
+    struct { float x, y; uint32_t rgba; float u, v; } *quad = vertices.cpu;
+    quad[0] = (typeof(*quad)){0.0f,     0.0f,     color, 0.0f, 0.0f};
+    quad[1] = (typeof(*quad)){(float)w, 0.0f,     color, 1.0f, 0.0f};
+    quad[2] = (typeof(*quad)){0.0f,     (float)h, color, 0.0f, 1.0f};
+    quad[3] = (typeof(*quad)){(float)w, (float)h, color, 1.0f, 1.0f};
+
+    float *m = (float *)cons.cpu;                 /* pixel space -> NDC */
+    memset(m, 0, 128);
+    m[0]  =  2.0f / (float)g_agc_dev.width;
+    m[5]  = -2.0f / (float)g_agc_dev.height;
+    m[10] =  1.0f;
+    m[12] = -1.0f;
+    m[13] =  1.0f;
+    m[15] =  1.0f;
+
+    evo_agc_build_constant_vsharp((uint32_t *)cons_d.cpu, cons.gpu_addr, 128);
+    evo_agc_build_vsharp((uint32_t *)vsh.cpu,
+                         vertices.gpu_addr, 20, 4);
+    if (evo_agc_build_tsharp_rgba8((uint32_t *)tex_d.cpu,
+                                   texture,
+                                   tex_w, tex_h, pitch) != 0) {
+        g_agc_dev.tex_alloc_fail++;
+        return 0;
+    }
+    evo_agc_build_ssharp((uint32_t *)tex_d.cpu + 8, 1 /* clamp */, 0 /* point */);
+
+    g_agc_dev.bound_pipeline = -1;                /* video pipeline was bound */
+    evo_agc_runtime_bind_pipeline(EVO_AGC_PIPE_UI);
+    evo_agc_runtime_set_blend(blend);
+    evo_agc_writer_set_scissor(&g_agc_dev.current_cb, alloc_transient_cx(2), 0, 0,
+                               (uint32_t)g_agc_dev.width, (uint32_t)g_agc_dev.height);
+    g_agc_dev.scissor_x = 0;
+    g_agc_dev.scissor_y = 0;
+    g_agc_dev.scissor_w = g_agc_dev.width;
+    g_agc_dev.scissor_h = g_agc_dev.height;
+
+    const evo_agc_user_data_layout_t ud =
+        evo_agc_runtime_get_user_data_layout(EVO_AGC_PIPE_UI);
+    if (!ud.vs_count || ud.vs_const_table_dword < 0 ||
+        ud.vs_vertex_table_dword < 0 || ud.ps_texture_table_dword < 0 ||
+        ud.vs_count > 16 || ud.ps_count > 16)
+        return 0;
+
+    uint32_t vs_user[16] = {0};
+    vs_user[ud.vs_const_table_dword]  = (uint32_t)cons_d.gpu_addr;
+    vs_user[ud.vs_vertex_table_dword] = (uint32_t)vsh.gpu_addr;
+    evo_agc_writer_set_user_data_gs(&g_agc_dev.current_cb, vs_user, ud.vs_count);
+
+    uint32_t ps_user[16] = {0};
+    ps_user[ud.ps_texture_table_dword] = (uint32_t)tex_d.gpu_addr;
+    evo_agc_writer_set_user_data_ps(&g_agc_dev.current_cb, ps_user, ud.ps_count);
+
+    evo_agc_writer_draw_index_modifier(&g_agc_dev.current_cb, 6, g_agc_dev.quad_indices,
+                                      g_agc_dev.pipelines[agc_hdr_remap(EVO_AGC_PIPE_UI)].draw_modifier);
+    evo_agc_runtime_note_draw();
+    return 1;
+}
+
 void evo_agc_composite_bgra(const uint32_t *fb, int w, int h, int upload)
 {
     if (!g_agc_dev.initialized || !fb || w <= 0 || h <= 0 ||
@@ -3208,76 +3282,45 @@ void evo_agc_composite_bgra(const uint32_t *fb, int w, int h, int upload)
                          (size_t)w * 4u, (uint32_t)h);
     }
 
-    evo_agc_transient_ring_t *ring = &g_agc_dev.transient_ring;
-    const uint32_t slot = g_agc_dev.current_slot;
+    draw_screen_quad(w, h, (uint64_t)(uintptr_t)g_agc_dev.composite_pixels,
+                     (uint32_t)w, (uint32_t)h, pitch, 0xffffffffu, EVO_AGC_BLEND_PREMULTIPLIED);
+}
 
-    /* Full-screen quad in pixel space, white vertex colour so the texture
-     * passes through untinted. */
-    struct { float x, y; uint32_t rgba; float u, v; } *quad =
-        (void *)g_agc_dev.composite_quad;
-    quad[0] = (typeof(*quad)){0.0f,        0.0f,        0xffffffffu, 0.0f, 0.0f};
-    quad[1] = (typeof(*quad)){(float)w,    0.0f,        0xffffffffu, 1.0f, 0.0f};
-    quad[2] = (typeof(*quad)){0.0f,        (float)h,    0xffffffffu, 0.0f, 1.0f};
-    quad[3] = (typeof(*quad)){(float)w,    (float)h,    0xffffffffu, 1.0f, 1.0f};
-    evo_agc_runtime_cache_flush(quad, 4 * 20);
+int evo_agc_runtime_set_night_shift(float warmth)
+{
+    if (!g_agc_dev.initialized)
+        return 0;
+    const uint32_t green = (uint32_t)lroundf(255.0f * (1.0f - 0.10f * warmth));
+    const uint32_t blue = (uint32_t)lroundf(255.0f * (1.0f - 0.35f * warmth));
+    g_agc_dev.night_shift_rgb = g_agc_dev.is_hdr || (green == 255 && blue == 255)
+        ? 0 : 0xff0000ffu | (blue << 16) | (green << 8);
+    return g_agc_dev.applied_night_shift[1 - g_agc_dev.active_backbuffer] != g_agc_dev.night_shift_rgb;
+}
 
-    evo_agc_transient_slice_t cons, cons_d, vsh, tex_d;
-    if (evo_agc_transient_ring_alloc(ring, slot, 80, 16, &cons) != EVO_AGC_TRANSIENT_OK ||
-        evo_agc_transient_ring_alloc(ring, slot, 16, 16, &cons_d) != EVO_AGC_TRANSIENT_OK ||
-        evo_agc_transient_ring_alloc(ring, slot, 16, 16, &vsh) != EVO_AGC_TRANSIENT_OK ||
-        evo_agc_transient_ring_alloc(ring, slot, 48, 16, &tex_d) != EVO_AGC_TRANSIENT_OK) {
-        g_agc_dev.ring_alloc_fail++;
+void evo_agc_runtime_apply_night_shift(void)
+{
+    const int buffer = g_agc_dev.active_backbuffer;
+    if (!g_agc_dev.frame_active || !g_agc_dev.frame_has_draws || g_agc_dev.is_hdr ||
+        !g_agc_dev.night_shift_rgb || g_agc_dev.applied_night_shift[buffer])
         return;
+
+    evo_agc_transient_slice_t white;
+    if (evo_agc_transient_ring_alloc(&g_agc_dev.transient_ring, g_agc_dev.current_slot,
+                                     256, 256, &white) != EVO_AGC_TRANSIENT_OK)
+        return;
+    *(uint32_t *)white.cpu = 0xffffffffu;
+    evo_agc_set_layer_target(NULL);
+    evo_agc_runtime_set_clip_mask(0);
+    SceAgcRegister *viewport = alloc_transient_cx(12);
+    if (!viewport)
+        return;
+    evo_agc_writer_set_target(&g_agc_dev.current_cb, g_agc_dev.gpu_regs->color_targets[buffer], 16);
+    evo_agc_writer_set_viewport(&g_agc_dev.current_cb, viewport, 0.0f, 0.0f,
+                                (float)g_agc_dev.width, (float)g_agc_dev.height);
+    if (draw_screen_quad(g_agc_dev.width, g_agc_dev.height, white.gpu_addr, 1, 1, 256,
+                         g_agc_dev.night_shift_rgb, EVO_AGC_BLEND_MULTIPLY)) {
+        g_agc_dev.applied_night_shift[buffer] = g_agc_dev.night_shift_rgb;
     }
-
-    float *m = (float *)cons.cpu;                 /* pixel space -> NDC */
-    memset(m, 0, 80);
-    m[0]  =  2.0f / (float)g_agc_dev.width;
-    m[5]  = -2.0f / (float)g_agc_dev.height;
-    m[10] =  1.0f;
-    m[12] = -1.0f;
-    m[13] =  1.0f;
-    m[15] =  1.0f;
-
-    evo_agc_build_constant_vsharp((uint32_t *)cons_d.cpu, cons.gpu_addr, 80);
-    evo_agc_build_vsharp((uint32_t *)vsh.cpu,
-                         (uint64_t)(uintptr_t)g_agc_dev.composite_quad, 20, 4);
-    if (evo_agc_build_tsharp_rgba8((uint32_t *)tex_d.cpu,
-                                   (uint64_t)(uintptr_t)g_agc_dev.composite_pixels,
-                                   (uint32_t)w, (uint32_t)h, pitch) != 0) {
-        g_agc_dev.tex_alloc_fail++;
-        return;
-    }
-    evo_agc_build_ssharp((uint32_t *)tex_d.cpu + 8, 1 /* clamp */, 0 /* point */);
-
-    g_agc_dev.bound_pipeline = -1;                /* video pipeline was bound */
-    evo_agc_runtime_bind_pipeline(EVO_AGC_PIPE_UI);
-    evo_agc_runtime_set_blend(EVO_AGC_BLEND_PREMULTIPLIED);
-    evo_agc_writer_set_scissor(&g_agc_dev.current_cb, alloc_transient_cx(2), 0, 0,
-                               (uint32_t)g_agc_dev.width, (uint32_t)g_agc_dev.height);
-    g_agc_dev.scissor_x = 0;
-    g_agc_dev.scissor_y = 0;
-    g_agc_dev.scissor_w = g_agc_dev.width;
-    g_agc_dev.scissor_h = g_agc_dev.height;
-
-    const evo_agc_user_data_layout_t ud =
-        evo_agc_runtime_get_user_data_layout(EVO_AGC_PIPE_UI);
-    if (!ud.vs_count || ud.vs_const_table_dword < 0 ||
-        ud.vs_vertex_table_dword < 0 || ud.ps_texture_table_dword < 0 ||
-        ud.vs_count > 16 || ud.ps_count > 16)
-        return;
-
-    uint32_t vs_user[16] = {0};
-    vs_user[ud.vs_const_table_dword]  = (uint32_t)cons_d.gpu_addr;
-    vs_user[ud.vs_vertex_table_dword] = (uint32_t)vsh.gpu_addr;
-    evo_agc_writer_set_user_data_gs(&g_agc_dev.current_cb, vs_user, ud.vs_count);
-
-    uint32_t ps_user[16] = {0};
-    ps_user[ud.ps_texture_table_dword] = (uint32_t)tex_d.gpu_addr;
-    evo_agc_writer_set_user_data_ps(&g_agc_dev.current_cb, ps_user, ud.ps_count);
-
-    evo_agc_writer_draw_index(&g_agc_dev.current_cb, 6, g_agc_dev.quad_indices);
-    evo_agc_runtime_note_draw();
 }
 
 /* =========================================================================

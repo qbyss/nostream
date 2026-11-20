@@ -2768,6 +2768,25 @@ static void draw_quit(DrawList &list, const Context &ctx, const Rect &box, const
     benefit_fit(list, ctx, a, cap_y + 36.0f, pv.benefit);
 }
 
+static void draw_night_shift(DrawList &list, const Context &ctx, const Rect &box,
+                             const SettingsPreview &pv)
+{
+    const Area a = begin_card(list, ctx, box, pv);
+    const float width = (a.w - 32.0f) * 0.5f;
+    const Rect normal{a.x, a.top + 12.0f, width, 118.0f};
+    const Rect warm{normal.x + width + 32.0f, normal.y, width, normal.h};
+    list.gradient_rect(normal, 12.0f, Color::rgb(0xe8f1ff), Color::rgb(0x87a8de));
+    list.gradient_rect(warm, 12.0f, Color::rgb(0xe8d9a6), Color::rgb(0x879790));
+    frame_border(list, ctx, normal, false);
+    frame_border(list, ctx, warm, pv.index != 0);
+    const float y = normal.y + normal.h + 27.0f;
+    ui::text(list, ctx.fonts.semibold, "Normal", normal.cx(), y, 18, kWhite, Align::center);
+    ui::text(list, ctx.fonts.semibold, "Warmer", warm.cx(), y, 18, kWhite, Align::center);
+    if (!pv.choices.empty())
+        caption(list, ctx, a, y + 50.0f, (pv.index ? "Scheduled  " : "Off  ") + pv.choices[0], pv.index != 0);
+    benefit_fit(list, ctx, a, y + 86.0f, pv.benefit);
+}
+
 static void draw_oled_screen_saver(DrawList &list, const Context &ctx, const Rect &box,
                                    const SettingsPreview &pv)
 {
@@ -2959,6 +2978,9 @@ void draw_settings_preview(DrawList &list, const Context &ctx, const Rect &box, 
         break;
     case EVO_RMLUI_PREVIEW_HDR_PEAK:
         draw_hdr_peak(list, ctx, box, pv);
+        break;
+    case EVO_RMLUI_PREVIEW_NIGHT_SHIFT:
+        draw_night_shift(list, ctx, box, pv);
         break;
     case EVO_RMLUI_PREVIEW_OLED_SCREEN_SAVER:
         draw_oled_screen_saver(list, ctx, box, pv);

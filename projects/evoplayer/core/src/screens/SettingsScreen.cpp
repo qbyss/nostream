@@ -30,7 +30,7 @@ namespace evo {
 namespace {
 
 constexpr int kMaxDefs    = 16;
-constexpr int kMaxOptions = 21 > EVO_THEME_MAX ? 21 : EVO_THEME_MAX;
+constexpr int kMaxOptions = 24 > EVO_THEME_MAX ? 24 : EVO_THEME_MAX;
 constexpr int kMaxSlots   = kMaxDefs + kMaxOptions;
 
 /*
@@ -51,6 +51,9 @@ enum class SettingKey : int {
     HdrOutput,
     HdrPeak,
     OledScreenSaver,
+    NightShift,
+    NightShiftStart,
+    NightShiftStop,
     /* AUDIO */
     VolumeBoost,
     AudioDelay,
@@ -220,7 +223,8 @@ const PreviewSpec kPreviews[] = {
 const SettingKey kVideoKeys[] = {
     SettingKey::DefaultAspect, SettingKey::ResumePlayback, SettingKey::SkipSegments, SettingKey::VideoDecoder,
     SettingKey::Upscaling, SettingKey::AiNetwork, SettingKey::RefreshRate,
-    SettingKey::HdrOutput, SettingKey::HdrPeak, SettingKey::OledScreenSaver, SettingKey::NetworkBuffer,
+    SettingKey::HdrOutput, SettingKey::HdrPeak, SettingKey::OledScreenSaver,
+    SettingKey::NightShift, SettingKey::NightShiftStart, SettingKey::NightShiftStop, SettingKey::NetworkBuffer,
 };
 const SettingKey kAudioKeys[] = {
     SettingKey::VolumeBoost, SettingKey::AudioDelay,
@@ -413,6 +417,29 @@ SettingDef makeDef(SettingKey key, ISettingsService* settings) {
                       "24P / 50 HZ OUTPUT DURING PLAYBACK - FALLS BACK TO 120 HZ OR 60 HZ",
                       "../icons/icon_refresh_cw.png", settings->isMatchVideoRateEnabled());
         break;
+
+    case SettingKey::NightShift:
+        d = toggleDef(key, "NIGHT SHIFT", "GRADUALLY WARMS NOSTREAM MENUS",
+                      "../icons/icon_sun_medium.png", settings->getNightShiftSchedule().enabled);
+        break;
+
+    case SettingKey::NightShiftStart:
+    case SettingKey::NightShiftStop: {
+        const bool start = key == SettingKey::NightShiftStart;
+        const auto schedule = settings->getNightShiftSchedule();
+        const int minute = start ? schedule.startMinute : schedule.stopMinute;
+        static constexpr const char* hours[] = {
+            "00:00", "01:00", "02:00", "03:00", "04:00", "05:00",
+            "06:00", "07:00", "08:00", "09:00", "10:00", "11:00",
+            "12:00", "13:00", "14:00", "15:00", "16:00", "17:00",
+            "18:00", "19:00", "20:00", "21:00", "22:00", "23:00",
+        };
+        d = valueDef(key, start ? "START TIME" : "STOP TIME",
+                     start ? "WHEN NIGHT SHIFT STARTS WARMING" : "WHEN THE SCREEN RETURNS TO NORMAL",
+                     "../icons/icon_timer.png", 24, minute / 60);
+        std::copy_n(hours, 24, d.opt_label);
+        break;
+    }
 
     case SettingKey::OledScreenSaver: {
         constexpr const char* choices[] = {"DISABLED", "1 MINUTE", "2 MINUTES", "3 MINUTES", "4 MINUTES", "5 MINUTES"};
@@ -941,6 +968,18 @@ int fillSection(int section, int expanded, int cursor, evo_rmlui_settings_params
         }
         row.preview_index = (def.kind == EVO_RMLUI_ROW_TOGGLE) ? (def.toggle_on ? 1 : 0)
                           : (opt >= 0) ? opt : def.opt_current;
+        if (def.key == SettingKey::NightShift || def.key == SettingKey::NightShiftStart || def.key == SettingKey::NightShiftStop) {
+            const auto schedule = Application::getInstance().getSettingsService()->getNightShiftSchedule();
+            static char hours[32];
+            std::snprintf(hours, sizeof(hours), "%02d:%02d - %02d:%02d",
+                          schedule.startMinute / 60, schedule.startMinute % 60,
+                          schedule.stopMinute / 60, schedule.stopMinute % 60);
+            row.preview = EVO_RMLUI_PREVIEW_NIGHT_SHIFT;
+            row.preview_index = schedule.enabled ? 1 : 0;
+            row.benefit = "Warms menus over 30 minutes at each end of the schedule.";
+            row.choice_count = 1;
+            row.choice[0] = hours;
+        }
         if (def.key == SettingKey::PhonePort) fillPortPreview(row);
         if (def.key == SettingKey::ReportProblem) fillReportPreview(row, false);
         if (def.key == SettingKey::ReportLastRun) fillReportPreview(row, true);
@@ -976,6 +1015,12 @@ void toggleSetting(SettingKey key) {
     ISettingsService* st = Application::getInstance().getSettingsService();
     if (!st) return;
     switch (key) {
+    case SettingKey::NightShift: {
+        auto schedule = st->getNightShiftSchedule();
+        schedule.enabled = !schedule.enabled;
+        st->setNightShiftSchedule(schedule);
+        break;
+    }
     case SettingKey::ResumePlayback:   st->setResumePlaybackEnabled(!st->isResumePlaybackEnabled()); break;
     case SettingKey::AudioPassthrough: st->setAudioPassthroughEnabled(!st->isAudioPassthroughEnabled()); break;
     case SettingKey::StereoUpmix:      st->setStereoUpmixEnabled(!st->isStereoUpmixEnabled()); break;
@@ -1018,6 +1063,19 @@ void applyOption(SettingKey key, int opt) {
     ISettingsService* st = Application::getInstance().getSettingsService();
     if (!st || opt < 0) return;
     switch (key) {
+    case SettingKey::NightShiftStart:
+    case SettingKey::NightShiftStop: {
+        auto schedule = st->getNightShiftSchedule();
+        if (key == SettingKey::NightShiftStart) schedule.startMinute = opt * 60;
+        else schedule.stopMinute = opt * 60;
+        if (!schedule.valid()) {
+            toast("Night Shift", "Start and stop times must be different.");
+            evo_feedback(EVO_FB_BOUNDARY);
+            return;
+        }
+        st->setNightShiftSchedule(schedule);
+        break;
+    }
     case SettingKey::DefaultAspect:  st->setDefaultViewMode(static_cast<ViewMode>(opt)); break;
     case SettingKey::SkipSegments:   st->setSkipSegments(static_cast<SkipSegments>(opt)); break;
     case SettingKey::VideoDecoder:   st->setVideoDecoderPreference(static_cast<DecoderPreference>(opt)); break;
@@ -1532,6 +1590,9 @@ void SettingsSectionScreen::activateSelection() {
         /* Expand in place so every choice is visible, collapse if already open. */
         m_expandedIndex = (m_expandedIndex == def) ? -1 : def;
         m_selectedIndex = def;
+        if (m_expandedIndex == def && (d[def].key == SettingKey::NightShiftStart ||
+                                      d[def].key == SettingKey::NightShiftStop))
+            m_selectedIndex += 1 + d[def].opt_current;
         evo_feedback(EVO_FB_CONFIRM);
         break;
     default:
@@ -1579,6 +1640,8 @@ bool SettingsSectionScreen::handleInput(uint32_t pressed, uint32_t held, uint32_
             const int def = slots[m_selectedIndex].def;
             if (d[def].kind == EVO_RMLUI_ROW_VALUE && !d[def].disabled && m_expandedIndex != def) {
                 m_expandedIndex = def;
+                if (d[def].key == SettingKey::NightShiftStart || d[def].key == SettingKey::NightShiftStop)
+                    m_selectedIndex = def + 1 + d[def].opt_current;
                 evo_feedback(EVO_FB_CONFIRM);
             }
         }

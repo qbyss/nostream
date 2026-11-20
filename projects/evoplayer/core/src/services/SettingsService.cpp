@@ -372,6 +372,9 @@ bool SettingsService::saveSettings() {
         m_oledScreenSaverMinutes             // line 48 (OLED screen saver: 0 disabled, 1..5 minutes)
     );
 
+    std::fprintf(file, "%d\n%d\n%d\n", static_cast<int>(m_nightShift.enabled),
+                 m_nightShift.startMinute, m_nightShift.stopMinute);
+
     if (std::fclose(file) != 0)
         EVO_LOGE("settings", "writing %s failed (errno %d)", filePath, errno);
     return true;
@@ -486,6 +489,21 @@ bool SettingsService::loadSettings() {
         &rawOledScreenSaverMinutes
     );
 
+    int nightShiftEnabled = 0;
+    NightShiftSchedule nightShift;
+    if (readCount == 48 && std::fscanf(file, "%d%d%d", &nightShiftEnabled,
+                                       &nightShift.startMinute, &nightShift.stopMinute) == 3 &&
+        (nightShiftEnabled == 0 || nightShiftEnabled == 1) && nightShift.valid()) {
+        // Earlier builds allowed minutes. Snap those saved schedules to whole hours.
+        nightShift.startMinute = nightShift.startMinute / 60 * 60;
+        nightShift.stopMinute = nightShift.stopMinute / 60 * 60;
+        if (nightShift.startMinute == nightShift.stopMinute)
+            nightShift.stopMinute = (nightShift.startMinute + 60) % 1440;
+        nightShift.enabled = nightShiftEnabled != 0;
+        m_nightShift = nightShift;
+    } else {
+        m_nightShift = {};
+    }
     std::fclose(file);
 
     (void)rawProfile;
@@ -565,7 +583,7 @@ bool SettingsService::loadSettings() {
     }
     /* An older file has no port line: the default stands, and the server may bind it. */
     evo_log_server_set_port(readCount >= 29 ? rawLogPort : evo_log_server_saved_port());   /* ignores out-of-range */
-    EVO_LOGI("settings", "loaded %d of 48 fields from %s", readCount, filePath);
+    EVO_LOGI("settings", "loaded %d base settings fields from %s", readCount, filePath);
     if (readCount >= 31 && rawHdrPeak >= 0 && rawHdrPeak <= 5) {
         m_hdrPeak = static_cast<HdrPeak>(rawHdrPeak);
     }

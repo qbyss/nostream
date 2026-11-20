@@ -139,6 +139,9 @@ int  evo_agc_runtime_is_active(void);
 void evo_agc_runtime_frame_begin(void);
 void evo_agc_runtime_frame_end(void);
 void evo_agc_runtime_present(void);
+/* Set the SDR warmth. Returns whether the displayed frame needs a redraw. */
+int evo_agc_runtime_set_night_shift(float warmth);
+void evo_agc_runtime_apply_night_shift(void);
 /* Begin an opaque black frame in the current output format. */
 void evo_agc_runtime_frame_begin_black(void);
 void evo_agc_runtime_set_player_mode(int is_player);

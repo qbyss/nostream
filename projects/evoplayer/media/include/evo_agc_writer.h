@@ -21,6 +21,7 @@ enum evo_agc_blend_mode {
     EVO_AGC_BLEND_ALPHA = 1,
     EVO_AGC_BLEND_PREMULTIPLIED = 2,
     EVO_AGC_BLEND_ADDITIVE = 3,
+    EVO_AGC_BLEND_MULTIPLY = 4,
 };
 
 /* GFX10.3 hardware descriptor builders */
