@@ -41,7 +41,7 @@ void draw_options_panel(DrawList &list, const Context &ctx, const std::string &t
     const auto &fonts = ctx.fonts;
     const auto black = Color::rgb(0x000000);
     const Rect panel{1260, 210, 568, 164.0f + count * 80.0f};
-    list.shadow({panel.x, panel.y + 12, panel.w, panel.h}, 24, 34, black.with_alpha(0.6f));
+    list.shadow({panel.x, panel.y + 5, panel.w, panel.h}, 24, 17, black.with_alpha(0.33f));
     list.rounded_rect(panel, 24, ctx.palette.bg_bottom.with_alpha(0.97f));
     list.bordered_rect(panel, 24, black.with_alpha(0.0f), 1.0f, kWhite.with_alpha(0.14f));
     ui::text(list, fonts.display, title, panel.x + 30, panel.y + 59, 32, kWhite);
@@ -131,7 +131,7 @@ void DialogOverlay::draw(DrawList &list, const Context &ctx) const
     if (!actions_.empty()) h += 80.0f;
 
     const Rect card{960.0f - w * 0.5f, 540.0f - h * 0.5f, w, h};
-    list.shadow({card.x, card.y + 24, card.w, card.h}, 48, 64, Color::rgb(0x000000, 0.6f));
+    list.shadow({card.x, card.y + 10, card.w, card.h}, 48, 32, Color::rgb(0x000000, 0.33f));
     list.rounded_rect(card, 32, p.bg_top.with_alpha(0.97f));
     list.bordered_rect(card, 32, Color::rgb(0,0), 1.0f, kWhite.with_alpha(0.14f));
 
@@ -253,7 +253,7 @@ void ToastOverlay::draw(DrawList &list, const Context &ctx) const
     constexpr float textInset = padding + 6.0f + 16.0f;
     const auto drawCard = [&](float height, float opacity) {
         const Rect card{cardRight - cardWidth + slide_, cardBottom - height, cardWidth, height};
-        list.shadow({card.x, card.y + 10, card.w, card.h}, 0, 24, Color::rgb(0x000000, 0.5f));
+        list.shadow({card.x, card.y + 4, card.w, card.h}, 0, 12, Color::rgb(0x000000, 0.28f));
         list.rounded_rect(card, 0, p.bg_top.with_alpha(opacity));
         list.bordered_rect(card, 0, Color::rgb(0, 0), 1.0f, kWhite.with_alpha(0.12f));
         return card;

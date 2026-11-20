@@ -388,7 +388,7 @@ void SettingsScreen::draw(DrawList &list, const Context &ctx) const
     }
 
     Rect pane{pane_left(), 130.0f, 1824.0f - pane_left(), 820.0f};
-    list.shadow(pane, page::kRadiusCard, 40, Color::rgb(0x000000, 0.4f));
+    list.shadow(pane, page::kRadiusCard, 20, Color::rgb(0x000000, 0.22f));
     list.rounded_rect(pane, page::kRadiusCard, p.surface);
     list.bordered_rect(pane, page::kRadiusCard, Color::rgb(0x000000, 0.0f), 1.0f, p.border);
 

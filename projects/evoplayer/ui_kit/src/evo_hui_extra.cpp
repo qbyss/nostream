@@ -339,7 +339,7 @@ void KeyboardOverlay::draw(DrawList &list, const Context &ctx) const
     list.push_opacity(alpha);
 
     const Rect card = kCard;
-    list.shadow({card.x, card.y + 20, card.w, card.h}, page::kRadiusCard, 60, kBlack.with_alpha(0.6f));
+    list.shadow({card.x, card.y + 8, card.w, card.h}, page::kRadiusCard, 30, kBlack.with_alpha(0.33f));
     list.rounded_rect(card, page::kRadiusCard, p.bg_top.with_alpha(0.97f));
     list.bordered_rect(card, page::kRadiusCard, kClear, 1.0f, kWhite.with_alpha(0.12f));
 
@@ -466,7 +466,7 @@ void KeyboardOverlay::draw_pad(DrawList &list, const Context &ctx) const
     list.push_opacity(enter_fade_.value);
 
     const Rect card{460.0f, 230.0f, 1000.0f, 620.0f};
-    list.shadow({card.x, card.y + 20, card.w, card.h}, page::kRadiusCard, 60, kBlack.with_alpha(0.6f));
+    list.shadow({card.x, card.y + 8, card.w, card.h}, page::kRadiusCard, 30, kBlack.with_alpha(0.33f));
     list.rounded_rect(card, page::kRadiusCard, p.bg_top.with_alpha(0.97f));
     list.bordered_rect(card, page::kRadiusCard, kClear, 1.0f, kWhite.with_alpha(0.12f));
     ui::text(list, fonts.semibold, ui::upper(title_), card.cx(), card.y + 54.0f, 16, p.text_muted, Align::center, 3.0f);

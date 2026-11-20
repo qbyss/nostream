@@ -127,7 +127,7 @@ void SubtitlePicker::draw(DrawList &list, const Context &ctx) const
     list.push_transform(1.0f, 0, 0, dx, 0);
     list.push_opacity(o);
     const Rect sheet{kSheetX, 48, kSheetW, 1080 - 96};
-    list.shadow({sheet.x - 10, sheet.y + 20, sheet.w, sheet.h}, page::kRadiusCard, 60, kBlack.with_alpha(0.6f));
+    list.shadow({sheet.x - 4, sheet.y + 8, sheet.w, sheet.h}, page::kRadiusCard, 30, kBlack.with_alpha(0.33f));
     list.rounded_rect(sheet, page::kRadiusCard, p.bg_top.with_alpha(0.96f));
     list.bordered_rect(sheet, page::kRadiusCard, kClear, 1.5f, kWhite.with_alpha(0.12f));
 
@@ -385,7 +385,7 @@ void MediaInfoCard::draw(DrawList &list, const Context &ctx) const
     const float col_h = 92.0f + static_cast<float>(rows) * pitch;
     const float card_h = 280.0f + col_h + 48.0f;
     const Rect card{160, std::max(60.0f, (1080.0f - card_h) * 0.5f - 20.0f), 1600, card_h};
-    list.shadow({card.x, card.y + 30, card.w, card.h}, page::kRadiusCard, 60, kBlack.with_alpha(0.6f));
+    list.shadow({card.x, card.y + 12, card.w, card.h}, page::kRadiusCard, 30, kBlack.with_alpha(0.33f));
     list.rounded_rect(card, page::kRadiusCard, p.bg_top.with_alpha(0.96f));
     list.bordered_rect(card, page::kRadiusCard, kClear, 1.5f, kWhite.with_alpha(0.12f));
 

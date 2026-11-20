@@ -557,11 +557,11 @@ void HomeScreen::draw_hero(DrawList &list, const Context &ctx, const Hero &hero,
     const Palette &p = ctx.palette;
     list.push_opacity(alpha);
 
-    /* Artwork, floating, with a glow in the accent colour. */
+    /* Hero artwork with a soft accent glow. */
     const float bob = std::sin(ctx.time * 0.8f) * 5.0f;
     const Rect art{kHeroArt.x + slide * 1.5f, kHeroArt.y + bob, kHeroArt.w, kHeroArt.h};
-    list.glow(art.inset(24), 40, 80, p.accent.with_alpha(0.28f));
-    list.shadow({art.x, art.y + 24, art.w, art.h}, 30, 44, Color::rgb(0x000000, 0.6f));
+    list.glow(art.inset(24), 40, 40, p.accent.with_alpha(0.14f));
+    list.shadow({art.x, art.y + 10, art.w, art.h}, 30, 22, Color::rgb(0x000000, 0.33f));
     const std::uint32_t tex = art_texture(ctx, hero.art, hero.art_w, hero.art_h, hero.title);
     if (tex)
     {
@@ -692,7 +692,7 @@ void HomeScreen::draw(DrawList &list, const Context &ctx) const
             r.y += dy;
             if (t.focused)
                 r = {r.x - 10, r.y - 10, r.w + 20, r.h + 20};
-            list.shadow({r.x, r.y + 14, r.w, r.h}, 20, 24, Color::rgb(0x000000, 0.5f));
+            list.shadow({r.x, r.y + 6, r.w, r.h}, 20, 12, Color::rgb(0x000000, 0.28f));
             const std::uint32_t tex = art_texture(ctx, t.art, t.art_w, t.art_h, std::string());
             if (tex)
             {
@@ -1112,7 +1112,7 @@ void ListScreen::draw(DrawList &list, const Context &ctx) const
     {
         list.rounded_rect({0, 0, 1920, 1080}, 0, Color::rgb(0x000000, 0.55f));
         const Rect card{960.0f - 280.0f, 540.0f - 100.0f, 560.0f, 200.0f};
-        list.shadow({card.x, card.y + 20, card.w, card.h}, page::kRadiusCard, 40, Color::rgb(0x000000, 0.55f));
+        list.shadow({card.x, card.y + 8, card.w, card.h}, page::kRadiusCard, 20, Color::rgb(0x000000, 0.30f));
         list.rounded_rect(card, page::kRadiusCard, p.bg_top.with_alpha(0.97f));
         list.bordered_rect(card, page::kRadiusCard, Color::rgb(0x000000, 0.0f), 1.5f, kWhite.with_alpha(0.14f));
         for (int i = 0; i < 3; ++i)
@@ -1137,7 +1137,7 @@ void ListScreen::draw(DrawList &list, const Context &ctx) const
         const float top = first.y - 180.0f;
         const float h = 180.0f + static_cast<float>(menu_.size()) * (kMenuItemH + 6.0f) + 24.0f;
         const Rect card{960.0f - kMenuW * 0.5f, top, kMenuW, h};
-        list.shadow({card.x, card.y + 24, card.w, card.h}, 32, 48, Color::rgb(0x000000, 0.6f));
+        list.shadow({card.x, card.y + 10, card.w, card.h}, 32, 24, Color::rgb(0x000000, 0.33f));
         list.rounded_rect(card, page::kRadiusCard, p.bg_top.with_alpha(0.96f));
         list.bordered_rect(card, page::kRadiusCard, Color::rgb(0x000000, 0.0f), 1.5f, kWhite.with_alpha(0.14f));
         const Rect well{card.x + 32, card.y + 36, 64, 64};

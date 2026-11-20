@@ -269,7 +269,7 @@ void BrowserUi::render_loading_overlay(hui::gfx::DrawList& list,
     // Centered loading dialog card if page is still awaiting initial content
     if (view->document().is_empty()) {
         hui::gfx::Rect card{vp.x + (vp.w - 460.0f) / 2.0f, vp.y + (vp.h - 190.0f) / 2.0f, 460.0f, 190.0f};
-        list.shadow(card, 16.0f, 24.0f, hui::gfx::Color::rgb(0x000000, 0.5f));
+        list.shadow(card, 16.0f, 12.0f, hui::gfx::Color::rgb(0x000000, 0.28f));
         list.bordered_rect(card, 18.0f, hui::gfx::Color::rgb(0x131726, 0.96f),
                            1.5f, hui::gfx::Color::rgb(0x313959));
 
@@ -684,7 +684,7 @@ void BrowserUi::render_quick_menu(hui::gfx::DrawList& list,
     constexpr float kW = 420.0f;
     const int count = browser::BrowserApp::kMenuItemCount;
     const gfx::Rect panel{static_cast<float>(app.screen_width()) - kW - 40.0f, 80.0f, kW, 24.0f + kRowH * static_cast<float>(count)};
-    list.shadow(panel, 18.0f, 26.0f, gfx::Color::rgb(0x000000, 0.55f));
+    list.shadow(panel, 18.0f, 13.0f, gfx::Color::rgb(0x000000, 0.30f));
     list.bordered_rect(panel, 16.0f, gfx::Color::rgb(0x131622, 0.98f), 1.5f, gfx::Color::rgb(0x2d334d));
     const float pulse = 0.5f + 0.3f * std::sin(pulse_time_ * 4.0f);
     for (int i = 0; i < count; ++i) {
@@ -921,7 +921,7 @@ void BrowserUi::render_keyboard_overlay(hui::gfx::DrawList& list,
 
     // Keyboard container card
     gfx::Rect kbd_box{(static_cast<float>(app.screen_width()) - 1400.0f) / 2.0f, 410.0f, 1400.0f, 560.0f};  // EVO: was x 260 (1920 wide)
-    list.shadow(kbd_box, 24.0f, 40.0f, gfx::Color::rgb(0x000000, 0.65f));
+    list.shadow(kbd_box, 24.0f, 20.0f, gfx::Color::rgb(0x000000, 0.36f));
     list.bordered_rect(kbd_box, 24.0f, gfx::Color::rgb(0x131626, 0.98f), 2.0f, gfx::Color::rgb(0x2f3653));
 
     // Title / prompt
@@ -1023,7 +1023,7 @@ void BrowserUi::render_bookmarks_drawer(hui::gfx::DrawList& list,
 
     // Right slide-out drawer
     gfx::Rect drawer{static_cast<float>(app.screen_width()) - 560.0f, 0.0f, 560.0f, 1080.0f};  // EVO: was 1360 (1920 wide)
-    list.shadow(drawer, 0.0f, 32.0f, gfx::Color::rgb(0x000000, 0.7f));
+    list.shadow(drawer, 0.0f, 16.0f, gfx::Color::rgb(0x000000, 0.39f));
     list.bordered_rect(drawer, 0.0f, gfx::Color::rgb(0x121522), 1.0f, gfx::Color::rgb(0x282f48));
 
     hui::ui::text(list, fonts.display, "BOOKMARKS", 1400.0f, 70.0f, 30.0f,
@@ -1078,7 +1078,7 @@ void BrowserUi::render_settings_dialog(hui::gfx::DrawList& list,
     constexpr float kRowH = 62.0f;
     const float modal_h = 150.0f + kRowH * static_cast<float>(browser::kSettingsItemCount) + 40.0f;
     gfx::Rect modal{(static_cast<float>(app.screen_width()) - 880.0f) / 2.0f, (1080.0f - modal_h) / 2.0f, 880.0f, modal_h};
-    list.shadow(modal, 24.0f, 40.0f, gfx::Color::rgb(0x000000, 0.65f));
+    list.shadow(modal, 24.0f, 20.0f, gfx::Color::rgb(0x000000, 0.36f));
     list.bordered_rect(modal, 24.0f, gfx::Color::rgb(0x131625), 1.5f, gfx::Color::rgb(0x2f3653));
 
     hui::ui::text(list, fonts.display, "SETTINGS", modal.x + 40.0f, modal.y + 64.0f, 30.0f,
@@ -1186,7 +1186,7 @@ void BrowserUi::render_page_dialog(hui::gfx::DrawList& list,
     const float text_h = static_cast<float>(lines.size()) * 30.0f + (prompt ? 70.0f : 0.0f);
     const float h = 130.0f + text_h + 110.0f;
     const gfx::Rect modal{(static_cast<float>(app.screen_width()) - kW) / 2.0f, (1080.0f - h) / 2.0f, kW, h};
-    list.shadow(modal, 24.0f, 40.0f, gfx::Color::rgb(0x000000, 0.65f));
+    list.shadow(modal, 24.0f, 20.0f, gfx::Color::rgb(0x000000, 0.36f));
     list.bordered_rect(modal, 20.0f, gfx::Color::rgb(0x131625), 1.5f, gfx::Color::rgb(0x2f3653));
 
     hui::ui::text(list, fonts.semibold, heading, modal.x + 48.0f, modal.y + 66.0f, 24.0f, gfx::Color::rgb(0xffffff));

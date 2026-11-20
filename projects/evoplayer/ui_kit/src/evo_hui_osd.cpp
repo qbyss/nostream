@@ -548,7 +548,7 @@ void OsdScreen::draw_music(DrawList &list, const Context &ctx) const
     const Palette &p = ctx.palette;
     draw_backdrop(list, ctx);
     const Rect card{960 - 520, 300, 1040, 380};
-    list.shadow({card.x, card.y + 30, card.w, card.h}, page::kRadiusCard, 60, kBlack.with_alpha(0.6f));
+    list.shadow({card.x, card.y + 12, card.w, card.h}, page::kRadiusCard, 30, kBlack.with_alpha(0.33f));
     list.rounded_rect(card, page::kRadiusCard, kWhite.with_alpha(0.06f));
     list.bordered_rect(card, page::kRadiusCard, kClear, 1.5f, kWhite.with_alpha(0.12f));
     const Rect art{card.x + 50, card.y + 50, 280, 280};

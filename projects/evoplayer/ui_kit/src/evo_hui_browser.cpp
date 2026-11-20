@@ -312,7 +312,7 @@ void BrowserScreen::draw(DrawList &list, const Context &ctx) const
             Rect r = card_rect(static_cast<int>(i));
             if (c.focused)
                 r = {r.x - 8, r.y - 8, r.w + 16, r.h + 16};
-            list.shadow({r.x, r.y + 12, r.w, r.h}, page::kRadiusTile, 22, Color::rgb(0x000000, 0.45f));
+            list.shadow({r.x, r.y + 5, r.w, r.h}, page::kRadiusTile, 11, Color::rgb(0x000000, 0.25f));
             const std::uint32_t tex = ctx.textures.pixels(c.art, c.art_w, c.art_h);
             if (tex)
             {
@@ -412,7 +412,7 @@ void BrowserScreen::draw(DrawList &list, const Context &ctx) const
         const Rect first = action_rect(0);
         const float h = 170.0f + nActions * (kActionH + 4.0f) + 24.0f;
         const Rect card{960.0f - kMenuW * 0.5f, first.y - 170.0f, kMenuW, h};
-        list.shadow({card.x, card.y + 24, card.w, card.h}, page::kRadiusCard, 48, Color::rgb(0x000000, 0.6f));
+        list.shadow({card.x, card.y + 10, card.w, card.h}, page::kRadiusCard, 24, Color::rgb(0x000000, 0.33f));
         list.rounded_rect(card, page::kRadiusCard, p.bg_top.with_alpha(0.97f));
         list.bordered_rect(card, page::kRadiusCard, kClear, 1.5f, kWhite.with_alpha(0.14f));
         ui::text(list, fonts.semibold, raw_.action_menu_eyebrow ? raw_.action_menu_eyebrow : "FILE OPERATIONS", card.x + 32, card.y + 54, 15, p.accent, Align::left, 3.0f);
@@ -469,7 +469,7 @@ void BrowserScreen::draw(DrawList &list, const Context &ctx) const
         list.rounded_rect({0, 0, 1920, 1080}, 0, Color::rgb(0x000000, 0.55f * t));
         list.push_opacity(t);
         const Rect card{960 - 400, 540 - 170, 800, 340};
-        list.shadow({card.x, card.y + 24, card.w, card.h}, page::kRadiusCard, 48, Color::rgb(0x000000, 0.6f));
+        list.shadow({card.x, card.y + 10, card.w, card.h}, page::kRadiusCard, 24, Color::rgb(0x000000, 0.33f));
         list.rounded_rect(card, page::kRadiusCard, p.bg_top.with_alpha(0.97f));
         list.bordered_rect(card, page::kRadiusCard, kClear, 1.5f, kWhite.with_alpha(0.14f));
         ui::text(list, fonts.semibold, ui::upper(tr_title_), card.x + 40, card.y + 62, 16, p.accent, Align::left, 3.0f);
