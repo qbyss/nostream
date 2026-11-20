@@ -474,7 +474,7 @@ struct EvoBrowserState {
     std::string action_menu_eyebrow;
     std::vector<ActionMenuItem> action_menu_items;
     std::string footer_triangle_label;
-    bool show_triangle = true;
+    bool show_triangle = false;
     std::string footer_options_label;
 
     bool transfer_modal_open = false;

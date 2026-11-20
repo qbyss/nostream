@@ -12,14 +12,8 @@ public:
 
     ScreenId getScreenId() const override { return ScreenId::Favorites; }
     void onEnter() override;
-    void onExit() override;
-    bool handleInput(uint32_t pressed, uint32_t held, uint32_t released) override;
-    void update(double deltaMs) override;
-    void render(uint32_t* framebuffer, int width, int height) override;
-
-private:
-    int m_selectedIndex = 0;
-    int m_scrollOffset = 0;
+    bool handleInput(uint32_t, uint32_t, uint32_t) override { return false; }
+    void render(uint32_t*, int, int) override {}
 };
 
 } // namespace evo

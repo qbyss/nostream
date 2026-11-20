@@ -1570,7 +1570,7 @@ void EvoRmlApp::UpdateBrowserState(const EvoBrowserState& state) {
     if (Rml::Element* hint = el("bhint-triangle"))
         hint->SetProperty("display", state.show_triangle ? "flex" : "none");
     if (Rml::Element* e = el("footer-triangle-label")) {
-        e->SetInnerRML(state.footer_triangle_label.empty() ? "FAVORITE" : state.footer_triangle_label);
+        e->SetInnerRML(state.footer_triangle_label);
     }
     if (Rml::Element* e = el("footer-options-label")) {
         e->SetInnerRML(state.footer_options_label.empty() ? "OPERATIONS" : state.footer_options_label);

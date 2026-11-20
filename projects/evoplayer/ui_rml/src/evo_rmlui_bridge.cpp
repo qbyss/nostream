@@ -270,7 +270,7 @@ void evo_rmlui_update_browser(const evo_rmlui_browser_params_t* p) {
         it.disabled = (p->action_menu_items[i].disabled != 0);
         state.action_menu_items.push_back(it);
     }
-    state.show_triangle = !p->footer_triangle_label || p->footer_triangle_label[0];
+    state.show_triangle = p->footer_triangle_label && p->footer_triangle_label[0];
     state.footer_triangle_label = p->footer_triangle_label ? p->footer_triangle_label : "";
     state.footer_options_label = p->footer_options_label ? p->footer_options_label : "";
 

@@ -347,7 +347,7 @@
                 </div>
                 <div class="footer-hint" id="bhint-triangle">
                     <div class="glyph-badge"><img src="../icons/btn_triangle.png" class="glyph-badge-img"/></div>
-                    <span id="footer-triangle-label" class="footer-text">FAVORITE</span>
+                    <span id="footer-triangle-label" class="footer-text">REMOVE</span>
                 </div>
                 <div class="footer-hint">
                     <div class="glyph-badge-pill"><span class="glyph-pill-text">L1 / R1</span></div>

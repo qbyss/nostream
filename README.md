@@ -53,9 +53,9 @@ To update a folder install, close NoStream and upload a newer build to the same 
 |---|---|---|---|
 | **CROSS ✕** | Select / Open | Play / Pause | Type character |
 | **CIRCLE ○** | Back | Hide the video menu or controls. Stops playback when they’re hidden. | Cancel |
-| **TRIANGLE △** | Add a file to Favorites / Remove network server | **Skip intro / credits** while the button shows (or undo an automatic skip) | Space |
-| **SQUARE □** | Search | — | Backspace |
-| **OPTIONS** | File operations (Copy, Move, Rename, Delete), Add to Favorites / Server options (Edit, Remove) | Player menu: Audio, Subtitles, View mode (Fit / Fill / Stretch), Media Info, Stats | Done |
+| **TRIANGLE △** | Remove network server | **Skip intro / credits** while the button shows (or undo an automatic skip) | Space |
+| **SQUARE □** | Search from the Storage sidebar or file list | — | Backspace |
+| **OPTIONS** | File operations (Copy, Move, Rename, Delete), favorite a USB folder, or edit a server | Player menu: Audio, Subtitles, View mode (Fit / Fill / Stretch), Media Info, Stats | Done |
 | **D-Pad / Left Stick** | Move focus, hold to scroll | **Left / Right:** seek 10 s (hold to scrub faster) | Move between keys (up from the top row: the clear X) |
 | **LEFT** | Open navigation rail | — | — |
 | **UP** | Instant folder filter chips | — | — |

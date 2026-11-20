@@ -570,49 +570,29 @@ extern "C" void test_smb_recent_and_favorites(void) {
     TEST_ASSERT(strstr(rbuf, "legacyuser") == nullptr && strstr(rbuf, "legacypass") == nullptr,
                 "re-saved recent file must not contain legacy credentials");
 
-    // 3. Favorites: store with credentials -> file on disk has none
-    favorites_clear();
-    favorites_add(credUrl, "Movie Name", 120.0);
-    favorites_save();
-
-    FILE *ffp = fopen(FAVORITES_FILE_DB, "r");
-    TEST_ASSERT(ffp != nullptr, "favorites DB must be created");
-    char fbuf[1024] = {0};
-    size_t fread_bytes = fread(fbuf, 1, sizeof(fbuf) - 1, ffp);
-    fclose(ffp);
-    fbuf[fread_bytes] = '\0';
-
-    TEST_ASSERT(strstr(fbuf, "192.168.0.8:4450/Media/Movie%20Name.mp4") != nullptr, "favorites disk path must be sanitized");
-    TEST_ASSERT(strstr(fbuf, "evotest") == nullptr, "favorites file must not contain username");
-    TEST_ASSERT(strstr(fbuf, "p@ss") == nullptr && strstr(fbuf, "w0rd") == nullptr, "favorites file must not contain password");
-
-    TEST_ASSERT(favorites_is_favorite(credUrl) == 1, "favorites_is_favorite with credentialed URL must match");
-    TEST_ASSERT(favorites_is_favorite("smb://192.168.0.8:4450/Media/Movie%20Name.mp4") == 1, "favorites_is_favorite with clean URL must match");
-
-    favorites_remove(credUrl);
-    TEST_ASSERT(favorite_count == 0, "favorites_remove with credentialed URL must remove clean entry");
-
-    // 4. Load of an old file containing user:pass@ in Favorites -> migrated
-    ffp = fopen(FAVORITES_FILE_DB, "w");
+    // A mixed legacy favorites database keeps only folder entries.
+    FILE *ffp = fopen(FAVORITES_FILE_DB, "w");
     TEST_ASSERT(ffp != nullptr, "open favorites DB for writing");
     fputs("https://example.test/provider/stream.mkv\tOld provider movie\t120.000\n", ffp);
-    fputs("Old provider channel\tOld provider channel\t0.000\n", ffp);
-    fprintf(ffp, "smb://legacyuser:legacypass@10.0.0.5/Media/OldFav.mp4\tOld Fav\t150.000\n");
+    fputs("smb://legacyuser:legacypass@10.0.0.5/Media/OldFav.mp4\tOld Fav\t150.000\n", ffp);
+    fputs("/mnt/usb1/Old.mkv\tOld video\t120.000\tUSB-TEST\t0\n", ffp);
+    fputs("/mnt/usb1/Movies\tMovies\t0.000\tUSB-TEST\t1\n", ffp);
+    fputs("smb://legacyuser:legacypass@10.0.0.5/Media/Shows\tShows\t0.000\t-\t1\n", ffp);
     fclose(ffp);
 
     favorites_load();
-    TEST_ASSERT(favorite_count == 1, "favorites_load must keep the SMB entry and skip old provider favorites");
-    TEST_ASSERT(std::string(favorite_files[0].path) == "smb://10.0.0.5/Media/OldFav.mp4",
-                "loaded favorite must be sanitized on load");
-    favorites_save();
+    TEST_ASSERT(favorite_count == 2, "favorites_load must keep folders and skip old video favorites");
+    TEST_ASSERT(std::string(favorite_files[0].path) == "/mnt/usb1/Movies", "keep saved USB folder path");
+    TEST_ASSERT(std::string(favorite_files[0].volume_id) == "USB-TEST", "keep saved USB identity");
+    TEST_ASSERT(favorites_find("smb://10.0.0.5/Media/Shows") == 1, "loaded folder path must be sanitized");
 
-    ffp = fopen(FAVORITES_FILE_DB, "r");
-    memset(fbuf, 0, sizeof(fbuf));
-    fread_bytes = fread(fbuf, 1, sizeof(fbuf) - 1, ffp);
-    fclose(ffp);
-    fbuf[fread_bytes] = '\0';
-    TEST_ASSERT(strstr(fbuf, "legacyuser") == nullptr && strstr(fbuf, "legacypass") == nullptr,
-                "re-saved favorites file must not contain legacy credentials");
+    favorites_save();
+    favorites_load();
+    TEST_ASSERT(favorite_count == 2, "both folders must survive a save and reload");
+    TEST_ASSERT(std::string(favorite_files[0].volume_id) == "USB-TEST", "USB identity must survive a save and reload");
+    favorites_remove_at(0);
+    TEST_ASSERT(favorite_count == 1 && favorites_find("smb://10.0.0.5/Media/Shows") == 0,
+                "removing one folder must preserve the remaining folder");
 
     TEST_PASS();
 }

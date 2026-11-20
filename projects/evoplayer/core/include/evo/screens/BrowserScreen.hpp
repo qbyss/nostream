@@ -92,9 +92,9 @@ private:
     void jumpPage(int direction);
     void jumpLetter(int direction);
     void activateSelection();
-    void activateSidebar(bool focusGrid = true);
+    bool activateSidebar(bool focusGrid = true);
     void refreshFolderShortcuts();
-    void openFavoriteFolder(int index, bool focusGrid = true);
+    bool openFavoriteFolder(int index, bool focusGrid = true);
     int storageSidebarIndex() const;
     void refreshStorageSources();
     int activeSidebarIndex() const;
