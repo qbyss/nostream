@@ -58,12 +58,14 @@ private:
     void initPlayerStateMachine();
     void feedPerformanceHud();
     void hideControlsOnPlay();
+    void dismissControls();
     void handleVideoSettingsInput(uint32_t pressed);
 
     StateMachine<PlayerScreenState, PlayerScreenEvent> m_playerFsm;
     int m_osdVisibilityAlpha = 255;
     uint64_t m_controlsLastUsedMs = 0;
     bool m_hideControlsAfterPlay = false;
+    bool m_controlsDismissed = false;
     bool m_stallToastShown = false;   /* "connection lost" is up; say when it is back */
     bool m_scrubThumbActive = false;  /* a scrub preview session is running (baseline taken) */
     uint64_t m_lastPlayPauseToggleMs = 0;

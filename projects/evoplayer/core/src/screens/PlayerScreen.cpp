@@ -362,6 +362,7 @@ void PlayerScreen::onEnter() {
         g_skip = SkipState();   /* #219: a file played twice offers its skip twice */
     }
     m_returnToVideoSettings = false;
+    m_controlsDismissed = false;
     m_controlsLastUsedMs = NowMs();
 
     auto playback = Application::getInstance().getPlaybackController();
@@ -386,7 +387,7 @@ void PlayerScreen::closeVideoSettings() {
 
 void PlayerScreen::handleVideoSettingsInput(uint32_t pressed) {
     constexpr int rowCount = 5;
-    if (pressed & (PadButtons::Options | PadButtons::Circle)) {
+    if (pressed & PadButtons::Options) {
         closeVideoSettings();
         evo_feedback(EVO_FB_CANCEL);
         return;
@@ -432,6 +433,13 @@ void PlayerScreen::hideControlsOnPlay() {
     m_osdVisibilityAlpha = 0;
 }
 
+void PlayerScreen::dismissControls() {
+    hideControlsOnPlay();
+    m_controlsDismissed = true;
+    m_playerFsm.postEvent(PlayerScreenEvent::HideOsd);
+    evo_feedback(EVO_FB_CANCEL);
+}
+
 bool PlayerScreen::handleInput(uint32_t pressed, uint32_t held, uint32_t released) {
     (void)released;
     auto playback = Application::getInstance().getPlaybackController();
@@ -439,12 +447,18 @@ bool PlayerScreen::handleInput(uint32_t pressed, uint32_t held, uint32_t release
     if (!playback) return false;
 
     if (pressed) {
+        m_controlsDismissed = false;
         m_hideControlsAfterPlay = false;
         m_controlsLastUsedMs = NowMs();
     }
 
     if (isVideoSettingsOpen()) {
-        handleVideoSettingsInput(pressed);
+        if (pressed & PadButtons::Circle) {
+            closeVideoSettings();
+            dismissControls();
+        } else {
+            handleVideoSettingsInput(pressed);
+        }
         return true;
     }
 
@@ -458,6 +472,11 @@ bool PlayerScreen::handleInput(uint32_t pressed, uint32_t held, uint32_t release
     }
 
     if (pressed & PadButtons::Circle) {
+        if (!playback->isMusicMode() && (m_osdVisibilityAlpha > 0 || playback->isScrubbing())) {
+            if (playback->isScrubbing()) playback->cancelScrub();
+            dismissControls();
+            return true;
+        }
         evo_feedback(EVO_FB_CONFIRM);
         playback->stopPlayback();
         if (screenMgr) screenMgr->returnFromPlayback();
@@ -605,7 +624,7 @@ void PlayerScreen::update(double deltaMs) {
     }
 
     // The demuxer can reach EOF while the decoded picture is still catching up.
-    const bool showEndControls = ended && !isBuffering &&
+    const bool showEndControls = ended && !isBuffering && !m_controlsDismissed &&
         (!m_hideControlsAfterPlay ||
          (playback->getDurationSeconds() > 0.0 &&
           playback->getPositionSeconds() >= playback->getDurationSeconds() - 0.5));

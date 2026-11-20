@@ -52,7 +52,7 @@ Close NoStream from the PS5 switcher before replacing an installed image.
 | Button | In Menus & File Browser | During Playback | On-Screen Keyboard |
 |---|---|---|---|
 | **CROSS ✕** | Select / Open | Play / Pause | Type character |
-| **CIRCLE ○** | Back | Stop playback | Cancel |
+| **CIRCLE ○** | Back | Hide the video menu or controls. Stops playback when they’re hidden. | Cancel |
 | **TRIANGLE △** | Add a file to Favorites / Remove network server | **Skip intro / credits** while the button shows (or undo an automatic skip) | Space |
 | **SQUARE □** | Search | — | Backspace |
 | **OPTIONS** | File operations (Copy, Move, Rename, Delete), Add to Favorites / Server options (Edit, Remove) | Player menu: Audio, Subtitles, View mode (Fit / Fill / Stretch), Media Info, Stats | Done |
