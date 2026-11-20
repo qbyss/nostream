@@ -1,5 +1,5 @@
 /*
- * tests/test_ntfs.cpp - EVO's NTFS reader (#217) against real NTFS images
+ * tests/test_ntfs.cpp - NoStream's NTFS reader (#217) against real NTFS images
  * made by ntfs-3g (tools/make_ntfs_image.sh -> output/ntfs/*.img): a volume
  * on the whole disk, an MBR partition at sector 63, a GPT partition with
  * 64 KiB clusters. Skipped when the images are not there.

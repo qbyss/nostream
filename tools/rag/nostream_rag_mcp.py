@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""evo_rag_mcp.py - MCP (stdio) server exposing evo_rag to Claude Code.
+"""nostream_rag_mcp.py - MCP (stdio) server exposing nostream_rag to Claude Code.
 
 Tools:
-  evo_search       search code, docs, GitHub issues and memory notes
-  evo_rag_status   what is indexed, and whether embeddings are on
+  nostream_search       search code, docs, GitHub issues and memory notes
+  nostream_rag_status   what is indexed, and whether embeddings are on
 
 Registered in .mcp.json. No third-party MCP package: the protocol is newline-
 delimited JSON-RPC 2.0 on stdin/stdout, and only initialize, ping, tools/list and
@@ -20,29 +20,29 @@ import threading
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-import evo_rag  # noqa: E402
+import nostream_rag  # noqa: E402
 
 PROTOCOL_DEFAULT = "2025-06-18"
 
 INSTRUCTIONS = (
-    "Search EVO Player's own code, docs, GitHub issues and project memory notes. "
-    "Use evo_search BEFORE grepping broadly or re-deriving a hardware rule: ask in plain "
-    "words ('why must we never deploy over a running EVO') or by name ('slot_renew_decoder'). "
+    "Search NoStream's own code, docs, GitHub issues and project memory notes. "
+    "Use nostream_search BEFORE grepping broadly or re-deriving a hardware rule: ask in plain "
+    "words ('why must we never deploy over a running NoStream') or by name ('slot_renew_decoder'). "
     "Results give path:lines - Read that range for the full text.\n"
     "third_party/ holds ~40 PS5 homebrew repos (sibling and research projects). They are NOT in a "
     "plain search; ask for them. Before designing a fix for a decode, audio, A/V sync, GPU or "
-    "provider bug, call evo_search with source=commits ('did anyone already fix X': commit "
+    "provider bug, call nostream_search with source=commits ('did anyone already fix X': commit "
     "messages of every repo on every branch; a hit tagged [not in checkout] is fetched but not "
     "checked out) and with source=thirdparty ('how does another app call this API'). Use path= "
     "to narrow, e.g. third_party/ProsperoTV/. Treat hits as hints to port by hand and verify on "
     "the console; check the licence, never paste code. Some clones (Jelly5 ...) contain copies of "
-    "EVO's own files, which is noise. For an exact string use Grep; for EVO's own history use git.")
+    "NoStream's own files, which is noise. For an exact string use Grep; for NoStream's own history use git.")
 
 TOOLS = [
     {
-        "name": "evo_search",
+        "name": "nostream_search",
         "description": (
-            "Hybrid keyword + semantic search over EVO Player: source code, docs/*.md, "
+            "Hybrid keyword + semantic search over NoStream: source code, docs/*.md, "
             "every GitHub issue (open and closed, with comments) and the project memory "
             "notes. Returns the best chunks as path:lines with a snippet. Good for 'where "
             "is X handled', 'why was Y done this way', 'what did we learn about Z on the "
@@ -54,7 +54,7 @@ TOOLS = [
                           "description": "A question or identifiers. Plain words and exact names both work."},
                 "k": {"type": "integer", "description": "Results to return (default 8, max 20)."},
                 "source": {"type": "string",
-                           "description": "all (default; EVO's own code, docs, issues, memory), or comma "
+                           "description": "all (default; NoStream's own code, docs, issues, memory), or comma "
                                           "list of: code, docs, issues, memory, thirdparty, commits. "
                                           "Use commits for 'did a sibling project already fix this' "
                                           "(commit messages of every third_party repo, including ones "
@@ -71,7 +71,7 @@ TOOLS = [
         },
     },
     {
-        "name": "evo_rag_status",
+        "name": "nostream_rag_status",
         "description": "How many files/chunks are indexed per source, whether embeddings are on, "
                        "and when issues were last synced.",
         "inputSchema": {"type": "object", "properties": {}},
@@ -83,13 +83,13 @@ _bg = threading.Event()          # set while the background sync is running
 
 
 def log(msg):
-    print(f"[evo-rag] {msg}", file=sys.stderr, flush=True)
+    print(f"[nostream-rag] {msg}", file=sys.stderr, flush=True)
 
 
 def index():
     global _idx
     if _idx is None:
-        _idx = evo_rag.Index()
+        _idx = nostream_rag.Index()
     return _idx
 
 
@@ -110,13 +110,13 @@ def background_sync():
 
 def call_tool(name, args):
     idx = index()
-    if name == "evo_search":
+    if name == "nostream_search":
         if not _bg.is_set():
             idx.sync_files()                            # cheap, throttled
         k = max(1, min(int(args.get("k") or 8), 20))
         hits = idx.search(args.get("query", ""), k=k, source=args.get("source") or "all",
                           path_prefix=args.get("path") or "")
-        text = evo_rag.format_hits(hits)
+        text = nostream_rag.format_hits(hits)
         st = idx.status()
         notes = []
         if _bg.is_set():
@@ -126,7 +126,7 @@ def call_tool(name, args):
         if st["dense_error"]:
             notes.append(f"semantic search off: {st['dense_error']}")
         return text + ("\n\n(" + "; ".join(notes) + ")" if notes else "")
-    if name == "evo_rag_status":
+    if name == "nostream_rag_status":
         return json.dumps(idx.status(), indent=1) + ("\nbackground sync running" if _bg.is_set() else "")
     raise ValueError(f"unknown tool {name}")
 
@@ -137,7 +137,7 @@ def handle(msg):
     if method == "initialize":
         return {"protocolVersion": params.get("protocolVersion", PROTOCOL_DEFAULT),
                 "capabilities": {"tools": {}},
-                "serverInfo": {"name": "evo-rag", "version": "1.0"},
+                "serverInfo": {"name": "nostream-rag", "version": "1.0"},
                 "instructions": INSTRUCTIONS}
     if method == "ping":
         return {}

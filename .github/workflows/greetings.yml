@@ -18,12 +18,12 @@ jobs:
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           issue-message: |
-            👋 Welcome to **EVO Player**! Thanks for opening your first issue in this repository.
+            👋 Welcome to **NoStream**! Thanks for opening your first issue in this repository.
             
-            - Please attach EVO's report: Settings → System & Diagnostics → **Report a Problem**, or **Report the last run** after a crash.
-            - Check our [Roadmap](https://github.com/sainsaji/EVO-PLAYER-PS5/blob/main/docs/planning/roadmap.md) to see related ongoing milestones.
+            - Please attach NoStream's report: Settings → System & Diagnostics → **Report a Problem**, or **Report the last run** after a crash.
+            - Check our [Roadmap](https://github.com/qbyss/nostream/blob/main/docs/planning/roadmap.md) to see related ongoing milestones.
           pr-message: |
-            🎉 Welcome and thank you for your contribution to **EVO Player**!
+            🎉 Welcome and thank you for your contribution to **NoStream**!
 
-            - Please read [CONTRIBUTING.md](https://github.com/sainsaji/EVO-PLAYER-PS5/blob/main/CONTRIBUTING.md): one pull request, one change, and no version, changelog or generated files.
+            - Please read [CONTRIBUTING.md](https://github.com/qbyss/nostream/blob/main/CONTRIBUTING.md): one pull request, one change, and no version, changelog or generated files.
             - Say how you tested it on a PS5. The build checks run once the maintainer approves them for a first pull request.

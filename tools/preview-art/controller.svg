@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- DualSense-style controller, top view, for the Settings "Controller lightbar" preview.
-     Original artwork for EVO Player. Light bars are left unlit: the app draws the glow in the
+     Original artwork for NoStream. Light bars are left unlit: the app draws the glow in the
      theme accent over them (see draw_lightbar in evo_hui_settings_preview.cpp).
      Render: tools/preview-art/render.sh -->
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 380" width="600" height="380">

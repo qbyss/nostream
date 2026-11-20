@@ -1,14 +1,14 @@
-# The dev remote: `evo-remote.sh`
+# The dev remote: `nostream-remote.sh`
 
 A build made with `package-app.sh --usb-remote` can be driven over FTP with no
-controller and no rebuild between tests. EVO polls `/mnt/usb0/nostream_cmd` for one-line
+controller and no rebuild between tests. NoStream polls `/mnt/usb0/nostream_cmd` for one-line
 commands and writes `/mnt/usb0/nostream_status` once a second and `/mnt/usb0/nostream_ui.json`
-whenever the UI changes. `tools/evo-remote.sh` is the host side. The code is
+whenever the UI changes. `tools/nostream-remote.sh` is the host side. The code is
 `src/evo_usb_remote.c`; release builds compile all of it out.
 
 ```bash
-./tools/dx.sh ./tools/evo-remote.sh status       # ~0.2 s per call on the long-lived container
-docker compose run --rm ps5-dev ./tools/evo-remote.sh key down cross
+./tools/dx.sh ./tools/nostream-remote.sh status       # ~0.2 s per call on the long-lived container
+docker compose run --rm ps5-dev ./tools/nostream-remote.sh key down cross
 ```
 
 Batch several `key` presses into one container start; each start costs seconds. Every
@@ -37,11 +37,11 @@ commands (`launch`, `quit`, `close`, `cycle`, `verify`, `kill`) are described in
 | `set <setting> [value]`, `set --list`, `focus <row>` | read or write a setting, list them, open a row (below) |
 | `dbcompare`, `upcompare [--crop x,y,w,h]` | capture one held frame under each Deep Blacks / upscaler mode |
 | `sweep [--dir p] [--secs n] [--max n] [--skip s]...`, `report` | the codec sweep ([../build/validation.md](../build/validation.md#the-codec-sweep)) |
-| `status` | print `evo_status` once |
+| `status` | print `nostream_status` once |
 | `log` | pull `/mnt/usb0/nostream.log` to `output/logs/` |
-| `logs [now] [problems|<text>]` | stream live logs from EVO's HTTP log server (honours `PS5_LOG_PORT`, default 9780) |
-| `watch [s]` | stream `evo_status` and new `evo.log` lines |
-| `clear` | delete `evo.log` and `evo_status` |
+| `logs [now] [problems|<text>]` | stream live logs from NoStream's HTTP log server (honours `PS5_LOG_PORT`, default 9780) |
+| `watch [s]` | stream `nostream_status` and new `nostream.log` lines |
+| `clear` | delete `nostream.log` and `nostream_status` |
 
 ## `key`, and reading focus as text
 
@@ -49,11 +49,11 @@ Buttons: `up down left right cross circle square triangle l1 r1 l2 r2 l3 r3 opti
 touchpad touchpad_left touchpad_right`. `l3` (or `shot`) takes a screenshot.
 
 ```bash
-./tools/evo-remote.sh key down down cross
+./tools/nostream-remote.sh key down down cross
 # down     [focus] #rec-tile-0 "Best of the Best Recent File" (item 1/6, launch) on MainMenu(0)  (seq 3)
 ```
 
-`key` sends each press, waits for `seq` in `evo_ui.json` to move (up to
+`key` sends each press, waits for `seq` in `nostream_ui.json` to move (up to
 `EVO_KEY_WAIT` seconds, default 2.5) and prints where focus came to rest.
 `(unchanged)` means the press moved nothing: the end of a list, or a key the screen
 ignores. `key --no-wait <b>` sends one press and does not read back.
@@ -80,11 +80,11 @@ plus `tools/shot.sh grab` for pixels.
 ## `go`, `set`, `focus`
 
 ```bash
-./tools/evo-remote.sh go settings-playback
-./tools/evo-remote.sh set audio-delay +100      # writes, applies live, prints it back
-./tools/evo-remote.sh set audio-delay           # prints the current value
-./tools/evo-remote.sh set --list                # every name with its valid values
-./tools/evo-remote.sh focus audio-delay         # opens the section, cursor on the row
+./tools/nostream-remote.sh go settings-playback
+./tools/nostream-remote.sh set audio-delay +100      # writes, applies live, prints it back
+./tools/nostream-remote.sh set audio-delay           # prints the current value
+./tools/nostream-remote.sh set --list                # every name with its valid values
+./tools/nostream-remote.sh focus audio-delay         # opens the section, cursor on the row
 ```
 
 - `go` names: `home browse internal favorites recent providers settings
@@ -95,19 +95,19 @@ plus `tools/shot.sh grab` for pixels.
   `volume-boost`, `network-buffer`). The answer file is `/mnt/usb0/nostream_set.txt`; a
   failure prints `ERR ...` and exits 1.
 - **Typing text.** `type` needs Settings → Interface & Storage → `KEYBOARD INPUT` =
-  `VIRTUAL KEYBOARD`: the native PS5 IME is a system dialog and nothing EVO injects
+  `VIRTUAL KEYBOARD`: the native PS5 IME is a system dialog and nothing NoStream injects
   reaches it. If the Square key opened it (a browser search does), `kbclose` cancels
   it. For system dialogs, use Remote Play ([remote-play.md](remote-play.md)).
 
 ## The status line
 
-`evo-remote.sh status`:
+`nostream-remote.sh status`:
 
 ```
 build=<id> t=<s> scr=<n> be=<0|1> pos=<s> dur=<s> fps=<n> fatal=<0|1> eof=<0|1> active=<0|1> parked=<0|1>
 ```
 
-`t=` advancing means EVO is running; `be` is the decoder backend in use (0 FFmpeg,
+`t=` advancing means NoStream is running; `be` is the decoder backend in use (0 FFmpeg,
 1 native); `fatal=1` is a decode failure; `parked=1` is written once as the soft
 close parks, after which `t=` is frozen. The build id comes from `evo_build_id.h`;
 a `+dirty` suffix means an uncommitted tree, and a run whose id does not match the
@@ -115,7 +115,7 @@ build you meant to test proves nothing.
 
 ## Desktop front ends
 
-`python tools/evo-panel.py` is a Tkinter panel over the same scripts (package with
+`python tools/nostream-panel.py` is a Tkinter panel over the same scripts (package with
 any flags, deploy, remote, log pull, preview, klog, screenshots) with streamed
-output. `python tools/evo-dash.py` is the live health dashboard
+output. `python tools/nostream-dash.py` is the live health dashboard
 ([diagnostics.md](diagnostics.md#the-dashboard)).

@@ -1,6 +1,6 @@
 # Shader compilation
 
-How EVO's GPU shaders are compiled for the PS5 (an RDNA 2 part, **`gfx1013`**, GFXIP
+How NoStream's GPU shaders are compiled for the PS5 (an RDNA 2 part, **`gfx1013`**, GFXIP
 10.1.3) and handed to `sceAgc`. The console firmware has no runtime shader compiler, so
 every shader is compiled ahead of time to AMDGPU machine code plus the exact register
 values the hardware needs. The runtime that consumes them is

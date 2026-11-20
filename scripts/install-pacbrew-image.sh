@@ -15,7 +15,7 @@
 #       .../libavformat.a .../libavcodec.a .../libswresample.a
 #       .../libavutil.a   .../libswscale.a
 #   The FFmpeg in this tarball is 7.0.1 (pacbrew-repo/ffmpeg/PKGBUILD:
-#   pkgver=7.0.1). That is the baseline EVO Player must first reproduce
+#   pkgver=7.0.1). That is the baseline NoStream must first reproduce
 #   before any custom FFmpeg is introduced.
 #
 # WHY A SURGICAL COPY INSTEAD OF `tar -x -C /`
@@ -43,7 +43,7 @@ log() { echo "==> [pacbrew] $*"; }
 
 if [[ "${INSTALL_PACBREW}" != "1" ]]; then
     log "INSTALL_PACBREW=0 - skipping prebuilt library sysroot."
-    log "NOTE: ProsperoPlayer/EVO Player will NOT link without SDL2+FFmpeg."
+    log "NOTE: ProsperoPlayer/NoStream will NOT link without SDL2+FFmpeg."
     exit 0
 fi
 

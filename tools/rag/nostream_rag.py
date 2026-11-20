@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""evo_rag.py - local search over EVO's code, docs, GitHub issues and memory notes.
+"""nostream_rag.py - local search over NoStream's code, docs, GitHub issues and memory notes.
 
 One SQLite file (output/rag/index.sqlite) holds every chunk twice: in an FTS5
 keyword index (BM25) and, when `fastembed` is installed, as a 384-d embedding.
@@ -7,10 +7,10 @@ A query runs both and fuses the rankings (reciprocal rank fusion), so an exact
 name like `slot_renew_decoder` and a question like "why does a seek lose frames"
 both land. Without fastembed it still works, keyword-only.
 
-  python tools/rag/evo_rag.py index            # build / update (changed files only)
-  python tools/rag/evo_rag.py search "why not call sceVideoOutOpen" -k 6
-  python tools/rag/evo_rag.py status
-  python tools/rag/evo_rag.py eval             # does it find the right file?
+  python tools/rag/nostream_rag.py index            # build / update (changed files only)
+  python tools/rag/nostream_rag.py search "why not call sceVideoOutOpen" -k 6
+  python tools/rag/nostream_rag.py status
+  python tools/rag/nostream_rag.py eval             # does it find the right file?
 
 Sources (the `source` filter):
   code     .c .h .cpp .hpp .py .sh .rml .rcss ... from `git ls-files` (+ untracked)
@@ -19,7 +19,7 @@ Sources (the `source` filter):
   memory   the Claude Code memory notes for this project
   thirdparty  every reference repo under third_party/ (homebrew clones, ProsperoTV, ...).
               Only searched when asked for (source=thirdparty, or a path under
-              third_party/); "all" leaves it out so reference code never drowns EVO's own.
+              third_party/); "all" leaves it out so reference code never drowns NoStream's own.
               Skip list: THIRDPARTY_SKIP below, or EVO_RAG_THIRDPARTY=dirA,dirB (empty = off).
   commits     the commit messages (subject, body, files touched) of those same repos, on
               every ref, so a fix that is fetched but not checked out still shows up, tagged
@@ -58,9 +58,9 @@ SKIP_FRAGMENTS = ("third_party/", "/third_party/", ".legacy", "bundle_data",
                   "uiview/obj/")
 MAX_FILE_BYTES = 300_000
 # Reference repos: every directory under third_party/ except the skip list below. Each is its
-# own git repo, so the EVO `git ls-files` never lists their files; they are walked on their own
+# own git repo, so the NoStream `git ls-files` never lists their files; they are walked on their own
 # (see list_thirdparty_files). Drop a clone into third_party/ and the next search indexes it.
-THIRDPARTY_SKIP = ("ffmpeg", "FastCopy", "daemons")   # huge or not relevant to EVO
+THIRDPARTY_SKIP = ("ffmpeg", "FastCopy", "daemons")   # huge or not relevant to NoStream
 THIRDPARTY_EXT = {".cs", ".rs", ".go", ".js", ".mjs", ".ts", ".tsx", ".jsx", ".java", ".kt",
                   ".swift", ".lua", ".rb", ".php", ".gradle"}   # on top of the normal set
 THIRDPARTY_SKIP_FRAGMENTS = ("/vendor/", "/dist/", "/build/", "/out/", ".min.", "/node_modules/",

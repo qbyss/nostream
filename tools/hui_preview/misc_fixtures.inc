@@ -31,7 +31,7 @@ static void fill_toast_fixture(evo_rmlui_toast_params_t& p)
 
 static void fill_about_fixture(evo_rmlui_about_params_t& p)
 {
-    p.app_name = "EVO PLAYER";
+    p.app_name = "NOSTREAM";
     p.version = "v1.2.0-beta";
     p.build_tag = "NIGHTLY";
     p.tagline = "CINEMATIC MEDIA PLAYER FOR PLAYSTATION 5 HOMEBREW";

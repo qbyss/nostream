@@ -2,9 +2,9 @@
 # tools/build_mesa_bundle_test.sh - #237: build helpers/mesa_bundle_test.c the
 # way the ProsperoWeb fork builds its payload (SDK v0.41.1, the fork's GL stubs
 # and src/ps5/mesa/ps5_mesa.c, output/mesa_bundle/ps5_mesa_gpu.o), as
-# output/evo_gpu_client.elf for EVO's GPU spike.
+# output/evo_gpu_client.elf for NoStream's GPU spike.
 #
-#   MSYS_NO_PATHCONV=1 docker run --rm -v "D:/Projects/EVO Player:/work" \
+#   MSYS_NO_PATHCONV=1 docker run --rm -v "D:/Projects/NoStream:/work" \
 #     -v "<dir with ps5-payload-dev.tar.gz v0.41.1>:/sdkdl" \
 #     prospero-gpu-dev:llvm18 /work/tools/build_mesa_bundle_test.sh
 set -euo pipefail

@@ -1,6 +1,6 @@
 # Hardware Feature Checks
 
-Per-feature hardware verification scripts executed against an already running EVO build compiled with `--usb-remote`. Each check configures its target setting via `./tools/evo-remote.sh set <name> <value>`, starts clip playback, reads back real runtime telemetry from `evo.log`, `evo_ui.json`, or `evo_status` to verify the feature in action, prints a single PASS or FAIL evidence line, and restores the original setting on exit. Run a check from the host using `./tools/dx.sh tools/checks/<name>.sh [clip]` or directly inside the dev container.
+Per-feature hardware verification scripts executed against an already running NoStream build compiled with `--usb-remote`. Each check configures its target setting via `./tools/nostream-remote.sh set <name> <value>`, starts clip playback, reads back real runtime telemetry from `nostream.log`, `nostream_ui.json`, or `nostream_status` to verify the feature in action, prints a single PASS or FAIL evidence line, and restores the original setting on exit. Run a check from the host using `./tools/dx.sh tools/checks/<name>.sh [clip]` or directly inside the dev container.
 
 audio-delay - lip-sync compensation audio delay applied to output (#170)
 volume-boost - PCM volume gain boost and clipping applied to audio output (#166)

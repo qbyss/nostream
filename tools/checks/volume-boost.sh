@@ -3,13 +3,13 @@
 # tools/checks/volume-boost.sh — Hardware check for audio volume boost (#166).
 #
 # Sets volume-boost to +100% via dev remote, plays a clip, verifies that
-# evo_audio_gain / evo_audio_out logs the active gain boost in evo.log, and restores
+# evo_audio_gain / evo_audio_out logs the active gain boost in nostream.log, and restores
 # the original setting on exit.
 # =============================================================================
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-EVO_REMOTE="${EVO_REMOTE:-$ROOT/tools/evo-remote.sh}"
+EVO_REMOTE="${EVO_REMOTE:-$ROOT/tools/nostream-remote.sh}"
 CLIP="${1:-${EVO_CHECK_CLIP:-/mnt/usb0/test.mkv}}"
 TIMEOUT="${EVO_TIMEOUT:-15}"
 
@@ -43,7 +43,7 @@ fi
 # 4. Wait for audio pipeline initialization and block processing
 sleep 4
 
-# 5. Read evo.log and inspect the real log line written by evo_audio_out.c:162 or PlaybackController.cpp:1308:
+# 5. Read nostream.log and inspect the real log line written by evo_audio_out.c:162 or PlaybackController.cpp:1308:
 # evo_boot_log("audio gain: +%d%% block peak %d -> %d", evo_audio_gain_get_boost(), peak_in, peak_out)
 # evo_boot_log("audio: source %dch -> port %dch (output=%s, pt=%d, boost=%d%%, delay=%dms) handle=%d", ...)
 log_out="$(remote log 2>/dev/null || true)"
@@ -58,6 +58,6 @@ if [[ -n "${evidence}" ]]; then
     exit 0
 else
     last_audio="$(echo "${log_out}" | grep -E 'audio' | tail -1 || true)"
-    echo "FAIL volume-boost: expected 'audio gain: +100%' or 'boost=100%' in evo.log, saw: ${last_audio:-no audio log entry found}"
+    echo "FAIL volume-boost: expected 'audio gain: +100%' or 'boost=100%' in nostream.log, saw: ${last_audio:-no audio log entry found}"
     exit 1
 fi

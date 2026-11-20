@@ -7,10 +7,10 @@
 cd "$(dirname "$0")/../.."
 K=$1
 cp third_party/ProsperoWeb/tools/bench/animtest.html third_party/ProsperoWeb/tools/bench/t_$K.html
-./tools/dx.sh ./tools/evo-remote.sh weburl "http://192.168.0.13:8123/t_$K.html" >/dev/null 2>&1
+./tools/dx.sh ./tools/nostream-remote.sh weburl "http://192.168.0.13:8123/t_$K.html" >/dev/null 2>&1
 sleep 6
 rm -f output/anim/one_*
-for i in 1 2 3; do ./tools/dx.sh ./tools/evo-remote.sh key l3 >/dev/null 2>&1; ./tools/shot.sh grab >/dev/null 2>&1; cp output/screenshots/latest.png output/anim/one_$i.png; sleep 1; done
+for i in 1 2 3; do ./tools/dx.sh ./tools/nostream-remote.sh key l3 >/dev/null 2>&1; ./tools/shot.sh grab >/dev/null 2>&1; cp output/screenshots/latest.png output/anim/one_$i.png; sleep 1; done
 python3 -W ignore -I -c "
 from PIL import Image, ImageChops
 imgs=[Image.open(f'output/anim/one_{i}.png').convert('RGB') for i in (1,2,3)]

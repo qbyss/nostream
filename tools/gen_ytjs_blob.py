@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Embed yt-dlp's challenge solver (third_party/yt-dlp-ejs) into EVO.
+"""Embed yt-dlp's challenge solver (third_party/yt-dlp-ejs) into NoStream.
 
 Writes projects/evoplayer/addons/src/evo_ytjs_blob.c with lib.min.js and
 core.min.js as byte arrays (each NUL-terminated, length excludes the NUL).

@@ -10,9 +10,9 @@ static void fill_reader_fixture(evo_rmlui_reader_params_t& p)
     p.rail_focused = 0;
     
     static const char* const kLines[] = {
-        "# EVO Player",
+        "# NoStream",
         "",
-        "Welcome to EVO Player, the ultimate media player for your homebrew console.",
+        "Welcome to NoStream, the ultimate media player for your homebrew console.",
         "",
         "## Features",
         "- Hardware decoding for maximum performance",
@@ -305,14 +305,14 @@ static void fill_settings_pv_extra_fixture(evo_rmlui_settings_params_t &p, const
     {
         build_preview_section(p, 3, "Interface & Storage", "THEMES, CONTROLLER & SORTING", {
             {EVO_RMLUI_ROW_TOGGLE, "FOLDERS FIRST", "USB FILE BROWSER SORTING", "../icons/icon_folder.png", "", 1, 0, "", {}, 0, -1, false},
-            {EVO_RMLUI_ROW_VALUE, "KEYBOARD INPUT", "TEXT ENTRY METHOD", "../icons/icon_keyboard.png", "VIRTUAL KEYBOARD", 0, EVO_RMLUI_PREVIEW_KEYBOARD, "The virtual keyboard is drawn by EVO. The native one is the PS5 system keyboard.", {"VIRTUAL KEYBOARD", "NATIVE PS5 IME"}, 0, 0, false},
+            {EVO_RMLUI_ROW_VALUE, "KEYBOARD INPUT", "TEXT ENTRY METHOD", "../icons/icon_keyboard.png", "VIRTUAL KEYBOARD", 0, EVO_RMLUI_PREVIEW_KEYBOARD, "The virtual keyboard is drawn by NoStream. The native one is the PS5 system keyboard.", {"VIRTUAL KEYBOARD", "NATIVE PS5 IME"}, 0, 0, false},
         });
     }
     else if (kind == "keyboard_ps5")
     {
         build_preview_section(p, 3, "Interface & Storage", "THEMES, CONTROLLER & SORTING", {
             {EVO_RMLUI_ROW_TOGGLE, "FOLDERS FIRST", "USB FILE BROWSER SORTING", "../icons/icon_folder.png", "", 1, 0, "", {}, 0, -1, false},
-            {EVO_RMLUI_ROW_VALUE, "KEYBOARD INPUT", "TEXT ENTRY METHOD", "../icons/icon_keyboard.png", "NATIVE PS5 IME", 0, EVO_RMLUI_PREVIEW_KEYBOARD, "The virtual keyboard is drawn by EVO. The native one is the PS5 system keyboard.", {"VIRTUAL KEYBOARD", "NATIVE PS5 IME"}, 1, 1, false},
+            {EVO_RMLUI_ROW_VALUE, "KEYBOARD INPUT", "TEXT ENTRY METHOD", "../icons/icon_keyboard.png", "NATIVE PS5 IME", 0, EVO_RMLUI_PREVIEW_KEYBOARD, "The virtual keyboard is drawn by NoStream. The native one is the PS5 system keyboard.", {"VIRTUAL KEYBOARD", "NATIVE PS5 IME"}, 1, 1, false},
         });
     }
     else if (kind == "port_free" || kind == "port_busy" || kind == "port_fallback" || kind == "port_none")
@@ -329,17 +329,17 @@ static void fill_settings_pv_extra_fixture(evo_rmlui_settings_params_t &p, const
                                           : "Ports 9780 to 9789 are all taken, so the phone keyboard and live log are off. Please set a new port.";
         build_preview_section(p, 3, "Interface & Storage", "THEMES, CONTROLLER & SORTING", {
             {EVO_RMLUI_ROW_VALUE, "KEYBOARD INPUT", "TEXT ENTRY METHOD", "../icons/icon_keyboard.png", "VIRTUAL KEYBOARD", 0, 0, "", {"VIRTUAL KEYBOARD", "NATIVE PS5 IME"}, 0, -1, false},
-            {EVO_RMLUI_ROW_VALUE, "PHONE & LOG PORT", "PHONE LINK & LIVE LOG", "../icons/icon_keyboard.png", badge, 0, EVO_RMLUI_PREVIEW_PORT, "EVO checks the port is free before it saves it. If it is busy at start-up, EVO tries the next nine and shows the one it got.", {link, status}, state, -1, false},
+            {EVO_RMLUI_ROW_VALUE, "PHONE & LOG PORT", "PHONE LINK & LIVE LOG", "../icons/icon_keyboard.png", badge, 0, EVO_RMLUI_PREVIEW_PORT, "NoStream checks the port is free before it saves it. If it is busy at start-up, NoStream tries the next nine and shows the one it got.", {link, status}, state, -1, false},
         });
     }
     else if (kind == "report" || kind == "report_nolink")
     {
         const int state = (kind == "report") ? 0 : 1;
         const char *link = state == 0 ? "http://192.168.0.12:9780/report" : "";
-        const char *status = state == 0 ? "The phone must be on the same network as the PS5. EVO has to stay open."
+        const char *status = state == 0 ? "The phone must be on the same network as the PS5. NoStream has to stay open."
                                         : "No network: the phone link is off. Save the report to USB instead.";
         build_preview_section(p, 4, "System & Diagnostics", "DIAGNOSTICS & SYSTEM MANAGEMENT", {
-            {EVO_RMLUI_ROW_ACTION, "REPORT A PROBLEM", "SEND EVO'S LOG FROM YOUR PHONE, OR SAVE IT TO USB", "../icons/icon_report.png", "SAVE", 0, EVO_RMLUI_PREVIEW_REPORT, "The report has EVO's log, version and settings. Passwords and tokens are taken out.", {link, status}, state, -1, false},
+            {EVO_RMLUI_ROW_ACTION, "REPORT A PROBLEM", "SEND NOSTREAM'S LOG FROM YOUR PHONE, OR SAVE IT TO USB", "../icons/icon_report.png", "SAVE", 0, EVO_RMLUI_PREVIEW_REPORT, "The report has NoStream's log, version and settings. Passwords and tokens are taken out.", {link, status}, state, -1, false},
             {EVO_RMLUI_ROW_TOGGLE, "DEBUG OVERLAY", "SHOWS LIVE PERFORMANCE NUMBERS ON SCREEN", "../icons/icon_activity.png", "", 0, 0, "", {}, 0, -1, false},
             {EVO_RMLUI_ROW_ACTION, "DEVELOPER TOOLS", "SYSTEM DIAGNOSTICS & PERFORMANCE STATS", "../icons/icon_developer_tools.png", "OPEN", 0, 0, "", {}, 0, -1, false}
         });
@@ -349,7 +349,7 @@ static void fill_settings_pv_extra_fixture(evo_rmlui_settings_params_t &p, const
         build_preview_section(p, 4, "System & Diagnostics", "DIAGNOSTICS & SYSTEM MANAGEMENT", {
             {EVO_RMLUI_ROW_ACTION, "DEVELOPER TOOLS", "SYSTEM DIAGNOSTICS & PERFORMANCE STATS", "../icons/icon_developer_tools.png", "OPEN", 0, 0, "", {}, 0, -1, false},
             {EVO_RMLUI_ROW_TOGGLE, "DEBUG OVERLAY", "SHOWS LIVE PERFORMANCE NUMBERS ON SCREEN", "../icons/icon_activity.png", "", 1, EVO_RMLUI_PREVIEW_DEBUG_OVERLAY, "Shows live performance numbers on screen.", {}, 0, -1, false},
-            {EVO_RMLUI_ROW_ACTION, "QUIT EVO", "RELEASE EVERYTHING, THEN CLOSE FROM THE SWITCHER", "../icons/icon_power.png", "QUIT", 0, 0, "", {}, 0, -1, false}
+            {EVO_RMLUI_ROW_ACTION, "QUIT NOSTREAM", "RELEASE EVERYTHING, THEN CLOSE FROM THE SWITCHER", "../icons/icon_power.png", "QUIT", 0, 0, "", {}, 0, -1, false}
         });
     }
     else if (kind == "debug_overlay_off")
@@ -357,7 +357,7 @@ static void fill_settings_pv_extra_fixture(evo_rmlui_settings_params_t &p, const
         build_preview_section(p, 4, "System & Diagnostics", "DIAGNOSTICS & SYSTEM MANAGEMENT", {
             {EVO_RMLUI_ROW_ACTION, "DEVELOPER TOOLS", "SYSTEM DIAGNOSTICS & PERFORMANCE STATS", "../icons/icon_developer_tools.png", "OPEN", 0, 0, "", {}, 0, -1, false},
             {EVO_RMLUI_ROW_TOGGLE, "DEBUG OVERLAY", "SHOWS LIVE PERFORMANCE NUMBERS ON SCREEN", "../icons/icon_activity.png", "", 0, EVO_RMLUI_PREVIEW_DEBUG_OVERLAY, "Shows live performance numbers on screen.", {}, 0, -1, false},
-            {EVO_RMLUI_ROW_ACTION, "QUIT EVO", "RELEASE EVERYTHING, THEN CLOSE FROM THE SWITCHER", "../icons/icon_power.png", "QUIT", 0, 0, "", {}, 0, -1, false}
+            {EVO_RMLUI_ROW_ACTION, "QUIT NOSTREAM", "RELEASE EVERYTHING, THEN CLOSE FROM THE SWITCHER", "../icons/icon_power.png", "QUIT", 0, 0, "", {}, 0, -1, false}
         });
     }
     else if (kind == "motion_off")

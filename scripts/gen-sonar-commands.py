@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Generate compile_commands.json containing all EVO Player source files
+Generate compile_commands.json containing all NoStream source files
 for SonarCloud / SonarQube static analysis.
 """
 import glob

@@ -34,7 +34,7 @@ def main():
     draw = ImageDraw.Draw(img)
 
     # Title
-    draw.text((pad, 20), "EVO PLAYER - ICONS CONTACT SHEET (ISSUE #107)", fill=ACCENT_COLOR)
+    draw.text((pad, 20), "NOSTREAM - ICONS CONTACT SHEET (ISSUE #107)", fill=ACCENT_COLOR)
 
     for idx, icon_path in enumerate(icons):
         r = idx // cols

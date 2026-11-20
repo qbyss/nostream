@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Generate EVO Player's UI icons.
+Generate NoStream's UI icons.
 
 WHY THIS EXISTS
     The icons shipped in assets/renderer_reset_assets.h are 72x72 PNGs whose

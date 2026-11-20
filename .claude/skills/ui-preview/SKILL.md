@@ -1,6 +1,6 @@
 ---
 name: ui-preview
-description: Design or change an EVO list screen (stream picker, audio picker, recent, favorites, provider lists) and look at it on the host before touching the console. Use when the user wants UI suggestions or mockups, asks to see the layout, or when adding pills, a details card or a busy card to a kit list screen. Renders real screens with tools/hui_preview.sh.
+description: Design or change a NoStream list screen (stream picker, audio picker, recent, favorites, provider lists) and look at it on the host before touching the console. Use when the user wants UI suggestions or mockups, asks to see the layout, or when adding pills, a details card or a busy card to a kit list screen. Renders real screens with tools/hui_preview.sh.
 ---
 
 # Design a list screen and view it on the host
@@ -45,6 +45,6 @@ sets `params.loading`, `update()` joins the thread, toasts the result and naviga
 
 ## 5. Then verify and ship
 
-Wire the real screen, `docker compose run --rm ps5-dev ./scripts/build-evoplayer.sh` (or the
+Wire the real screen, `docker compose run --rm ps5-dev ./scripts/build-nostream.sh` (or the
 full package from `ship`), drive it with `ui --line` (focus text) on the console, and say
-plainly that pixels were checked on the host only. Commit with `commit-evo`.
+plainly that pixels were checked on the host only. Commit with `commit-nostream`.

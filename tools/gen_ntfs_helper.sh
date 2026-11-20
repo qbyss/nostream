@@ -1,10 +1,10 @@
 #!/bin/bash
 # tools/gen_ntfs_helper.sh - build the NTFS disk-reader payload (#217) and embed
-# it in EVO as projects/evoplayer/src/generated/evo_ntfs_helper_elf.c.
+# it in NoStream as projects/evoplayer/src/generated/evo_ntfs_helper_elf.c.
 #
-# EVO sends these bytes to the console's ELF loader when a USB disk may be
+# NoStream sends these bytes to the console's ELF loader when a USB disk may be
 # there (projects/evoplayer/helpers/ntfs_helper.c says why). Run by
-# scripts/build-evoplayer.sh and scripts/package-app.sh inside the container.
+# scripts/build-nostream.sh and scripts/package-app.sh inside the container.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 SRC=projects/evoplayer/helpers/ntfs_helper.c

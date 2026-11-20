@@ -1,8 +1,8 @@
 {
   "mcpServers": {
-    "evo-rag": {
+    "nostream-rag": {
       "command": "python",
-      "args": ["tools/rag/evo_rag_mcp.py"]
+      "args": ["tools/rag/nostream_rag_mcp.py"]
     }
   }
 }

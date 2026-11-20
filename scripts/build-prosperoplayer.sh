@@ -3,7 +3,7 @@
 # scripts/build-prosperoplayer.sh
 #
 # Import the upstream ProsperoPlayer and build it UNMODIFIED, to establish the
-# baseline EVO Player forks from.
+# baseline NoStream forks from.
 #
 #   ./scripts/build-prosperoplayer.sh              clone (if needed) + build
 #   ./scripts/build-prosperoplayer.sh --clone-only

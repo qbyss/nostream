@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # =============================================================================
-# tools/hui_preview.sh - render EVO's ps5-homebrew-ui screens on the host.
+# tools/hui_preview.sh - render NoStream's ps5-homebrew-ui screens on the host.
 #
 #   ./tools/hui_preview.sh [width height]     -> output/uiview/hui_*.png
 #
 # Builds tools/hui_preview/hui_preview.cpp with the kit's OpenGL backend and
-# EVO's screen code (projects/evoplayer/ui_kit), then renders every fixture
+# NoStream's screen code (projects/evoplayer/ui_kit), then renders every fixture
 # through Mesa's surfaceless EGL. Same screens and shader as the console; the
 # console draws them through sceAgc instead (ui_kit/src/hui_agc_batch.cpp).
 # Re-runs itself in the dev container when started from Windows.
@@ -45,7 +45,7 @@ SOURCES=("${ROOT}/tools/hui_preview/hui_preview.cpp"
 while IFS= read -r -d '' f; do SOURCES+=("$f"); done < <(
     find "${KIT}/src/gfx" "${KIT}/src/ui" "${KIT}/src/core" -name '*.cpp' -print0 | sort -z)
 SOURCES+=("${KIT}/src/audio/cues.cpp" "${KIT}/src/audio/mixer.cpp" "${KIT}/src/audio/wav.cpp")
-# #237: Prospero Browser's app and UI, copied into EVO (browser/).
+# #237: Prospero Browser's app and UI, copied into NoStream (browser/).
 while IFS= read -r -d '' f; do SOURCES+=("$f"); done < <(
     find "${EVO}/browser/browser" "${EVO}/browser/web" "${EVO}/browser/ui" -name '*.cpp' -print0 | sort -z)
 FLAGS+=(-I"${EVO}/browser")

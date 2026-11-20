@@ -1,6 +1,6 @@
 # Architecture
 
-How EVO Player is put together, and where each layer lives. For the C++ core
+How NoStream is put together, and where each layer lives. For the C++ core
 (screens, services, state machines) read [core.md](core.md). For what the app
 module is and the traps of running in it, read [app-module.md](app-module.md).
 
@@ -8,7 +8,7 @@ module is and the traps of running in it, read [app-module.md](app-module.md).
 
 ## What it runs as
 
-EVO is a **fake-signed Media-category app module**, title `PPSA99273`. It has its
+NoStream is a **fake-signed Media-category app module**, title `PPSA99273`. It has its
 own title id, `param.json`, sandbox and user session, and ShadowMountPlus mounts
 it from `/data/homebrew/PPSA99273.ffpfsc`. That context is what gives it
 `sceVideodec2` hardware decode and `sceAgc` GPU access; a payload loaded through
@@ -23,7 +23,7 @@ main.cpp            entry point only: crash + SIGTERM handlers -> Application::r
   core/             the player (C++17): Application, ScreenManager, screens/, services/,
   │                 interfaces/, fsm/, audio/ (IEC 61937 + passthrough)
   │
-  ├── ui_kit/       EVO's own screens, drawn with the ps5-homebrew-ui kit (ui/hui-kit.md)
+  ├── ui_kit/       NoStream's own screens, drawn with the ps5-homebrew-ui kit (ui/hui-kit.md)
   ├── ui_rml/       RmlUi: the bridge every screen call goes through, provider
   │                 documents, the fallback, and the sceAgc render interface
   ├── ui/           shared UI primitives in C: nav, focus, input, layout, feedback,
@@ -107,7 +107,7 @@ probed at run time, never a build-time dependency. The full codec table is in
 ## Repository layout
 
 ```
-EVO Player/
+NoStream/
 ├── Dockerfile  Dockerfile.amdllpc          toolchain images (the shader compiler is the second)
 ├── docker-compose.yml  docker-compose.amdllpc.yml
 │                   (Dockerfile.ps5-opengl is an unused leftover of the removed OpenGL path)

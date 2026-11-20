@@ -84,7 +84,7 @@ static void build_launch(evo_rmlui_launch_params_t& p,
                          std::vector<std::vector<uint32_t>>& covers,
                          int focus_tile) {
     memset(&p, 0, sizeof(p));
-    p.app_name = "EVO PLAYER";
+    p.app_name = "NOSTREAM";
     p.version = "v0.11.0";
     p.clock = "21:48";
     p.theme_name = "MIDNIGHT";

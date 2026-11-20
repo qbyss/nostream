@@ -1,18 +1,18 @@
 name: Feature request
-description: Something EVO cannot do yet, or could do better.
+description: Something NoStream cannot do yet, or could do better.
 title: "[Feature]: "
 labels: ["enhancement"]
 body:
   - type: markdown
     attributes:
       value: |
-        Check the [roadmap](https://github.com/sainsaji/EVO-PLAYER-PS5/blob/main/docs/planning/roadmap.md) and the open
+        Check the [roadmap](https://github.com/qbyss/nostream/blob/main/docs/planning/roadmap.md) and the open
         issues first: it may already be planned. One request per issue.
   - type: textarea
     id: problem
     attributes:
       label: Problem
-      description: What do you want to do that EVO does not let you do today? Describe the situation, not the solution.
+      description: What do you want to do that NoStream does not let you do today? Describe the situation, not the solution.
       placeholder: "When I watch a series from Jellyfin, I have to go back to the list after every episode."
     validations:
       required: true
@@ -20,7 +20,7 @@ body:
     id: proposal
     attributes:
       label: What you would like
-      description: How it could work in EVO, from the viewer's side - the screen, the button, the setting.
+      description: How it could work in NoStream, from the viewer's side - the screen, the button, the setting.
     validations:
       required: true
   - type: textarea

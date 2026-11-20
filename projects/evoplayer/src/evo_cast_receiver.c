@@ -469,7 +469,7 @@ static void send_ssdp_reply(int fd, const struct sockaddr_in *client, const char
         "DATE: %s\r\n"
         "EXT:\r\n"
         "LOCATION: http://%s:%d/ssdp/device-desc.xml\r\n"
-        "SERVER: FreeBSD/13.6 UPnP/1.1 EVOPlayer/1.0\r\n"
+        "SERVER: FreeBSD/13.6 UPnP/1.1 NoStream/1.0\r\n"
         "ST: %s\r\n"
         "USN: uuid:%s::%s\r\n"
         "BOOTID.UPNP.ORG: 1\r\n"
@@ -503,7 +503,7 @@ static void send_ssdp_notify(int fd, const char *local_ip, int port, const char 
             "LOCATION: http://%s:%d/ssdp/device-desc.xml\r\n"
             "NT: %s\r\n"
             "NTS: %s\r\n"
-            "SERVER: FreeBSD/13.6 UPnP/1.1 EVOPlayer/1.0\r\n"
+            "SERVER: FreeBSD/13.6 UPnP/1.1 NoStream/1.0\r\n"
             "USN: uuid:%s::%s\r\n"
             "BOOTID.UPNP.ORG: 1\r\n"
             "CONFIGID.UPNP.ORG: 1\r\n"
@@ -1175,7 +1175,7 @@ static int lounge_listen_channel(const char *poll_url, const char *token,
     int rlen = snprintf(req, sizeof(req),
         "GET %s HTTP/1.1\r\n"
         "Host: %s\r\n"
-        "User-Agent: EVOPlayer-PS5/1.0\r\n"
+        "User-Agent: NoStream-PS5/1.0\r\n"
         "Accept: */*\r\n"
         "X-YouTube-LoungeId-Token: %s\r\n"
         "Connection: keep-alive\r\n\r\n",

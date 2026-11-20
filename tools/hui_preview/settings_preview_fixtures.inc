@@ -343,21 +343,21 @@ static void fill_settings_pv_fixture(evo_rmlui_settings_params_t &p, const std::
             {EVO_RMLUI_ROW_TOGGLE, "CONTROLLER LIGHTBAR", "DUALSENSE LIGHT FOLLOWS THE THEME ACCENT", "../icons/icon_gamepad.png", "", 0, 0, "", {}, 0, -1, false},
             {EVO_RMLUI_ROW_TOGGLE, "FOLDERS FIRST", "USB FILE BROWSER SORTING", "../icons/icon_folder.png", "", 1, 0, "", {}, 0, -1, false},
             {EVO_RMLUI_ROW_VALUE, "KEYBOARD INPUT", "TEXT ENTRY METHOD", "../icons/icon_keyboard.png", "VIRTUAL KEYBOARD", 0, kb,
-             "The virtual keyboard is drawn by EVO. The native one is the PS5 system keyboard.", {"VIRTUAL KEYBOARD", "NATIVE PS5 IME"}, 0, -1, false},
+             "The virtual keyboard is drawn by NoStream. The native one is the PS5 system keyboard.", {"VIRTUAL KEYBOARD", "NATIVE PS5 IME"}, 0, -1, false},
             {EVO_RMLUI_ROW_ACTION, "PHONE & LOG PORT", "PHONE KEYBOARD LINK AND LIVE LOG - CROSS TO CHANGE", "../icons/icon_keyboard.png", "9780", 0, 0, "", {}, 0, -1, false},
             {EVO_RMLUI_ROW_TOGGLE, "PHONE CASTING (DIAL)", "CAST YOUTUBE FROM YOUR PHONE (PORT 8765)", "../icons/icon_tv.png", "", pc ? on : 1, pc,
-             "Allows casting YouTube from your phone directly to EVO Player (DIAL receiver on port 8765).", {}, 0, -1, false},
-            {EVO_RMLUI_ROW_TOGGLE, "CAST TO EVO PLAYER", "PLAY CAST IN NATIVE PLAYER (UP TO 1080P)", "../icons/icon_tv.png", "", cp ? on : 1, cp,
-             "Plays YouTube casts in EVO Player, full length up to 1080p60, instead of the 720p WebKit browser.", {}, 0, -1, false},
+             "Allows casting YouTube from your phone directly to NoStream (DIAL receiver on port 8765).", {}, 0, -1, false},
+            {EVO_RMLUI_ROW_TOGGLE, "CAST TO NOSTREAM", "PLAY CAST IN NATIVE PLAYER (UP TO 1080P)", "../icons/icon_tv.png", "", cp ? on : 1, cp,
+             "Plays YouTube casts in NoStream, full length up to 1080p60, instead of the 720p WebKit browser.", {}, 0, -1, false},
             {EVO_RMLUI_ROW_ACTION, "PLAY A YOUTUBE LINK", "PASTE OR TYPE A LINK - PLAYS FULL LENGTH (UP TO 1080P60)", "../icons/icon_tv.png", "", 0, yt,
-             "Paste or type a YouTube link (or use the phone page) and EVO plays the whole video, up to 1080p60.", {}, 0, -1, false},
+             "Paste or type a YouTube link (or use the phone page) and NoStream plays the whole video, up to 1080p60.", {}, 0, -1, false},
         });
     }
     else if (kind == "info_quit")
     {
         build_preview_section(p, 4, "System & Diagnostics", "DIAGNOSTICS & SYSTEM MANAGEMENT", {
             {EVO_RMLUI_ROW_ACTION, "DEVELOPER TOOLS", "SYSTEM DIAGNOSTICS & PERFORMANCE STATS", "../icons/icon_developer_tools.png", "OPEN", 0, 0, "", {}, 0, -1, false},
-            {EVO_RMLUI_ROW_ACTION, "QUIT EVO", "RELEASE EVERYTHING, THEN CLOSE FROM THE SWITCHER", "../icons/icon_power.png", "QUIT", 0, EVO_RMLUI_PREVIEW_INFO, "Releases everything, then close EVO from the switcher.", {}, 0, -1, false},
+            {EVO_RMLUI_ROW_ACTION, "QUIT NOSTREAM", "RELEASE EVERYTHING, THEN CLOSE FROM THE SWITCHER", "../icons/icon_power.png", "QUIT", 0, EVO_RMLUI_PREVIEW_INFO, "Releases everything, then close NoStream from the switcher.", {}, 0, -1, false},
             {EVO_RMLUI_ROW_ACTION, "CONSOLE", "DETECTED HARDWARE MODEL", "../icons/icon_tv.png", "PS5", 0, 0, "", {}, 0, -1, false}
         });
     }
@@ -429,7 +429,7 @@ static void fill_settings_pv_fixture(evo_rmlui_settings_params_t &p, const std::
     {
         build_preview_section(p, 4, "System & Diagnostics", "DIAGNOSTICS & SYSTEM MANAGEMENT", {
             {EVO_RMLUI_ROW_ACTION, "DEVELOPER TOOLS", "SYSTEM DIAGNOSTICS & PERFORMANCE STATS", "../icons/icon_developer_tools.png", "OPEN", 0, 0, "", {}, 0, -1, false},
-            {EVO_RMLUI_ROW_ACTION, "CONSOLE", "DETECTED HARDWARE MODEL", "../icons/icon_monitor.png", "PS5 PRO", 0, EVO_RMLUI_PREVIEW_CONSOLE, "The console EVO detected. Some features, like Maximum AI upscaling, need a PS5 Pro.", {}, 0, -1, false},
+            {EVO_RMLUI_ROW_ACTION, "CONSOLE", "DETECTED HARDWARE MODEL", "../icons/icon_monitor.png", "PS5 PRO", 0, EVO_RMLUI_PREVIEW_CONSOLE, "The console NoStream detected. Some features, like Maximum AI upscaling, need a PS5 Pro.", {}, 0, -1, false},
             {EVO_RMLUI_ROW_ACTION, "MEMORY", "12.9 GIB - PRO MODE", "../icons/icon_memory_stick.png", "12.9 GIB - PRO MODE", 0, 0, "", {}, 0, -1, false}
         });
     }
@@ -437,7 +437,7 @@ static void fill_settings_pv_fixture(evo_rmlui_settings_params_t &p, const std::
     {
         build_preview_section(p, 4, "System & Diagnostics", "DIAGNOSTICS & SYSTEM MANAGEMENT", {
             {EVO_RMLUI_ROW_ACTION, "CONSOLE", "DETECTED HARDWARE MODEL", "../icons/icon_monitor.png", "PS5 PRO", 0, 0, "", {}, 0, -1, false},
-            {EVO_RMLUI_ROW_ACTION, "MEMORY", "12.9 GIB - PRO MODE", "../icons/icon_memory_stick.png", "12.9 GIB - PRO MODE", 0, EVO_RMLUI_PREVIEW_MEMORY, "How much GPU memory EVO was given. A PS5 Pro gives about 1.2 GiB more to the Pro memory package. Standard mode is the normal amount.", {}, 0, -1, false},
+            {EVO_RMLUI_ROW_ACTION, "MEMORY", "12.9 GIB - PRO MODE", "../icons/icon_memory_stick.png", "12.9 GIB - PRO MODE", 0, EVO_RMLUI_PREVIEW_MEMORY, "How much GPU memory NoStream was given. A PS5 Pro gives about 1.2 GiB more to the Pro memory package. Standard mode is the normal amount.", {}, 0, -1, false},
             {EVO_RMLUI_ROW_ACTION, "SOFTWARE UPDATE", "RUNNING v0.13.6 - CROSS TO CHECK FOR UPDATES", "../icons/icon_download.png", "UPDATE", 0, 0, "", {}, 0, -1, false}
         });
     }
@@ -445,15 +445,15 @@ static void fill_settings_pv_fixture(evo_rmlui_settings_params_t &p, const std::
     {
         build_preview_section(p, 4, "System & Diagnostics", "DIAGNOSTICS & SYSTEM MANAGEMENT", {
             {EVO_RMLUI_ROW_ACTION, "MEMORY", "12.9 GIB - PRO MODE", "../icons/icon_memory_stick.png", "12.9 GIB - PRO MODE", 0, 0, "", {}, 0, -1, false},
-            {EVO_RMLUI_ROW_ACTION, "SOFTWARE UPDATE", "RUNNING v0.13.6 - CROSS TO CHECK FOR UPDATES", "../icons/icon_download.png", "UPDATE", 0, EVO_RMLUI_PREVIEW_UPDATE, "Checks GitHub for a newer EVO. It downloads only after you say so, checks the file against GitHub's checksum, and replaces the installed image just once, when you confirm. EVO then closes; open it again from the Games row.", {}, 0, -1, false},
-            {EVO_RMLUI_ROW_ACTION, "QUIT EVO", "RELEASE EVERYTHING, THEN CLOSE FROM THE SWITCHER", "../icons/icon_power.png", "QUIT", 0, 0, "", {}, 0, -1, false}
+            {EVO_RMLUI_ROW_ACTION, "SOFTWARE UPDATE", "RUNNING v0.13.6 - CROSS TO CHECK FOR UPDATES", "../icons/icon_download.png", "UPDATE", 0, EVO_RMLUI_PREVIEW_UPDATE, "Checks GitHub for a newer NoStream. It downloads only after you say so, checks the file against GitHub's checksum, and replaces the installed image just once, when you confirm. NoStream then closes; open it again from the Games row.", {}, 0, -1, false},
+            {EVO_RMLUI_ROW_ACTION, "QUIT NOSTREAM", "RELEASE EVERYTHING, THEN CLOSE FROM THE SWITCHER", "../icons/icon_power.png", "QUIT", 0, 0, "", {}, 0, -1, false}
         });
     }
     else if (kind == "quit")
     {
         build_preview_section(p, 4, "System & Diagnostics", "DIAGNOSTICS & SYSTEM MANAGEMENT", {
             {EVO_RMLUI_ROW_ACTION, "SOFTWARE UPDATE", "RUNNING v0.13.6 - CROSS TO CHECK FOR UPDATES", "../icons/icon_download.png", "UPDATE", 0, 0, "", {}, 0, -1, false},
-            {EVO_RMLUI_ROW_ACTION, "QUIT EVO", "RELEASE EVERYTHING, THEN CLOSE FROM THE SWITCHER", "../icons/icon_power.png", "QUIT", 0, EVO_RMLUI_PREVIEW_QUIT, "Releases everything, then close EVO from the switcher.", {}, 0, -1, false},
+            {EVO_RMLUI_ROW_ACTION, "QUIT NOSTREAM", "RELEASE EVERYTHING, THEN CLOSE FROM THE SWITCHER", "../icons/icon_power.png", "QUIT", 0, EVO_RMLUI_PREVIEW_QUIT, "Releases everything, then close NoStream from the switcher.", {}, 0, -1, false},
             {EVO_RMLUI_ROW_ACTION, "CONSOLE", "DETECTED HARDWARE MODEL", "../icons/icon_monitor.png", "PS5 PRO", 0, 0, "", {}, 0, -1, false}
         });
     }

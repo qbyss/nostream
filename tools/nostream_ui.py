@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """
-tools/evo_ui.py - #115: read EVO's UI state as text (called by evo-remote.sh).
+tools/nostream_ui.py - #115: read NoStream's UI state as text (called by nostream-remote.sh).
 
 A --usb-remote build writes /mnt/usb0/nostream_ui.json whenever the screen, the
 focused element, a modal or a toast changes. This reads it over FTP, so the
 remote can navigate without a screenshot.
 
-  evo_ui.py show [--line]        pretty JSON (or just the one-line summary)
-  evo_ui.py key <button>...      press each button in turn; after each, wait
+  nostream_ui.py show [--line]        pretty JSON (or just the one-line summary)
+  nostream_ui.py key <button>...      press each button in turn; after each, wait
                                  for the state it produced and print its line
 
 Env: PS5_HOST, FTP_PORT (2121), EVO_KEY_WAIT (seconds per press, default 2.5).
@@ -21,8 +21,8 @@ from ftplib import FTP, error_perm
 
 HOST = os.environ["PS5_HOST"]
 PORT = int(os.environ.get("FTP_PORT", "2121"))
-UI_PATHS = ["/mnt/usb0/nostream_ui.json", "/data/nostream/evo_ui.json"]
-CMD_PATHS = ["/mnt/usb0/nostream_cmd", "/data/nostream/evo_cmd"]
+UI_PATHS = ["/mnt/usb0/nostream_ui.json", "/data/nostream/nostream_ui.json"]
+CMD_PATHS = ["/mnt/usb0/nostream_cmd", "/data/nostream/nostream_cmd"]
 
 
 def connect():
@@ -53,7 +53,7 @@ def read_state(f):
 def summary(st):
     """[focus] #id "text" (item i/n, doc) on Screen  [modal ...] [toast ...]"""
     if not st:
-        return "[focus] (no evo_ui.json - launched? built --usb-remote?)"
+        return "[focus] (no nostream_ui.json - launched? built --usb-remote?)"
     ui = st.get("ui", {})
     scr = ui.get("screen") or {}
     foc = ui.get("focused")

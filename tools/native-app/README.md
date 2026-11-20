@@ -1,17 +1,17 @@
 <!--
 SPDX-License-Identifier: GPL-3.0-or-later
 Copyright (C) 2026 BlackBearReloaded  (upstream boilerplate + ProsperoLight)
-Copyright (C) 2026 EVO Player contributors  (vendoring + EVO integration)
+Copyright (C) 2026 NoStream contributors  (vendoring + NoStream integration)
 -->
 
 # `tools/native-app/` — PS5 game-category app-module build tail
 
-This directory is the **link + package tail** for building EVO Player as a
+This directory is the **link + package tail** for building NoStream as a
 fake-signed, game-category **app module** (`PPSA99273`) instead of an
 hbldr/elfldr payload. It is what the app module build needs; see
 [docs/architecture/app-module.md](../../docs/architecture/app-module.md).
 
-Compilation still uses EVO's normal toolchain and per-object build; only the
+Compilation still uses NoStream's normal toolchain and per-object build; only the
 **final link, the LLVM-PIE → PS5-module conversion, the FSELF signing, and the
 `dist/` assembly** happen here. Driven by
 [`scripts/package-app.sh`](../../scripts/package-app.sh).
@@ -24,7 +24,7 @@ Forked verbatim from **`blackbearreloaded/ps5-native-app-boilerplate`**
 `103264dfe2761d35772671792fff4f013a573e70`), which is the tree the first app-module hardware check ran against on 2026-09-01.
 
 The local reference clone lives at `third_party/ProsperoLight/` (git-ignored);
-see its `README.EVO.md`. Files were copied from:
+see its `README.NoStream.md`. Files were copied from:
 
 | Vendored here | Upstream path (in the clone) |
 |---|---|
@@ -39,10 +39,10 @@ see its `README.EVO.md`. Files were copied from:
 All upstream SPDX + copyright headers are kept intact. Upstream files are
 verbatim (LF-normalised via `dos2unix`) **except**:
 
-- **`ps5-pie.ld`** — EVO added `PROVIDE_HIDDEN(__eh_frame[_hdr]_{start,end})`
+- **`ps5-pie.ld`** — NoStream added `PROVIDE_HIDDEN(__eh_frame[_hdr]_{start,end})`
   in the `.eh_frame[_hdr]` output sections. `libunwind.a` references those
   bounds; a custom `-T` script must define them (the SDK's default script does).
-- **`stubs/libc_ext.c`** — NEW, EVO-authored, small. Just `_setjmp`/`_longjmp`
+- **`stubs/libc_ext.c`** — NEW, NoStream-authored, small. Just `_setjmp`/`_longjmp`
   (asm alias to the plain forms), `dladdr` + `__dl*` no-ops, and `recvmmsg`/
   `sendmmsg` (ENOSYS). `scripts/package-app.sh` compiles it INTO `eboot.bin`.
   The bulk of the FreeBSD libc gap (xlocale `*_l`, `gmtime_r`, `nl_langinfo`,
@@ -55,7 +55,7 @@ verbatim (LF-normalised via `dos2unix`) **except**:
   `libSceLibcInternal` doesn't export the xlocale family and the stub bodies
   are discarded, so the imports bound to NULL.
 
-- **`stubs/evo_dns.c`** — NEW, EVO-authored (#91). `getaddrinfo` /
+- **`stubs/evo_dns.c`** — NEW, NoStream-authored (#91). `getaddrinfo` /
   `freeaddrinfo` / `getnameinfo` / `gai_strerror`, compiled INTO `eboot.bin`
   because on retail FW 12.70 the console exports them only from
   `libScePosixForWebKit.sprx` as NULL stubs (a call faults at `rip=0`). A
@@ -66,7 +66,7 @@ verbatim (LF-normalised via `dos2unix`) **except**:
   a one-time `sceNetInit()` if the first pool will not create (an app module may
   not have `libSceNet` up the way a payload's process does), and one
   `dns: <host> -> <ip>, <ip>  (console DNS, N addresses, M ms)` line in
-  `evo.log` per real lookup. It returns **every** address the resolver finds
+  `nostream.log` per real lookup. It returns **every** address the resolver finds
   (`sceNetResolverStartNtoaMultipleRecordsEx`, up to ten), chained through
   `ai_next`, so FFmpeg's connect can race past an address that is unreachable
   from the user's network - one of raw.githubusercontent.com's four was, and the
@@ -81,7 +81,7 @@ verbatim (LF-normalised via `dos2unix`) **except**:
   the SDK's link stub like `libSceImeDialog`'s does; no `.syms` file is needed.
   `tools/dns_host.sh` tests it on the host against a mock `libSceNet`.
 
-- **`stubs/malloc_shim.c`** — NEW, EVO-authored. Interposes the whole
+- **`stubs/malloc_shim.c`** — NEW, NoStream-authored. Interposes the whole
   `malloc`/`free`/`calloc`/`realloc`/`posix_memalign`/`aligned_alloc`/…
   family onto an **mmap-backed allocator**: requests > 12 KiB get one
   page-rounded `mmap` each (32-byte-aligned user pointer, `munmap` on free),
@@ -94,7 +94,7 @@ verbatim (LF-normalised via `dos2unix`) **except**:
 
 ## Licensing
 
-EVO Player is already GPL-3.0-or-later ([LICENSE](../../LICENSE)), so vendoring
+NoStream is already GPL-3.0-or-later ([LICENSE](../../LICENSE)), so vendoring
 this GPL-3.0-or-later tooling and shipping the generated `libc.prx` adds **no
 new obligation**. Compliance rests on shipping `libc.prx` **with** its in-repo
 emitter (`libc_builder.cpp` + `runtime/api-surface.txt` + `runtime/imports.txt`)
@@ -124,6 +124,6 @@ docker compose run --rm ps5-dev ./scripts/package-app.sh --rebuild-libc
 
 The generated binary is verified byte-for-byte against `runtime/libc.prx.sha256`
 (and the pinned raw/signed digests inside the builder script). The surface has not been
-re-harvested from EVO's own link; if EVO ever imports a `libc` symbol it lacks,
+re-harvested from NoStream's own link; if NoStream ever imports a `libc` symbol it lacks,
 re-harvest it (see `runtime/README.md`), which intentionally breaks the pinned digest
-and means re-pinning EVO's own.
+and means re-pinning NoStream's own.

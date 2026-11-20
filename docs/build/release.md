@@ -34,7 +34,7 @@ Everything that carries the version string, as changed by the v0.12.5 commit
    `core/src/services/MediaMetadataService.cpp`, `addons/src/evo_net.c`,
    `addons/src/evo_http_avio.c`, `addons/src/evo_updater.c`, and the
    `version` comment in `ui_rml/include/evo_rmlui_bridge.h`. The updater compares
-   against this define, so a missed one makes EVO offer its own version as an
+   against this define, so a missed one makes NoStream offer its own version as an
    update.
 4. `projects/evoplayer/include/evo_changelog.h` (the in-app Changelog screen;
    write the strings in capitals like the others - the old twin at
@@ -44,14 +44,14 @@ Everything that carries the version string, as changed by the v0.12.5 commit
    into the GitHub release notes, so the heading must match the version.
 6. Root `README.md` "What's new".
 7. Build, run the host tests, verify on the console, then commit
-   ([../../.claude/skills/commit-evo/SKILL.md](../../.claude/skills/commit-evo/SKILL.md)).
+   ([../../.claude/skills/commit-nostream/SKILL.md](../../.claude/skills/commit-nostream/SKILL.md)).
 8. `git tag v0.12.6 && git push origin v0.12.6`.
 
 ## The workflows
 
 | Workflow | Trigger | Does |
 |---|---|---|
-| `build.yml` | push to `main`, `develop`, `experiment/**`; PRs; manual | builds the dev image, runs `setup-sdk.sh`, `build-evoplayer.sh` and the compile-database build, validates the ELFs, and runs a `package-app` job (the verified folder is archived on each PR). Skips doc-only changes |
+| `build.yml` | push to `main`, `develop`, `experiment/**`; PRs; manual | builds the dev image, runs `setup-sdk.sh`, `build-nostream.sh` and the compile-database build, validates the ELFs, and runs a `package-app` job (the verified folder is archived on each PR). Skips doc-only changes |
 | `release.yml` | tag `v*`; manual (a dry run) | checks VERSION and `contentVersion`; builds FFmpeg 7.1.1 inside the container (the image ships 7.0.1); packages the standard and Pro images and the zip; verifies them; extracts the changelog section; publishes the GitHub release on a tag only |
 | `add-to-project.yml`, `issue-triage.yml`, `pr-labeler.yml`, `greetings.yml`, `stale.yml` | issue and PR events | project board, auto-labels, housekeeping |
 
@@ -83,7 +83,7 @@ Settings → System & Diagnostics → Software Update (`addons/src/evo_updater.c
 3. **Verify** the SHA-256 against the `digest` GitHub publishes for the asset. No
    digest, or a mismatch, fails the update and leaves the installed image alone.
 4. **Apply** with one rename on the same filesystem, on a second confirmation. The
-   old image stays mounted under its open inode, so the running EVO is undisturbed;
-   EVO then closes and the user relaunches from the Media tab.
+   old image stays mounted under its open inode, so the running NoStream is undisturbed;
+   NoStream then closes and the user relaunches from the Media tab.
 
 Nothing is replaced before the hash matches, and every step needs a yes.

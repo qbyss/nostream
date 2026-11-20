@@ -1,6 +1,6 @@
 # Diagnostics
 
-Where to look when something goes wrong, and the switches that change EVO's
+Where to look when something goes wrong, and the switches that change NoStream's
 behaviour for a test.
 
 ## The log: `/mnt/usb0/nostream.log`
@@ -14,20 +14,20 @@ buffered and flushed right after the self-unjail. Credentials are redacted befor
 line enters the log.
 
 ```bash
-./tools/evo-remote.sh log                 # pull it to output/logs/evo.log
-./tools/evo-remote.sh watch 60            # stream status + new lines
+./tools/nostream-remote.sh log                 # pull it to output/logs/evo.log
+./tools/nostream-remote.sh watch 60            # stream status + new lines
 curl -N http://<ps5>:9780/raw             # live, no FTP (default port 9780)
 curl "http://<ps5>:9780/raw?grep=hui&level=warn"
 ```
 
-- Legacy PFS deployment with `deploy-app.sh --ffpfsc` deletes `evo.log`, `evo_status` and
+- Legacy PFS deployment with `deploy-app.sh --ffpfsc` deletes `nostream.log`, `nostream_status` and
   `evo_report.txt`, so each launch starts clean.
-- **A static log proves nothing about whether EVO exited.** The idle heartbeat is
+- **A static log proves nothing about whether NoStream exited.** The idle heartbeat is
   about six minutes apart.
 - Check the build id on the first lines against the build you meant to test.
 - **klog** carries the boot lines (`evo_bt`) live through `sceKernelDebugOutText`,
   and is the only channel that shows a launch dying before the sandbox opens.
-  Runtime lines are in `evo.log` and on `:9780` only.
+  Runtime lines are in `nostream.log` and on `:9780` only.
   `./tools/klog.sh` follows and records (`--quiet`, `--grep evo`, `--once`,
   `--tail 200`, `--sessions`) to `output/logs/klog/klog-<UTC>.log` and an
   append-only `klog-all.log`; it reconnects when the payload restarts and logs the
@@ -62,7 +62,7 @@ format is still checked.
 
 | Prefix | Content |
 |---|---|
-| `mem budget [<when>]` | the kernel's view: direct total and largest free run, flexible configured and free, EVO's own pool. Logged at boot and at each software decoder open |
+| `mem budget [<when>]` | the kernel's view: direct total and largest free run, flexible configured and free, NoStream's own pool. Logged at boot and at each software decoder open |
 | `alloc [<when>]` | the malloc shim: `live`/`peak`, **`map_fail`** (backing maps refused: nonzero is a real out-of-memory, so check it before blaming a codec), `flex_avail`, `direct=`/`direct_live=`/`direct_peak=` for heap blocks served from direct memory. Logged at `decode-open`, every 2 s of playback (`play`, the line that survives a crash) and at `stop` |
 | `agc health` / `agc pipe` / `agc color_target` | the GPU runtime ([../hardware/agc-runtime.md](../hardware/agc-runtime.md#verifying-a-build)) |
 | `dns:` | one line per real lookup: the host, the addresses, the console-DNS timing |
@@ -81,35 +81,35 @@ format is still checked.
 client never holds up the logger.
 
 The port defaults to 9780 and is user-settable in Settings → Interface & Storage →
-`PHONE & LOG PORT` (digits 1024–65535, Triangle resets to 9780). EVO test-binds the
+`PHONE & LOG PORT` (digits 1024–65535, Triangle resets to 9780). NoStream test-binds the
 chosen port; if busy at startup, it falls back to the next nine ports (n+1..n+9) and
 keeps retrying the saved port in the background. The real bound port feeds the live
 log server, the phone keyboard URL and the QR code. If all 10 ports are busy, the
 server is disabled and the keyboard shows `PHONE LINK OFF` with a "Set port" button
-(R3). Dev tools (`tools/evo-remote.sh logs`, `tools/evo-dash.py`) default to 9780
+(R3). Dev tools (`tools/nostream-remote.sh logs`, `tools/nostream-dash.py`) default to 9780
 and honour `PS5_LOG_PORT` from the environment.
 
 | Path | Returns |
 |---|---|
 | `/raw` | plain text, kept open |
 | `/stream` | Server-Sent Events, one per line |
-| `/log` (and `/` when no phone keyboard is open) | the log viewer for a phone or PC, in the active theme's colours and the kit's fonts. **Now**: live cards from `/stats` (playing, picture, loaded ahead, network against the video's bitrate, memory) and plain-words alerts. **What happened**: the session as a story, one card per video with a timeline of pauses and errors, quiet rows for everything else, and the run before this one (**Last run**). **Log**: every line, search, levels, tags, routine lines hidden. `diag:` lines (the diagnostic engine, #234) show as findings in both. Page: `assets/web/log.html`, embedded with the bundle; preview it on a PC with `tools/logview_preview.py --log <evo.log> --demo` |
+| `/log` (and `/` when no phone keyboard is open) | the log viewer for a phone or PC, in the active theme's colours and the kit's fonts. **Now**: live cards from `/stats` (playing, picture, loaded ahead, network against the video's bitrate, memory) and plain-words alerts. **What happened**: the session as a story, one card per video with a timeline of pauses and errors, quiet rows for everything else, and the run before this one (**Last run**). **Log**: every line, search, levels, tags, routine lines hidden. `diag:` lines (the diagnostic engine, #234) show as findings in both. Page: `assets/web/log.html`, embedded with the bundle; preview it on a PC with `tools/logview_preview.py --log <nostream.log> --demo` |
 | `/info` | `{"version","build","model","up_s","last_run","theme"}` for the viewer; `last_run` is `crashed`, `closed`, `ended` or `none`, `theme` the active colours as `#RRGGBBAA` |
-| `/session.txt` | the end of `evo.log` from disk (as much as a report carries, redacted again), or with `?run=last` the saved run before this one. The viewer builds its story from it and then follows `/stream` |
+| `/session.txt` | the end of `nostream.log` from disk (as much as a report carries, redacted again), or with `?run=last` the saved run before this one. The viewer builds its story from it and then follows `/stream` |
 | `/web/<file>` | the viewer's files: `log.html` and the kit's fonts as Latin-only WOFF2 |
 | `/snapshot` | the last ~128 KiB, then closes |
 | `/report` | the phone page for a bug report (#229): Download / Share / Copy, and the last warnings and errors. Settings → System & Diagnostics → Report a Problem shows its QR |
-| `/report.txt` | that report as a download: version, build, model, `/stats`, the settings file and the last 1.5 MB of `evo.log` from disk (with `evo.log.1` if there is room), every line redacted again. The network-shares file (it has passwords) is never in it |
-| `/report.txt?run=last` | the report of the run before this one, from `evo.prev.log` (`/report?run=last` is its page). At start, before the new session header, EVO copies the last session of `evo.log` (up to 1.5 MB) to `evo.prev.log` next to it and reads how it ended: `CRASH signal=` = crashed, `soft close: parked` = closed from EVO, neither = ended without closing (PS button, kill). `src/evo_prev_run.c` |
+| `/report.txt` | that report as a download: version, build, model, `/stats`, the settings file and the last 1.5 MB of `nostream.log` from disk (with `nostream.log.1` if there is room), every line redacted again. The network-shares file (it has passwords) is never in it |
+| `/report.txt?run=last` | the report of the run before this one, from `evo.prev.log` (`/report?run=last` is its page). At start, before the new session header, NoStream copies the last session of `nostream.log` (up to 1.5 MB) to `evo.prev.log` next to it and reads how it ended: `CRASH signal=` = crashed, `soft close: parked` = closed from NoStream, neither = ended without closing (PS button, kill). `src/evo_prev_run.c` |
 | `/stats` | one JSON snapshot of memory pools, read-ahead, network reader and playback (`src/evo_stats.c`) |
-| `/input`, `/input/state`, `POST /input` | the phone page for typing into an open EVO keyboard (needs the `X-EVO-Input` header; refused unless a phone keyboard is open) |
+| `/input`, `/input/state`, `POST /input` | the phone page for typing into an open NoStream keyboard (needs the `X-EVO-Input` header; refused unless a phone keyboard is open) |
 
 Query options on `/raw`, `/stream`, `/log`: `tail=0` (only new lines), `grep=<text>`
 (case-sensitive), `level=warn|error`. Unknown paths redirect to `/input`.
 
 ### The dashboard
 
-`python tools/evo-dash.py` (host, plain Python) polls `/stats` once a second and tails
+`python tools/nostream-dash.py` (host, plain Python) polls `/stats` once a second and tails
 `/raw`, then shows in plain words whether playback is healthy: the flexible pool
 (the one that runs out), seconds of video loaded ahead, download speed against what
 the video needs, and a "what happened" list (buffering, connection lost or back,
@@ -119,7 +119,7 @@ overrides the log port (default 9780).
 
 ## Screenshots
 
-`key l3` (or R3) in a menu, or `evo-remote.sh key l3`, writes
+`key l3` (or R3) in a menu, or `nostream-remote.sh key l3`, writes
 `/mnt/usb0/nostream_shot_NNN.bmp`, a raw framebuffer at the panel's resolution (3840×2160
 on a 4K output; numbers wrap at 32). Fetch and look:
 
@@ -147,7 +147,7 @@ terminal; the stick fills over a long session.
 
 ## Switches
 
-Files on the USB stick that change EVO's behaviour. They are read at launch (or
+Files on the USB stick that change NoStream's behaviour. They are read at launch (or
 per use, where noted) and need no rebuild.
 
 | File | Effect |
@@ -161,8 +161,8 @@ per use, where noted) and need no rebuild.
 | `/mnt/usb0/nostream_interp_stage`, `evo_interp_debug` | a digit stops the motion-smoothing chain early, or replaces its output with a debug view ([../hardware/motion-smoothing.md](../hardware/motion-smoothing.md)) |
 | `/mnt/usb0/nostream_vdec_hang` | test hook: the 100th decode blocks forever, to exercise the watchdog |
 
-Written by EVO: `evo_report.txt` (Settings → System & Diagnostics → Report a
-Problem; on `/data/nostream` with no stick), and the `evo_status` / `evo_ui.json` / `evo_set.txt` of the
+Written by NoStream: `evo_report.txt` (Settings → System & Diagnostics → Report a
+Problem; on `/data/nostream` with no stick), and the `nostream_status` / `nostream_ui.json` / `evo_set.txt` of the
 dev remote.
 
 On the data root (`/data/nostream`), not the USB stick: `thumb_quarantine` lists
@@ -170,7 +170,7 @@ files that crashed the process during poster extraction and are skipped from the
 on (`evo_crash_note.h`). If a file mysteriously has no poster, delete the entry (or
 the file) to retry.
 
-## Files EVO keeps
+## Files NoStream keeps
 
 `/data/nostream/` once the sandbox is open (`/download0/nostream/` before that,
 which does not survive a relaunch):
@@ -188,4 +188,4 @@ which does not survive a relaunch):
 | `evo_home_art.tsv`, `evo_plex_home_art.tsv`, `iptv_guides.map` | home artwork and guide caches |
 | `evo_stats_hud.cfg` | the diagnostics panel's on/off state |
 
-`tools/wipe-evo.py` removes all of it for a fresh install.
+`tools/wipe-nostream.py` removes all of it for a fresh install.

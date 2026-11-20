@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-tools/subsync_report.py — measure subtitle drift from evo.log.
+tools/subsync_report.py — measure subtitle drift from nostream.log.
 
     python3 tools/subsync_report.py output/logs/evo.log
 
-Reads the `subsync` lines EVO writes when /mnt/usb0/nostream_subsync exists, and
+Reads the `subsync` lines NoStream writes when /mnt/usb0/nostream_subsync exists, and
 reports how far each displayed cue was from where it should have been.
 
 This only works because the test clip is built for it
@@ -48,7 +48,7 @@ def cue_start(text):
 
 def parse(path, after=None):
     """
-    evo.log is cumulative across launches and across every `play` command in
+    nostream.log is cumulative across launches and across every `play` command in
     one launch, so a single file can hold several subsync runs back to back
     (embedded, then external, with no relaunch between them). `after` (console
     seconds) keeps only lines at or after that point - use it to report one
@@ -158,7 +158,7 @@ def main():
     ap.add_argument("log", nargs="?", default="output/logs/evo.log")
     ap.add_argument("--after", type=float, metavar="T",
                     help="keep only lines at or after console time T (the `t=` "
-                         "field in evo_status) - isolate one run out of a log "
+                         "field in nostream_status) - isolate one run out of a log "
                          "that has more than one")
     args = ap.parse_args()
     try:

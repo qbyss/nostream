@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# tools/uiplay.sh - browse every EVO Player screen in one page, on any machine.
+# tools/uiplay.sh - browse every NoStream screen in one page, on any machine.
 #
 #   ./tools/uiplay.sh
 #

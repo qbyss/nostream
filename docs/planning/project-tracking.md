@@ -1,4 +1,4 @@
-# Project tracking — the "EVO Player Roadmap" board
+# Project tracking — the "NoStream Roadmap" board
 
 A GitHub **Project (v2)** that mirrors every issue so the roadmap can be
 tracked and visualised (board, priority table, milestone timeline, blocked
@@ -60,7 +60,7 @@ list). The dependency-ordered narrative still lives in
 Turn on:
 
 - **Auto-add to project** → filter `is:issue,pr is:open` (repo:
-  `EVO-PLAYER-PS5`). New issues land on the board with no Action / token.
+  `nostream`). New issues land on the board with no Action / token.
 - **Item closed** → set `Status` = `Done`.
 - **Item reopened** → set `Status` = `Todo`.
 - **Auto-archive items** → `is:closed updated:<@today-2w` (keeps the board lean).

@@ -1,7 +1,7 @@
 #!/bin/bash
 # tools/build_glslim_probe.sh - build the GLSlim probe (#237, GPU compositing
-# plan) as output/glslim_probe.elf. Not embedded in EVO: it is sent to elfldr
-# (:9021) with EVO closed and logs to /data/glslim_probe.log.
+# plan) as output/glslim_probe.elf. Not embedded in NoStream: it is sent to elfldr
+# (:9021) with NoStream closed and logs to /data/glslim_probe.log.
 # Runs inside the container (docker compose run --rm ps5-dev ./tools/build_glslim_probe.sh).
 set -euo pipefail
 cd "$(dirname "$0")/.."

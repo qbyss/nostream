@@ -2,9 +2,9 @@
 """
 tools/sweep_run.py — drive the #8 codec sweep over FTP.
 
-Invoked by `tools/evo-remote.sh sweep`; not meant to be run directly (it needs
+Invoked by `tools/nostream-remote.sh sweep`; not meant to be run directly (it needs
 PS5_HOST / FTP_PORT in the environment). Lists a directory on the console, plays
-each clip for a fixed window, and moves on. EVO does the measuring — this only
+each clip for a fixed window, and moves on. NoStream does the measuring — this only
 decides when a clip has been watched long enough and writes the next command.
 
 Every FTP call is bounded by a timeout: the console's FTP server happily accepts
@@ -33,8 +33,8 @@ SKIP = [s.strip().lower()
 
 CMD_PATH = "/mnt/usb0/nostream_cmd"
 STATUS_PATH = "/mnt/usb0/nostream_status"
-CMD_FALLBACK = "/data/nostream/evo_cmd"
-STATUS_FALLBACK = "/data/nostream/evo_status"
+CMD_FALLBACK = "/data/nostream/nostream_cmd"
+STATUS_FALLBACK = "/data/nostream/nostream_status"
 
 MEDIA_EXT = (
     ".mp4", ".mkv", ".m4v", ".mov", ".avi", ".webm", ".ts", ".m2ts",
@@ -42,7 +42,7 @@ MEDIA_EXT = (
 )
 
 # Hard ceiling per clip regardless of what the status line says. A file that
-# never starts must not stall the run; it gets recorded as whatever EVO managed.
+# never starts must not stall the run; it gets recorded as whatever NoStream managed.
 STALL_GRACE_S = 25.0
 
 
@@ -184,7 +184,7 @@ def play_one(path, index, total):
 def main():
     st = parse_status(get_status())
     if not st:
-        sys.exit("no evo_status on the console — is EVO launched, "
+        sys.exit("no nostream_status on the console — is NoStream launched, "
                  "and built with --usb-remote?")
     print("build=%s  sweeping %s  window=%.0fs"
           % (st.get("build", "?"), SWEEP_DIR, WINDOW_S), flush=True)

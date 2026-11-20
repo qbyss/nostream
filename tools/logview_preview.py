@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Host preview of EVO's log viewer page (projects/evoplayer/assets/web/log.html)
+Host preview of NoStream's log viewer page (projects/evoplayer/assets/web/log.html)
 without a console: serves the page and its fonts the way evo_log_server.c does,
-and fakes the data routes from a real evo.log.
+and fakes the data routes from a real nostream.log.
 
   python tools/logview_preview.py --log path/to/evo.log [--port 8791] [--demo]
 

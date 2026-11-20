@@ -1,6 +1,6 @@
 # Video decode
 
-How EVO turns a compressed stream into frames: the `sceVideodec2` hardware decoder
+How NoStream turns a compressed stream into frames: the `sceVideodec2` hardware decoder
 where it can, FFmpeg where it must. What is supported is in
 [codec-support.md](codec-support.md); the ABI is in [videodec2-abi.md](videodec2-abi.md).
 
@@ -153,7 +153,7 @@ with the TV's own dynamic tone mapping off (HGIG on LG). The playback panel show
 
 ## Where it is measured
 
-`evo.log` carries, per file, `sweep v=1 ...` with the backend, decode ms per frame
+`nostream.log` carries, per file, `sweep v=1 ...` with the backend, decode ms per frame
 (average and p95), late drops and a colour signature
 ([../build/validation.md](../build/validation.md#the-codec-sweep)). On the dev PS5
 Pro, native decode is 0.3 to 0.8 ms per frame at every resolution, with zero late

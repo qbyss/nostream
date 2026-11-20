@@ -51,7 +51,7 @@ public:
     {
         if (!notice_) return false;
         notice_ = false;
-        if (text) *text = "Downloads are not supported in EVO yet";
+        if (text) *text = "Downloads are not supported in NoStream yet";
         return true;
     }
 

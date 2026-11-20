@@ -1,6 +1,6 @@
-# Contributing to EVO Player
+# Contributing to NoStream
 
-Thanks for helping! EVO is maintained by one person in spare time, and most testing means sitting in front of a
+Thanks for helping! NoStream is maintained by one person in spare time, and most testing means sitting in front of a
 PS5. The rules below are here so a change can be understood, tested and released quickly. They are not meant to be
 gatekeeping; they make the review easier for everyone.
 
@@ -13,7 +13,7 @@ gatekeeping; they make the review easier for everyone.
 - [Commits](#commits)
 - [Using AI tools](#using-ai-tools)
 
-To build EVO, run its tests or put it on a console, see [Building from Source](README.md#building-from-source) and
+To build NoStream, run its tests or put it on a console, see [Building from Source](README.md#building-from-source) and
 [docs/build/building.md](docs/build/building.md).
 
 ## Ways to help
@@ -21,21 +21,21 @@ To build EVO, run its tests or put it on a console, see [Building from Source](R
 - **Report a bug.** A file that will not play, a stream that stutters, a screen that misbehaves. See
   [Report a bug](#report-a-bug).
 - **Test a file or a source.** If a codec, a container, a drive or a provider works or fails, a
-  [playback report](../../issues/new?template=playback-problem.yml) with EVO's report file attached helps even when you
+  [playback report](../../issues/new?template=playback-problem.yml) with NoStream's report file attached helps even when you
   cannot say why.
 - **Fix a bug or add a feature.** Look for an open issue. For a large change, open an issue first (see below).
-- **Improve the UI kit.** EVO's screens are drawn on [ps5-homebrew-ui](third_party/ps5-homebrew-ui). A fix to the
+- **Improve the UI kit.** NoStream's screens are drawn on [ps5-homebrew-ui](third_party/ps5-homebrew-ui). A fix to the
   kit itself goes there first (see [Files that stay out of pull requests](#files-that-stay-out-of-pull-requests)).
 
 ## Report a bug
 
 1. Search the [open issues](../../issues). If yours is there, add what is new to it instead of opening another.
-2. Get EVO's report. It holds the version, your console model and firmware, the settings and the recent log, with
+2. Get NoStream's report. It holds the version, your console model and firmware, the settings and the recent log, with
    passwords, tokens and debrid keys masked. The network-shares file (it has passwords) is never in it.
-   - **EVO is still running:** Settings → System & Diagnostics → **Report a Problem**. Scan the QR code to download
-     it on your phone, or press Cross to save `evo_report.txt` to the USB drive (or to `/data/evoplayer` with no
+   - **NoStream is still running:** Settings → System & Diagnostics → **Report a Problem**. Scan the QR code to download
+     it on your phone, or press Cross to save `evo_report.txt` to the USB drive (or to `/data/nostream` with no
      drive).
-   - **EVO crashed or froze:** start EVO again, then Settings → System & Diagnostics → **Report the last run**. It
+   - **NoStream crashed or froze:** start NoStream again, then Settings → System & Diagnostics → **Report the last run**. It
      saves `evo_report_last_run.txt` the same way. Report a Problem would only show the new, healthy run.
 3. [Open an issue](../../issues/new/choose): **Playback problem** for anything about playing a file or a stream,
    **Bug report** for the rest. Attach the report file and fill in the form.
@@ -54,7 +54,7 @@ was there" in the description, split it.
 - A pull request that fixes a bug does not also refactor, rename or reformat code it did not need to touch.
 - If two changes are independent, they are two pull requests. If one needs the other, open the one it needs first
   and mention it in the second.
-- A change to the UI kit is its own pull request on the kit, before the EVO one.
+- A change to the UI kit is its own pull request on the kit, before the NoStream one.
 
 A good rule of thumb: if a reviewer could reasonably want to merge half of the pull request and reject the other
 half, it should have been two. Google's [Small CLs](https://google.github.io/eng-practices/review/developer/small-cls.html)
@@ -80,7 +80,7 @@ breaks consoles that update:
 - **Generated files**: `projects/evoplayer/ui_rml/src/evo_rmlui_bundle_data.cpp` is rebuilt by every build and
   is ignored by git.
 - **Submodule pins**: `third_party/ps5-homebrew-ui` may only point at a commit already on the kit's `main`. The pull
-  request on the kit comes first; once it is merged, an EVO pull request may move the pin.
+  request on the kit comes first; once it is merged, a NoStream pull request may move the pin.
 - **Releases and tags.**
 
 **The settings file** is line-based and old files must keep loading. Add a new setting as a new line at the end, never
@@ -94,7 +94,7 @@ Everything runs in the pinned Docker toolchain. **Never call `make` directly**: 
 dependencies. Use the scripts.
 
 ```sh
-docker compose run --rm ps5-dev ./scripts/build-evoplayer.sh       # compile check
+docker compose run --rm ps5-dev ./scripts/build-nostream.sh       # compile check
 docker compose run --rm ps5-dev ./tests/run_tests.sh               # host tests
 docker compose run --rm ps5-dev ./scripts/package-app.sh  # the app folder you test on the console
 ./tools/hui_preview.sh                                             # every screen rendered on your PC
@@ -104,9 +104,9 @@ New behaviour comes with tests where it can be tested on the host; changed behav
 UI change, attach the `hui_preview.sh` render or a console screenshot.
 
 Before you put a build on your console, read [docs/console/hardware-cycle.md](docs/console/hardware-cycle.md). Never
-deploy over a running EVO and never start it twice: both have crashed consoles.
+deploy over a running NoStream and never start it twice: both have crashed consoles.
 
-Match the style of the code around your change. Reusable UI fixes belong in ps5-homebrew-ui; EVO's own behaviour
+Match the style of the code around your change. Reusable UI fixes belong in ps5-homebrew-ui; NoStream's own behaviour
 belongs here.
 
 ## Describe the problem and what you tested
@@ -135,7 +135,7 @@ issue.
 
 ## Using AI tools
 
-**You are welcome to use AI coding tools.** Most of EVO was written with them. Two things to keep in mind:
+**You are welcome to use AI coding tools.** Most of NoStream was written with them. Two things to keep in mind:
 
 1. **Say so.** The pull request template asks which tool and model you used and roughly how much of the change it
    wrote. This is not a judgement; it tells the maintainer where to look harder.
@@ -159,5 +159,5 @@ your patience, and for contributing!
 
 ## License
 
-EVO Player is GPL-3.0 ([LICENSE](LICENSE)). Submodules and vendored sources keep their own licences; see
+NoStream is GPL-3.0 ([LICENSE](LICENSE)). Submodules and vendored sources keep their own licences; see
 [docs/proprietary.md](docs/proprietary.md) before you copy code from another project.

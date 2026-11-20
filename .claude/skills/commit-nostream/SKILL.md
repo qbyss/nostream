@@ -1,9 +1,9 @@
 ---
-name: commit-evo
-description: Commit finished EVO work cleanly - split by topic, leave out files that were already modified before the session, match the repo's message style, add the attribution trailer, never push. Use only when the user says commit (or ship it) after the build and console check passed.
+name: commit-nostream
+description: Commit finished NoStream work cleanly - split by topic, leave out files that were already modified before the session, match the repo's message style, add the attribution trailer, never push. Use only when the user says commit (or ship it) after the build and console check passed.
 ---
 
-# Commit EVO work
+# Commit NoStream work
 
 Only on the user's word, and only after the change was built and checked
 (CLAUDE.md: no commits until verified). Never push.

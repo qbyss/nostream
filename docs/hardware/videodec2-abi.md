@@ -3,7 +3,7 @@
 **Status: hardware-verified 2026-09-01.** Every call below returned `0` on a
 PS5 (12.70) from a fake-signed *game-category app module*, decoding a 1080p
 H.264 IDR to a valid NV12 frame. Header: [sce/sce_videodec2.h](../../projects/evoplayer/media/include/sce/sce_videodec2.h).
-How EVO uses it (resident decoders, sizing, feeding): [video-decode.md](video-decode.md).
+How NoStream uses it (resident decoders, sizing, feeding): [video-decode.md](video-decode.md).
 
 This is a transcription, not new code. Every struct and value here is lifted from
 `blackbearreloaded/ProsperoLight` (`src/moonlight_stream.cpp`, a clone under
@@ -136,7 +136,7 @@ On success `out.buffer` points **inside** the frame-pool slot and holds:
 * chroma plane follows luma at the same stride, half height.
 * `out.codec` echoes `codec_type`; `out.picture_count == 1`.
 
-The buffer is valid until the next `Decode`/`Flush` reuses that slot. EVO's
+The buffer is valid until the next `Decode`/`Flush` reuses that slot. NoStream's
 converter consumes synchronously on push today, so a straight hand-off works;
 if that changes, copy into `evo_direct_mem` here.
 
@@ -165,7 +165,7 @@ sceSysmoduleUnloadModule(207)
 
 `max_width`/`max_height` per resolution: `1920x1088`, `2560x1440`, `3840x2176`.
 
-For EVO the values come from the demuxer's `AVCodecParameters`
+For NoStream the values come from the demuxer's `AVCodecParameters`
 (`codec_id`, `profile`, `level`, `width`, `height`) — map `AV_CODEC_ID_H264` ->
 `1`, `AV_CODEC_ID_HEVC` -> `974921`, round `width`/`height` up to the next 16.
 
@@ -179,8 +179,8 @@ For EVO the values come from the demuxer's `AVCodecParameters`
   after a random-access seek.
 - **HEVC Main10 and VP9 Profile 2** use `profile` 2 and output P010.
 - **The decoder is sized at `Create` time**, so a larger stream means recreating the slot;
-  EVO does that on demand and restores the boot size on close.
-- **VideoOut:** the decoder uses the compute-queue path and never opens VideoOut. EVO's
+  NoStream does that on demand and restores the boot size on close.
+- **VideoOut:** the decoder uses the compute-queue path and never opens VideoOut. NoStream's
   `evo_agc_runtime.c` owns VideoOut, so the payload-only `sceVideoOutOpen` panic rule is
   not in play, but bring the decoder up after the GPU runtime and tear it down before.
 - **Memory:** the pools above come out of direct memory and the `cpu` workspace out of

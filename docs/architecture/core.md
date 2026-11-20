@@ -34,10 +34,10 @@ blocking), the dev remote, the pad (with auto-repeat), the late-jailbreak rebind
 (`evo_jailbreak_poll`, so settings and history move to `/data` when it lands),
 then updates and renders the active screen and presents.
 
-Shutdown has two paths. **Settings → System & Diagnostics → QUIT EVO** (or
-`evo-remote.sh quit`) calls `requestExit()`: the loop finishes its frame, media
-stops, the GPU drains (`agc_wait_gpu_idle`, bounded at 500 ms) and EVO parks on
-the *Safe to close* screen (`parked=1` in `evo_status`). The PS button kills the
+Shutdown has two paths. **Settings → System & Diagnostics → QUIT NoStream** (or
+`nostream-remote.sh quit`) calls `requestExit()`: the loop finishes its frame, media
+stops, the GPU drains (`agc_wait_gpu_idle`, bounded at 500 ms) and NoStream parks on
+the *Safe to close* screen (`parked=1` in `nostream_status`). The PS button kills the
 process and skips all of that; a kill while the GPU is still submitting has
 panicked the console, which is why every deploy script waits for `parked=1`. A
 `SIGTERM`/`SIGINT`/`SIGHUP` handler sets `g_evo_term_requested` so a signalled
@@ -80,7 +80,7 @@ Screens do not draw anything themselves. They fill a parameter struct and call
 `ui_rml/src/evo_rmlui_bridge.cpp` routes to the kit first and RmlUi second
 ([ui/hui-kit.md](../ui/hui-kit.md)).
 
-`ScreenId` (in `Common.hpp`; `evo-remote.sh go <number>` takes these):
+`ScreenId` (in `Common.hpp`; `nostream-remote.sh go <number>` takes these):
 
 | Id | Screen | Id | Screen |
 |---|---|---|---|
@@ -153,9 +153,9 @@ The RmlUi fallback OSD has no button; Triangle still works there.
 
 ## Network Storage & SMB Streaming
 
-EVO supports browsing and streaming from remote network storage, including Windows / Samba shares (SMB) and FTP servers:
+NoStream supports browsing and streaming from remote network storage, including Windows / Samba shares (SMB) and FTP servers:
 
-- **`NetworkStorageService`**: Persists configured shares in `/data/evoplayer/evo_network_shares.json`. Configured shares appear in `BrowserScreen` under **Network Storage**.
+- **`NetworkStorageService`**: Persists configured shares in `/data/nostream/evo_network_shares.json`. Configured shares appear in `BrowserScreen` under **Network Storage**.
 - **`SmbClient` (`libsmb2`)**: Connects to Windows and Samba shares (`smb://host/Share` or `user:pass@host/Share`) for directory enumeration and file metadata.
 - **Direct AVIO Streaming (`evo_smb_io`)**: Playback streams directly over SMB via custom FFmpeg `AVIOContext` callbacks (`evo_smb_io_open`, `evo_smb_io_read`, `evo_smb_io_seek`, `evo_smb_io_close`). No local disk copy or download is required; seeking is handled over the SMB connection, scaling with the user's configured network buffer.
 - **Add Server flow (#226)**: `BrowserScreen` runs address, Guest or Account (user, masked password), then `NetworkStorageService::testConnection` on a worker. The test returns the stage that failed (`Address`, `Login`, `Share`, `Folder`) with a plain message shown on the next prompt. It uses its own SMB/FTP client, so it never touches the browse state. An SMB address without a share ends in a share picker (the action menu with a kit switch per row via `action_menu_items[].toggle`: at most 6 shares on screen plus Done; Edit Server on a server root re-runs the test and reopens it with the saved ticks) fed by `NetworkTestResult::shares`; the ticked names go to `NetworkShare::chosenShares` (JSON `shares`, omitted when empty). Empty means show all, and all-ticked is stored as empty. `listEntries` applies `filterChosenShares` at the server root. A prompt is never opened from another prompt's callback: the callback sets a pending flag and `update()` opens it.
@@ -169,7 +169,7 @@ EVO supports browsing and streaming from remote network storage, including Windo
 - **`stderr` is not usable.** Log with `EVO_LOGI/W/E("tag", ...)`, which land in
   `/mnt/usb0/evo.log`; `evo_bt()` is for boot lines that also need klog
   ([console/diagnostics.md](../console/diagnostics.md#writing-a-log-line)).
-- **Only call libc functions EVO already uses.** The clean-room `libc.prx` has no
+- **Only call libc functions NoStream already uses.** The clean-room `libc.prx` has no
   `strcasestr`, `opendir` and so on; a missing import is null and crashes at
   address 0 ([app-module.md](app-module.md#traps)). Use `evo_readdir`, `evo_mkdir`
   and `evo_data_path` for the filesystem.

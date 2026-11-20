@@ -5,7 +5,7 @@
 # locally, PFS-packs it into a single PPSA99273.ffpfsc image
 # (scripts/package-app.sh --ffpfsc), and publishes that as a GitHub release.
 # This is the ONLY hardware path (see CLAUDE.md / docs/build/tooling.md) — the old
-# ELF/Media-tile/hbldr release route reached none of EVO's headline features
+# ELF/Media-tile/hbldr release route reached none of NoStream's headline features
 # (no sceVideodec2 hardware decode, no sceAgc GPU present, no real user
 # session) and was replaced here (#36).
 #
@@ -75,7 +75,7 @@ jobs:
           fi
           echo "VERSION $FILE_VER matches tag"
 
-      # ProsperoStore / homebrew.page offer an update only when contentVersion
+      # Consoles are offered an update only when contentVersion
       # in sce_sys/param.json is higher than the installed one. v0.11.0 first
       # shipped with 0.10.0's value and was invisible to consoles as an update.
       - name: Check contentVersion went up since the previous release
@@ -116,7 +116,7 @@ jobs:
       # defaults docs/build/tooling.md documents as the normal deploy.
       - name: Build and PFS-pack the app module
         run: |
-          # The image's SDK ships FFmpeg 7.0.1; EVO needs 7.1.1 (AV1 fixes, and
+          # The image's SDK ships FFmpeg 7.0.1; NoStream needs 7.1.1 (AV1 fixes, and
           # evo_dovi.c refuses to build against anything else). Local builds get
           # it from build-ffmpeg.sh --install in a persistent volume, so CI has
           # to build and install it into this container before packaging.
@@ -240,7 +240,7 @@ jobs:
           image installs and their in-app updater. The `-pro.ffpfsc` variant
           requests the additional memory available on PS5 Pro.
 
-          Never stack launches — PS button to close a running EVO before
+          Never stack launches — PS button to close a running NoStream before
           relaunching (deploying/launching over a live instance risks a
           console kernel panic).
 
@@ -258,7 +258,7 @@ jobs:
           `scripts/package-app.sh` produces locally. Checksum in
           `SHA256SUMS.txt`.
 
-          Licensed GPL-3.0-or-later. Derived from ProsperoPlayer; see NOTICE.
+          Licensed GPL-3.0-or-later. A fork of EVO Player, itself derived from ProsperoPlayer; see NOTICE.
           EOF
           cat dist/NOTES.md
 

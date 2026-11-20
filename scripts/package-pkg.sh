@@ -4,7 +4,7 @@
 #
 #   ./scripts/package-pkg.sh --format homebrew output/elf/hello_world.elf
 #   ./scripts/package-pkg.sh --format app      output/elf/hello_world.elf \
-#                            --title-id FAKE00001 --title "EVO Player"
+#                            --title-id FAKE00001 --title "NoStream"
 #
 # ---------------------------------------------------------------------------
 # WHAT "PKG" ACTUALLY MEANS ON PS5 - read before assuming anything
@@ -55,7 +55,7 @@ source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 FORMAT="homebrew"
 ELF=""
 TITLE_ID="FAKE00001"
-TITLE="EVO Player"
+TITLE="NoStream"
 ICON=""
 
 while (( $# )); do
@@ -127,7 +127,7 @@ homebrew)
 function main() {
     return {
         mainText: "${TITLE}",
-        secondaryText: "EVO Player - PS5 13.60 homebrew",
+        secondaryText: "NoStream - PS5 13.60 homebrew",
         args: []
     };
 }

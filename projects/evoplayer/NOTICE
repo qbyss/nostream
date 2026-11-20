@@ -1,3 +1,15 @@
+NoStream
+Copyright (C) 2026 NoStream contributors
+
+A modified version of EVO Player
+Upstream: https://github.com/sainsaji/EVO-PLAYER-PS5
+Forked at commit 08bcab5 (EVO Player 0.13.7).
+
+Changes made by the NoStream contributors include: removing the online
+media providers, PS5 Media Remote support, folder favorites and hidden
+storage sources, Night Shift, an OLED screen saver and frequent resume
+points. See the git history for the full record.
+
 EVO Player
 Copyright (C) 2026 EVO Player contributors
 

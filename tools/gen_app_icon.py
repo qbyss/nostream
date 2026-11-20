@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
-Generate EVO Player's home-screen application icon.
+Generate NoStream's home-screen application icon.
 
 WHY THIS EXISTS
     The Media tile needs a 512x512 icon0.png, and the repository had none -
     the only app icon in the tree was ProsperoPlayer's branded artwork, which
-    is upstream's and cannot ship on an EVO tile. package-pkg.sh was falling
+    is upstream's and cannot ship on a NoStream tile. package-pkg.sh was falling
     back to a 1x1 placeholder for the same reason.
 
     Rather than commit a binary nobody can regenerate, the icon is described
@@ -37,7 +37,7 @@ import gen_app_icon_variants as variants
 
 def render_icon(size, face="Lato-Bold"):
     """
-    The shipping tile: PRO badge top-right, play mark centred, EVO across the
+    The shipping tile: PRO badge top-right, play mark centred, NoStream across the
     bottom. Chosen from tools/gen_app_icon_variants.py, which renders the
     alternatives side by side at tile size.
 

@@ -86,5 +86,5 @@ path, so treat these as the things to look at after any change to it:
 - The app module must still load with the `libSceAudioIn` positional import. If it does
   not, the symptom is CE-108255-1 at launch with no log, and dropping `libSceAudioIn`
   from `PRX_STUB_WANT` in `package-app.sh` recovers it.
-- Mic capture and chirp detection on real speakers (the `calibration:` lines in `evo.log`).
+- Mic capture and chirp detection on real speakers (the `calibration:` lines in `nostream.log`).
 - The calibration trims audibly applied on playback.

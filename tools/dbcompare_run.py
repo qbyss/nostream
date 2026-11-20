@@ -2,10 +2,10 @@
 """
 tools/dbcompare_run.py - the #119 Deep Blacks Off / Low / High capture.
 
-Invoked by `tools/evo-remote.sh dbcompare` (needs PS5_HOST / FTP_PORT). With a
+Invoked by `tools/nostream-remote.sh dbcompare` (needs PS5_HOST / FTP_PORT). With a
 video playing on a --usb-remote build it:
 
-  1. sends `dbcompare`: EVO pauses, redraws the SAME held frame with Deep Blacks
+  1. sends `dbcompare`: NoStream pauses, redraws the SAME held frame with Deep Blacks
      Off, Low and High (OSD suppressed), saving the scanout after each to
      /mnt/usb0/nostream_db_{off,low,high}.bmp, then restores Settings and pause;
   2. pulls the BMPs into output/dbcompare/;
@@ -52,7 +52,7 @@ def capture(timeout_s: float) -> int:
         if any(" high -> " in l for l in lines):
             break
     else:
-        print("\n".join(lines[-4:]) or "(no dbcompare lines in evo.log)")
+        print("\n".join(lines[-4:]) or "(no dbcompare lines in nostream.log)")
         print("timed out - is a video playing, and is this a --usb-remote build?")
         return 1
     print("\n".join(lines[-4:]))

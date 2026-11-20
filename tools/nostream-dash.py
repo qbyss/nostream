@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
-evo-dash.py - live health dashboard for EVO on the console, served on the PC.
+nostream-dash.py - live health dashboard for NoStream on the console, served on the PC.
 
-    python tools/evo-dash.py            # then open http://localhost:8790
-    python tools/evo-dash.py --host 192.168.0.12 --port 8790 --no-open
+    python tools/nostream-dash.py            # then open http://localhost:8790
+    python tools/nostream-dash.py --host 192.168.0.12 --port 8790 --no-open
 
-Runs on the HOST (plain Python 3, no packages, no Docker). It polls EVO's
+Runs on the HOST (plain Python 3, no packages, no Docker). It polls NoStream's
 GET /stats (port 9780 or PS5_LOG_PORT, evo_stats.c) once a second and tails GET /raw for the
 lines worth seeing - warnings, errors, and the read-ahead / network / memory
 events. Both are kept here, not in the browser, so a reload or a second tab
@@ -161,7 +161,7 @@ def poll_stats(st, stop):
             st.add_sample(s)
             st.online = True
             st.last_error = ""
-        except Exception as e:  # console off, EVO closed, or an older build without /stats
+        except Exception as e:  # console off, NoStream closed, or an older build without /stats
             st.online = False
             st.last_error = str(e)[:200]
         stop.wait(max(0.0, 1.0 - (time.time() - t0)))
@@ -251,7 +251,7 @@ def main():
         threading.Thread(target=fn, args=(st, stop), daemon=True).start()
     srv = ThreadingHTTPServer(("127.0.0.1", a.port), make_handler(st))
     url = "http://localhost:%d" % a.port
-    print("evo-dash: console %s  ->  %s   (samples saved to %s)" % (host, url, st.jsonl))
+    print("nostream-dash: console %s  ->  %s   (samples saved to %s)" % (host, url, st.jsonl))
     if not a.no_open:
         threading.Timer(0.5, lambda: webbrowser.open(url)).start()
     try:

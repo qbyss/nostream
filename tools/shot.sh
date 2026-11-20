@@ -79,7 +79,7 @@ cmd_grab() {
 
        Captures are written by a build with -DEVO_AUTOSHOT=N, or by
        pressing L3/R3 while in the menus. Rebuild with:
-           EXTRA_CFLAGS=\"-DEVO_AUTOSHOT=4\" ./scripts/build-evoplayer.sh --run"
+           EXTRA_CFLAGS=\"-DEVO_AUTOSHOT=4\" ./scripts/build-nostream.sh --run"
     fi
 
     begin "fetching ${name}"

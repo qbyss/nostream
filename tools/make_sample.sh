@@ -1,10 +1,10 @@
 #!/bin/bash
-# tools/make_sample.sh [OUT] - make EVO's 20 s test clip (run on the HOST: needs ffmpeg).
+# tools/make_sample.sh [OUT] - make NoStream's 20 s test clip (run on the HOST: needs ffmpeg).
 #
 # 1080p24 H.264 + stereo AAC + one English subtitle track, about 3 MB, written
-# to output/sample/evo_sample.mkv. `evo-remote.sh sample-install` copies it to
-# /data/nostream/test/ on the console, where EVO can always read it (the app
-# sandbox cannot see /data/Media), and `evo-remote.sh play --sample` plays it.
+# to output/sample/evo_sample.mkv. `nostream-remote.sh sample-install` copies it to
+# /data/nostream/test/ on the console, where NoStream can always read it (the app
+# sandbox cannot see /data/Media), and `nostream-remote.sh play --sample` plays it.
 # So a playback check needs no USB stick and no SMB server.
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -25,6 +25,6 @@ ffmpeg -hide_banner -loglevel error -y \
     -map 0:v -map 1:a -map 2:s \
     -c:v libx264 -profile:v high -pix_fmt yuv420p -preset veryfast -b:v 1M \
     -c:a aac -ac 2 -b:a 128k -c:s srt \
-    -metadata title="EVO sample" -metadata:s:a:0 language=eng -metadata:s:s:0 language=eng \
+    -metadata title="NoStream sample" -metadata:s:a:0 language=eng -metadata:s:s:0 language=eng \
     "${OUT}"
 echo "made ${OUT} ($(du -h "${OUT}" | cut -f1))"

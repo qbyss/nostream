@@ -6,4 +6,4 @@
 # ps5-opengl archives, GL_SCE_UNDEF) to this stub's generated .c. See
 # libSceAgc.syms for the full rationale.
 #
-# Add an explicit symbol below ONLY if an EVO object imports it directly.
+# Add an explicit symbol below ONLY if a NoStream object imports it directly.

@@ -3,16 +3,16 @@
 Started as a go/no-go spike on whether `PPSA99273` can drive the PS5's own
 WebKit (`libSceWebBrowserDialog`). The answer was yes, so it became a feature:
 Emby, Jellyfin and Nuvio could be used through their own web client, opened beside
-EVO's nav rail, with Play rerouted to EVO's player. Stage 1 (offline research) is in
+NoStream's nav rail, with Play rerouted to NoStream's player. Stage 1 (offline research) is in
 [the issue comment](https://github.com/sainsaji/EVO-PLAYER-PS5/issues/101#issuecomment-5838945530).
 
 **Since 2026-10-01 this is the optional "web version", not the everyday route.** The
 browser owns the controller (cursor, no D-pad focus), its only exits are the page's
-"Back to EVO" button or the PS button (a panic vector, so a page that fails to load is
+"Back to NoStream" button or the PS button (a panic vector, so a page that fails to load is
 a trap), setup meant typing an address with the D-pad, and nothing was reported back to
-the server. Emby, Jellyfin, Plex and Nuvio are now browsed in EVO's own screens
+the server. Emby, Jellyfin, Plex and Nuvio are now browsed in NoStream's own screens
 ([media-servers.md](media-servers.md)); the web client stays behind Triangle or OPTIONS
-in the provider chooser, and for Nuvio it is where addons were first managed (EVO can
+in the provider chooser, and for Nuvio it is where addons were first managed (NoStream can
 add and remove them itself now).
 
 ## How it works
@@ -32,7 +32,7 @@ add and remove them itself now).
    after `evo_jailbreak_self()` (#31, #34), so this cannot wait until the
    dialog is needed.
 2. **Open:** the provider screen calls `evo_webui_open("http[s]://host:port",
-   "/web/index.html")`. EVO starts a reverse proxy on `127.0.0.1:8686` (a thread
+   "/web/index.html")`. NoStream starts a reverse proxy on `127.0.0.1:8686` (a thread
    per connection) and opens the dialog there in Mode 2 (Custom) at
    `x=108 y=0 1812x1080`: right of the 108 px nav rail, with no browser chrome.
 3. **Hook:** the proxy injects `<script src="/evo/hook.js">` right after
@@ -41,14 +41,14 @@ add and remove them itself now).
    `<source>`, `.m3u8` XHR/fetch, and as a catch-all the capture-phase
    `loadstart`/`play` events. It sends the stream URL, the item title (from the
    site's `ApiClient`) and a return URL to `/evo/play`.
-4. **Handoff:** EVO rewrites the URL from the proxy's origin to the real
+4. **Handoff:** NoStream rewrites the URL from the proxy's origin to the real
    server, closes the dialog itself (`sceWebBrowserDialogClose` on a running
    dialog works), and plays the stream through `startPlaybackSource`. The stream
    URL carries the server's `api_key`, so FFmpeg needs no further auth.
-5. **Return:** when playback ends, EVO reopens the page the user was on. That
+5. **Return:** when playback ends, NoStream reopens the page the user was on. That
    is the last page that was not the site's own player route (Emby `videoosd`,
    Jellyfin `#/video`); reopening the player route leaves an empty player.
-6. **Exit:** the hook adds a **Back to EVO** button to every page, which calls
+6. **Exit:** the hook adds a **Back to NoStream** button to every page, which calls
    `/evo/close`. The embedded layout switches the browser's own controls off,
    and the PS button is the close path that has panicked the console.
 
@@ -66,11 +66,11 @@ certificate verification, the same as `evo_net.c`) and a hostname
 | 1 | Loads and opens from the app module? | **Yes.** Module load, `Initialize` (pre-unjail) and `Open` all return `0` |
 | 2 | Anything refused? | **No.** `sceUserServiceGetInitialUser` gives a user `Open` accepts |
 | 3 | Composites over the AGC plane? | **Yes**, cleanly, including in Custom mode beside the rail |
-| 4 | Page → EVO handoff? | **Yes, through the loopback listener**, by `fetch()` (cross-origin, CORS) and by navigation. The library's own `CallbackInitParam` is **not usable**: a guessed PS4 layout is accepted, but the dialog never closes on the callback URL and `GetResult` refuses every callback-result buffer (`0x80b8000a`) |
+| 4 | Page → NoStream handoff? | **Yes, through the loopback listener**, by `fetch()` (cross-origin, CORS) and by navigation. The library's own `CallbackInitParam` is **not usable**: a guessed PS4 layout is accepted, but the dialog never closes on the callback URL and `GetResult` refuses every callback-result buffer (`0x80b8000a`) |
 | 5 | Controller | The system browser's cursor/scroll model |
 | 6 | Closing | `sceWebBrowserDialogClose()` on a RUNNING dialog returns `0` and FINISHED follows ~25 frames later |
 | 7 | Layouts | Mode 2 opens with parts/control `0/0`, `0x7/0` and `0/0x1`; `0xFF/0xFF` is refused (`0x80b8000a`) |
-| 8 | Real site | Emby's web UI through the proxy: Play in Emby plays in EVO |
+| 8 | Real site | Emby's web UI through the proxy: Play in Emby plays in NoStream |
 
 User agent: `Mozilla/5.0 (PlayStation; PlayStation 5/12.70) AppleWebKit/605.1.15
 (KHTML, like Gecko) Version/17.0 Safari/605.1.15`.
@@ -79,7 +79,7 @@ User agent: `Mozilla/5.0 (PlayStation; PlayStation 5/12.70) AppleWebKit/605.1.15
 
 - **`strcasestr` is not in the native-app libc.** Calling it is a call through a
   null import: SIGSEGV at address 0, on the first proxied response. Use only
-  libc calls EVO already makes elsewhere; `evo_net.c` carries its own
+  libc calls NoStream already makes elsewhere; `evo_net.c` carries its own
   `evo_strcasestr` for the same reason.
 - **A dialog that has been terminated is never initialized again.** After the
   unjail that was never tried, so the subsystem stays initialized for the
@@ -97,11 +97,11 @@ catch-all went in.
 **Nuvio** (`addons/src/provider_nuvio.c`) is the third web-UI provider: the
 open-source Nuvio TV web app (NuvioTVSmart), a Stremio-addon client, so
 catalogs and debrid streams (TorBox, Real-Debrid via addons) arrive with no
-debrid code in EVO. The hosted app (`web.nuvioapp.space`) was returning
+debrid code in NoStream. The hosted app (`web.nuvioapp.space`) was returning
 Cloudflare 522, so the test setup self-hosts the unmodified build (`nuvio-test`
 container, port 8098). A self-built copy has no Nuvio account backend or TMDB
 key: accounts, QR sign-in and cloud sync don't work; addons and playback do.
-Played on hardware: Nuvio → EVO Test Library → Play → stream → EVO's player.
+Played on hardware: Nuvio → NoStream Test Library → Play → stream → NoStream's player.
 
 The hook has a **`nuvio` profile** (`web_ui_hook` in the provider vtable,
 passed as `/evo/hook.js?p=nuvio`):
@@ -122,18 +122,18 @@ passed as `/evo/hook.js?p=nuvio`):
 
 **The page storage.** The browser dialog starts every opening with empty
 storage: an addon saved in Nuvio was gone the next time it opened, and Emby
-and Jellyfin sign-ins were being lost the same way. The hook restores EVO's
+and Jellyfin sign-ins were being lost the same way. The hook restores NoStream's
 copy of the site's `localStorage` (`GET /evo/storage`) before the site's own
 code runs, once per dialog session (a `sessionStorage` flag, so a reload
 doesn't roll back newer changes), and posts it back (`POST /evo/storage`)
-every 5 s when it changed, synchronously before a handoff or Back to EVO, and
-by beacon on page-hide. EVO keeps one file per upstream site in
-`/data/evoplayer/webui/<host>_<port>.json`: every web provider shares the
+every 5 s when it changed, synchronously before a handoff or Back to NoStream, and
+by beacon on page-hide. NoStream keeps one file per upstream site in
+`/data/nostream/webui/<host>_<port>.json`: every web provider shares the
 origin `127.0.0.1:8686`, and Emby's and Jellyfin's clients use the same keys.
 Values over 512 KB (caches) are left out. The file can be edited over FTP
-while the site is closed; EVO restores the edit the next time it opens.
+while the site is closed; NoStream restores the edit the next time it opens.
 
-**Diagnostics.** The hook reports to `evo.log` as `web: page: ...`: key
+**Diagnostics.** The hook reports to `nostream.log` as `web: page: ...`: key
 presses, route changes (Nuvio's router state), clicks, script errors,
 media-element events and every handoff attempt. That was what located the Play
 failure.
@@ -147,9 +147,9 @@ page inside the dialog.
 
 ## Known limits
 
-- Through the web version, Emby and Jellyfin are not told what EVO played; the native
+- Through the web version, Emby and Jellyfin are not told what NoStream played; the native
   screens report progress, watched state and resume points.
-- The dialog is modal and uses the system browser's cursor UX; EVO cannot draw
+- The dialog is modal and uses the system browser's cursor UX; NoStream cannot draw
   over it.
 - `Secure` cookies from an HTTPS upstream are not stored over the loopback
   HTTP origin. Emby and Jellyfin keep their session in local storage, so this

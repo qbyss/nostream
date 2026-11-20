@@ -1,5 +1,5 @@
 /*
- * EVO Player - name resolution for the app module (#91).
+ * NoStream - name resolution for the app module (#91).
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
  * On retail PS5 FW 12.70 getaddrinfo / freeaddrinfo / getnameinfo /
@@ -87,7 +87,7 @@
 #define INADDR_LOOPBACK ((uint32_t)0x7f000001)
 #endif
 
-/* EVO's durable log (/mnt/usb0/nostream.log). Weak, so this file also builds and
+/* NoStream's durable log (/mnt/usb0/nostream.log). Weak, so this file also builds and
  * links without it: the host test supplies its own, and a build that lacks it
  * simply logs nothing. */
 extern void evo_boot_log(const char *fmt, ...) __attribute__((weak));

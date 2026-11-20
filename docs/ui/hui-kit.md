@@ -1,8 +1,8 @@
-# EVO's UI on ps5-homebrew-ui
+# NoStream's UI on ps5-homebrew-ui
 
-EVO's own screens are drawn with the **ps5-homebrew-ui** kit
-(`third_party/ps5-homebrew-ui`, a git submodule, GPL-3.0-or-later like EVO; its changes
-are separate commits from EVO's). RmlUi is still linked ([rmlui.md](rmlui.md)), but only
+NoStream's own screens are drawn with the **ps5-homebrew-ui** kit
+(`third_party/ps5-homebrew-ui`, a git submodule, GPL-3.0-or-later like NoStream; its changes
+are separate commits from NoStream's). RmlUi is still linked ([rmlui.md](rmlui.md)), but only
 for the data binding and focus of **provider screens**, for provider UI bundles that are
 fetched from the network at run time ([../providers/architecture.md](../providers/architecture.md)),
 and as the fallback for any screen the kit cannot draw.
@@ -22,7 +22,7 @@ core/screens/*.cpp  ──►  evo_rmlui_update_<screen>(params)      (unchanged
         ui_kit/src/hui_agc_batch.cpp      DrawList → sceAgc, shader ui_sdf.pipe
 ```
 
-- The kit's renderer is OpenGL-only (`gfx/gl_batch.cpp`). EVO has no OpenGL, so
+- The kit's renderer is OpenGL-only (`gfx/gl_batch.cpp`). NoStream has no OpenGL, so
   `hui_agc_batch.cpp` draws the same `DrawList` through the AGC runtime with the
   kit's own SDF shader ported to LLPC (`shaders/agc/ui_sdf.pipe`). Each
   `hui::gfx::Instance` is written six times (96-byte vertices) and drawn with
@@ -40,7 +40,7 @@ core/screens/*.cpp  ──►  evo_rmlui_update_<screen>(params)      (unchanged
 
 ## Screens on the kit
 
-Everything EVO draws itself: Home, the list screens (Recent, Favourites, the audio,
+Everything NoStream draws itself: Home, the list screens (Recent, Favourites, the audio,
 stream and chapter pickers, with pills and a details card, and a busy card while a
 switch runs on a worker), the file browser (file operations and transfer progress),
 Settings (with a live preview card for every setting, #158), the player OSD (seek
@@ -49,12 +49,12 @@ changelog, safe-to-close, dialogs, toasts, the text reader, the image viewer,
 Surround Studio, and every provider screen (shelves, details and cast, skeleton cards
 while loading). The navigation rail is drawn over every menu screen. The virtual
 keyboard draws its keys with the kit `Keyboard` component, in the native layout with
-Shift and Caps Lock state and a clear button; EVO keeps focus and text (#157, #138).
+Shift and Caps Lock state and a clear button; NoStream keeps focus and text (#157, #138).
 Still RmlUi: downloaded provider bundles and the fallback skin.
 
 Screens only *draw*: focus and input stay in `core/`. Each screen animates
 towards the state in its params (springs, staggered entrances) and reports its
-focused item for `evo-remote.sh ui` (`evo_hui_dev_focus_json`).
+focused item for `nostream-remote.sh ui` (`evo_hui_dev_focus_json`).
 
 ### Page chrome
 
@@ -114,4 +114,4 @@ Hardware loop: [../console/hardware-cycle.md](../console/hardware-cycle.md).
 
 ## Text in every script (#128)
 
-Kit text goes: baked ASCII atlases, then `noto-fallback.huifont` (Latin ext, Greek, Cyrillic, Hebrew, Arabic with joining and bidi order in `src/gfx/font.cpp`, symbols; baked by `tools/font-baker/bake_fallback.cpp`), then `ComplexText` (`projects/evoplayer/ui_kit/src/evo_hui_complex.cpp`: HarfBuzz shapes, FreeType draws SDF glyphs into a growing 2048 atlas; Thai and Indic faces are embedded, Chinese/Japanese/Korean load from `/data/evoplayer/fonts/NotoSans{SC,JP,KR}-Regular.otf` when present). `tools/hui_preview.sh` has no HarfBuzz, so Thai/Indic/CJK only show on the console. Subtitle sidecars are converted to UTF-8 by `media/src/evo_charset.c`; track pickers show native language names (`evo_langname.c`).
+Kit text goes: baked ASCII atlases, then `noto-fallback.huifont` (Latin ext, Greek, Cyrillic, Hebrew, Arabic with joining and bidi order in `src/gfx/font.cpp`, symbols; baked by `tools/font-baker/bake_fallback.cpp`), then `ComplexText` (`projects/evoplayer/ui_kit/src/evo_hui_complex.cpp`: HarfBuzz shapes, FreeType draws SDF glyphs into a growing 2048 atlas; Thai and Indic faces are embedded, Chinese/Japanese/Korean load from `/data/nostream/fonts/NotoSans{SC,JP,KR}-Regular.otf` when present). `tools/hui_preview.sh` has no HarfBuzz, so Thai/Indic/CJK only show on the console. Subtitle sidecars are converted to UTF-8 by `media/src/evo_charset.c`; track pickers show native language names (`evo_langname.c`).

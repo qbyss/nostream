@@ -6,8 +6,9 @@ originally created with.
 
 ## Why
 
-`projects/evoplayer/` is a modified version of
-[ProsperoPlayer](https://github.com/KINGDKAK/ProsperoPlayer), which is
+NoStream is a fork of [EVO Player](https://github.com/sainsaji/EVO-PLAYER-PS5),
+and `projects/evoplayer/` is in turn a modified version of
+[ProsperoPlayer](https://github.com/KINGDKAK/ProsperoPlayer). Both are
 GPL-3.0-or-later. GPL-3.0 is a copyleft licence: a derivative work must be
 distributed under the same terms. Apache-2.0 is compatible *into* GPLv3
 (one-way), but the combined work must still be GPLv3 — it cannot be
@@ -19,17 +20,17 @@ The root `LICENSE` was therefore replaced with GPL-3.0 to match.
 
 * Source must be made available to anyone you distribute binaries to.
 * Copyright notices and attribution must be preserved — see
-  `projects/evoplayer/NOTICE`, which records the fork point and the changes.
+  `projects/evoplayer/NOTICE`, which records both fork points and the changes.
 * Modifications must be marked as such.
 * You cannot add restrictions beyond the GPL.
 
 ## Credit is appreciated
 
-If EVO Player helps your project (you fork it, borrow code, or build on its
-research), a mention such as *"Based on EVO Player by sainsaji —
-github.com/sainsaji/EVO-PLAYER-PS5"* in your README or credits would be
-great, and so would crediting the people EVO itself builds on (see the
-README's Credits).
+NoStream builds on EVO Player by sainsaji
+(github.com/sainsaji/EVO-PLAYER-PS5) and on the people EVO Player itself
+builds on (see the README's Credits). If NoStream helps your project, a
+mention of NoStream and of EVO Player in your README or credits would be
+great.
 
 This is a friendly request, not an extra licence term: the GPL is the only
 condition. Keeping the existing copyright notices is already required by
@@ -39,7 +40,7 @@ the GPL itself.
 
 | Part | Origin | Licence |
 |---|---|---|
-| `projects/evoplayer/` | fork of ProsperoPlayer @ 282b449 | GPL-3.0-or-later |
+| `projects/evoplayer/` | fork of EVO Player @ 08bcab5, itself a fork of ProsperoPlayer @ 282b449 | GPL-3.0-or-later |
 | Development environment (`Dockerfile`, `scripts/`, `docs/`, `tools/`) | original to this project | GPL-3.0-or-later, for consistency |
 | `projects/*_test/`, `projects/common/` | original to this project | GPL-3.0-or-later |
 | PS5 Payload SDK | ps5-payload-dev/sdk | GPL-3.0-or-later (not vendored) |

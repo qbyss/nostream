@@ -9,12 +9,12 @@ H=ftp://192.168.0.12:2121
 URL=${1:-https://prosperostore.net}; TAG=${2:-run}
 R=./tools/dx.sh
 mkdir -p output/anim
-$R ./tools/evo-remote.sh weburl "about:blank" >/dev/null 2>&1; sleep 3
-$R ./tools/evo-remote.sh weburl "$URL" >/dev/null 2>&1
+$R ./tools/nostream-remote.sh weburl "about:blank" >/dev/null 2>&1; sleep 3
+$R ./tools/nostream-remote.sh weburl "$URL" >/dev/null 2>&1
 t0=$(date +%s)
 for i in 1 2 3 4 5 6 7 8; do
   sleep 4
-  $R ./tools/evo-remote.sh key l3 >/dev/null 2>&1; ./tools/shot.sh grab >/dev/null 2>&1
+  $R ./tools/nostream-remote.sh key l3 >/dev/null 2>&1; ./tools/shot.sh grab >/dev/null 2>&1
   cp output/screenshots/latest.png output/anim/load_${TAG}_$i.png
   echo "$(( $(date +%s) - t0 )) s" > output/anim/load_${TAG}_$i.txt
 done

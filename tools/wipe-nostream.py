@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
-tools/wipe-evo.py - remove every NoStream file from the console, for a
+tools/wipe-nostream.py - remove every NoStream file from the console, for a
 fresh install. NOSTREAM ONLY: other homebrew, games and the rest of the USB stick
 are never touched.
 
-    python3 tools/wipe-evo.py <host>            # dry run: list what would go
-    python3 tools/wipe-evo.py <host> --do       # delete it
+    python3 tools/wipe-nostream.py <host>            # dry run: list what would go
+    python3 tools/wipe-nostream.py <host> --do       # delete it
     ./scripts/deploy-app.sh --ffpfsc --fresh    # wipe + deploy in one go
 
 What goes:
@@ -20,7 +20,7 @@ Two quirks of the console's FTP server, both found the hard way:
     listing cwd()s first (a path-argument walk silently lists "/" instead).
   * DELE answers 226, not 250, which ftplib treats as an error.
 
-Never run this against a running EVO: deploy-app.sh --fresh checks first.
+Never run this against a running NoStream: deploy-app.sh --fresh checks first.
 """
 import ftplib
 import sys

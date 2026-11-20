@@ -15,7 +15,7 @@
 #                                             verbose vdec log) — off in release
 #   ./scripts/package-app.sh --pro-memory     opt into PS5 Pro ~1.2 GiB direct memory mode (#143)
 #   ./scripts/package-app.sh --virtual-keyboard  debug only: always use
-#                                             EVO's own keyboard, never the
+#                                             NoStream's own keyboard, never the
 #                                             PS5 IME, which the dev remote
 #                                             can neither press nor see
 #   ./scripts/package-app.sh --breadcrumbs    + boot-trace notification
@@ -68,7 +68,7 @@ while (( $# )); do
         --usb-remote)   USB_REMOTE=1 ;;   # dev: /mnt/usb0/nostream_cmd + nostream_status + verbose vdec log
         --pro-memory)   PRO_MEMORY=1 ;;   # #143: set attribute3 bit 22 so a PS5 Pro gives the app ~1.2 GiB more direct memory
         --breadcrumbs)  BREADCRUMBS=1 ;;  # #51: bring back the on-screen boot-trace popups
-        --virtual-keyboard) VIRTUAL_KB=1 ;;  # debug: EVO's keyboard instead of the PS5 IME
+        --virtual-keyboard) VIRTUAL_KB=1 ;;  # debug: NoStream's keyboard instead of the PS5 IME
         --agc)          AGC_DEVICE=1 ;;   # accepted and redundant: AGC is the only render path
         --gl|--no-gl|--gl-smoke|--gl-hdr-probe)
             die "$1 is gone. The OpenGL device path, its ps5-opengl submodule and
@@ -229,7 +229,7 @@ build_libc() {
     got="$(sha256sum "${work}/libc-a.prx" | cut -d' ' -f1)"
     if [[ "${got}" != "${expected_signed}" ]]; then
         warn "generated libc.prx sha256 ${got}
-       != pinned upstream ${expected_signed}. Expected once EVO re-harvests
+       != pinned upstream ${expected_signed}. Expected once NoStream re-harvests
        api-surface.txt (task 4); until then the build tail changed - stopping."
         die "libc.prx digest mismatch"
     fi
@@ -280,7 +280,7 @@ if [[ "${MODE}" == "probe" ]]; then
 else
     APP_NAME="NoStream (FFmpeg-software)"
     begin "compiling ${APP_NAME} objects (${TCC} ${TFLAGS[*]})"
-    # EVO's Makefile owns the source list, include paths and -D flags; we only
+    # NoStream's Makefile owns the source list, include paths and -D flags; we only
     # add the native-app link-tail flags via EXTRA_CFLAGS.
     # EVO_APP_MODULE: routes data paths to /download0/nostream and directory
     # enumeration through getdents (opendir fails EPERM in the sandbox).
@@ -307,7 +307,7 @@ else
     [[ -n "${EVO_VER}" ]] || die "projects/evoplayer/VERSION is empty"
     # A raw connect() is a 75 s freeze on a dead host on the PS5 (see the script).
     "${REPO_ROOT}/tools/check_raw_connect.sh" || die "raw connect() found - see above"
-    # #217: the NTFS disk helper payload, embedded in EVO (src/generated/).
+    # #217: the NTFS disk helper payload, embedded in NoStream (src/generated/).
     bash "${REPO_ROOT}/tools/gen_ntfs_helper.sh" || die "NTFS helper payload did not build"
     # The quotes must survive two hops - this shell, then the make recipe's
     # shell. Written as \\" the backslash escaped the space that followed and
@@ -326,8 +326,8 @@ else
     # module now, so the popups are only useful watching the TV without klog.
     (( BREADCRUMBS )) && APP_DEFS+=" -DEVO_BOOT_TRACE_POPUP=1"
     # --virtual-keyboard: debug builds only. The PS5 IME is a system dialog
-    # that evo-remote.sh can neither press nor screenshot, and while it is up
-    # EVO routes every pad press to it - one stray prompt wedges a remote
+    # that nostream-remote.sh can neither press nor screenshot, and while it is up
+    # NoStream routes every pad press to it - one stray prompt wedges a remote
     # session. Users keep the IME; the Settings row cannot undo this.
     (( VIRTUAL_KB )) && APP_DEFS+=" -DEVO_FORCE_VIRTUAL_KEYBOARD=1"
     # --native-secondary (#41): HEVC + VP9 resident sceVideodec2 decoders, at
@@ -348,7 +348,7 @@ else
     rm -f "${EVO}/include/evo_autoplay.h"
 
     # The Makefile tracks sources, NOT the -D flag set. The app-module defines
-    # (EVO_APP_MODULE, EVO_BOOT_TRACE_POPUP, ...) differ from build-evoplayer.sh's, so
+    # (EVO_APP_MODULE, EVO_BOOT_TRACE_POPUP, ...) differ from build-nostream.sh's, so
     # `make objects` would silently reuse payload .o files - which is exactly
     # how three console sessions shipped an eboot with none of the app-module
     # code. Force a clean object build whenever the flag set changed.
@@ -419,7 +419,7 @@ else
         "${REPO_ROOT}/scripts/build-dav1d.sh" --install
     fi
 
-    # Static archives EVO links (Makefile LIBS + build-evoplayer.sh transitive
+    # Static archives NoStream links (Makefile LIBS + build-nostream.sh transitive
     # set). Order-independent inside the group.
     for a in libSDL2 \
              libavformat libavcodec libswresample libavutil libswscale libdav1d \
@@ -486,7 +486,7 @@ PRX_STUB_WANT=()
 # libSceVideodec2's own startup load needs the GPU driver stack present
 # (sceVideodec2AllocateComputeQueue allocates a GPU compute queue). ProsperoLight
 # links libSceAgc + libSceAgcDriver, which pull in libSceGnmDriver and satisfy
-# that; EVO must do the same or libSceVideodec2 loads broken. The
+# that; NoStream must do the same or libSceVideodec2 loads broken. The
 # libSceAgc/libSceAgcDriver .syms are comment-only, and the actual symbol list
 # is harvested from the AGC runtime's own imports in the augmentation block
 # below.

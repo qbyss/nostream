@@ -54,7 +54,7 @@ for line in lines:
 last_42 = sessions[-42:]
 
 out = []
-out.append('# EVO Player Comprehensive Video & Audio Codec Validation Report')
+out.append('# NoStream Comprehensive Video & Audio Codec Validation Report')
 out.append('')
 out.append('- **Hardware Platform**: PlayStation 5 Retail (Disc/Digital) running ShadowMount+ Homebrew (`PPSA99273`)')
 out.append('- **Total Media Clips Swept**: **42 clips**')

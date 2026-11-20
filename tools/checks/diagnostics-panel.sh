@@ -3,18 +3,18 @@
 # tools/checks/diagnostics-panel.sh — Hardware check for diagnostics / debug overlay (#167).
 #
 # Sets debug-overlay to on via dev remote, plays a clip, verifies active playback
-# via evo-remote.sh status and UI telemetry via evo-remote.sh ui, and restores the
+# via nostream-remote.sh status and UI telemetry via nostream-remote.sh ui, and restores the
 # original setting on exit.
 #
 # Note: As observed in projects/evoplayer/ui_rml/src/evo_rmlui_devstate.cpp:334,
 # debug_context is skipped during the UI DOM walk and the debug overlay renders
-# directly without emitting log lines in evo.log. As instructed, the check
-# verifies the setting read-back plus evo-remote.sh status showing active playback.
+# directly without emitting log lines in nostream.log. As instructed, the check
+# verifies the setting read-back plus nostream-remote.sh status showing active playback.
 # =============================================================================
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-EVO_REMOTE="${EVO_REMOTE:-$ROOT/tools/evo-remote.sh}"
+EVO_REMOTE="${EVO_REMOTE:-$ROOT/tools/nostream-remote.sh}"
 CLIP="${1:-${EVO_CHECK_CLIP:-/mnt/usb0/test.mkv}}"
 TIMEOUT="${EVO_TIMEOUT:-15}"
 

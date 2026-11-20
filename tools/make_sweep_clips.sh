@@ -3,7 +3,7 @@
 # tools/make_sweep_clips.sh — generate the #8 codec-sweep corpus.
 #
 # HOST tool, not a container one: the pinned ps5-dev image ships FFmpeg as
-# decode libraries for EVO, with no ffmpeg binary and no encoders. This needs a
+# decode libraries for NoStream, with no ffmpeg binary and no encoders. This needs a
 # host ffmpeg built with libx264, libx265, libaom-av1/libsvtav1, libvpx-vp9 and
 # mpeg2video.
 #

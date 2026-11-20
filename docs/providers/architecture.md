@@ -1,7 +1,7 @@
 # Provider Architecture
 
-How EVO Player connects to a media source that is not the USB stick, and why a
-provider brings its own UI instead of EVO drawing one for it.
+How NoStream connects to a media source that is not the USB stick, and why a
+provider brings its own UI instead of NoStream drawing one for it.
 
 Implemented by #90. What each provider does and how it is set up is in
 [media-servers.md](media-servers.md); this page is the seam they share. Per-provider
@@ -11,8 +11,8 @@ stories follow under the `addons` label and build on this seam rather than exten
 
 ## 1. The rule this exists to enforce
 
-**The 0.6/0.7 Emby integration was wrong because EVO drew a custom UI for it.** A
-nine-row D-pad list that looked like EVO and nothing like Emby, re-authored by hand for
+**The 0.6/0.7 Emby integration was wrong because NoStream drew a custom UI for it.** A
+nine-row D-pad list that looked like NoStream and nothing like Emby, re-authored by hand for
 every new source, could not express what those services look like: a channel guide is a
 grid, a library is a poster wall.
 
@@ -21,16 +21,16 @@ So a provider is two halves with a hard line between them:
 | Layer | Owner | Delivery |
 |---|---|---|
 | Auth, catalog, search, link resolution, progress reporting | in-binary C behind `evo_provider_t` | compiled into the app module |
-| Screens, layout, navigation | a data-bound document over the provider's data model | an **embedded** document EVO ships for its own providers (`mediaserver`, `iptv`, `xtream`, the fallback skin), or a **bundle fetched over HTTP at run time**, cached under `/data/nostream/providers/<id>/` |
+| Screens, layout, navigation | a data-bound document over the provider's data model | an **embedded** document NoStream ships for its own providers (`mediaserver`, `iptv`, `xtream`, the fallback skin), or a **bundle fetched over HTTP at run time**, cached under `/data/nostream/providers/<id>/` |
 
 The C half publishes a **data model**; the markup binds to it by name and never
-references an EVO element id. There is no per-provider C++ screen: every provider shares
-one `ProviderHostScreen`. EVO's own providers draw on one shared **shelves** layout
+references a NoStream element id. There is no per-provider C++ screen: every provider shares
+one `ProviderHostScreen`. NoStream's own providers draw on one shared **shelves** layout
 (below), rasterised by the kit ([../ui/hui-kit.md](../ui/hui-kit.md)); a bundle served by
 a third party is drawn by RmlUi itself, and arbitrary third-party *code* never reaches the
 console.
 
-**EVO supplies playback; a provider supplies content and, if it wants, its own look.**
+**NoStream supplies playback; a provider supplies content and, if it wants, its own look.**
 
 ---
 
@@ -58,7 +58,7 @@ console.
 
 ## 3. Runtime constraints (app module, not payload)
 
-EVO is the `PPSA99273` app module. There is no payload heap and no 3.5 GB.
+NoStream is the `PPSA99273` app module. There is no payload heap and no 3.5 GB.
 
 | Capability | Status on the app module |
 |---|---|
@@ -73,7 +73,7 @@ Three consequences that are easy to get wrong:
 
 - **`dash` needs libxml2**, which needs libiconv. Both are in the pacbrew
   prefix, and both are now in the link lists (`Makefile`,
-  `build-evoplayer.sh`, `package-app.sh`). Forgetting one turns a provider
+  `build-nostream.sh`, `package-app.sh`). Forgetting one turns a provider
   change into an FFmpeg-looking link failure.
 - **Nothing may block the 60 Hz loop.** Every provider call returns
   immediately and completes through a callback delivered by `evo_net_poll()`,
@@ -112,7 +112,7 @@ turn until one returns something playable. Neither provider knows the other
 exists.
 
 Item ids are **opaque**. Whatever a provider needs to identify an item again;
-EVO never parses, splits or constructs one. That is the difference from
+NoStream never parses, splits or constructs one. That is the difference from
 `BrowserEntry::fullPath`, which is a filesystem path the browser manipulates
 freely — a remote item has no path.
 
@@ -143,7 +143,7 @@ freely — a remote item has no path.
 - `data_model` must match the name the bundle's `data-model` attribute uses. A
   mismatch renders the document bound to nothing, which looks like a working
   screen with no content and produces no warning.
-- `version` is what EVO compares against its cache. An edit that does not change
+- `version` is what NoStream compares against its cache. An edit that does not change
   it will not be picked up. `tools/gen_provider_manifest.py` stamps a UTC
   timestamp on every run for exactly this reason.
 - Hashes are an **integrity** check — a truncated download, a mangled cache —
@@ -186,7 +186,7 @@ interesting case, and only the second check catches it.
   drive letter, any `..`, any backslash, any `scheme:` prefix, an empty
   component, a component that is only dots, and anything over the length cap.
   This is the only sanctioned way to build a path inside a provider's cache
-  directory, including for names EVO generated itself — RmlUi's file interface
+  directory, including for names NoStream generated itself — RmlUi's file interface
   reaches disk with a plain `fopen()` and does no checking of its own.
 - **Artwork is http(s) only.** An item's `art_url` is data from a remote
   service; a `file://` in it must not become a local read.
@@ -266,25 +266,25 @@ Supported and worth knowing:
   `overflow`, `border-radius`, `box-sizing` all work, and work identically in
   the host preview and on the console.
 - **`:focus` and `:focus-visible`** are set by RmlUi when navigation moves
-  focus. The focus ring is the bundle's to draw; EVO pushes no `is_focused`
+  focus. The focus ring is the bundle's to draw; NoStream pushes no `is_focused`
   flag and does not know which row is selected.
 - **Single-quoted string literals** work in data expressions:
   `data-if="status != ''"`.
 - **Transform functions** are `to_lower`, `to_upper` and `format`. There is no
   `substr`.
-- **dp units.** Every EVO stylesheet is authored against a 1920×1080 canvas in
+- **dp units.** Every NoStream stylesheet is authored against a 1920×1080 canvas in
   `dp`; the context's density-independent ratio scales it to the panel. Use
   `dp`, not `px`.
-- **Leave 152dp of gutter on the left.** EVO's navigation rail is a document in
-  EVO's *main* context, composited over the provider context after it has
+- **Leave 152dp of gutter on the left.** NoStream's navigation rail is a document in
+  NoStream's *main* context, composited over the provider context after it has
   drawn (`ProviderHostScreen::render`). It is not in the bundle's layout and
   nothing reserves room for it, so a bundle that starts at x=0 has its first
   column drawn underneath the rail. `assets/providers/iptv/main.rcss` puts the
   whole page in a `#tv-pane` at `left: 152dp`.
 
-### 6.3.1 EVO's shared assets
+### 6.3.1 NoStream's shared assets
 
-EVO's embedded asset bundle (#60) is reachable from a provider document under
+NoStream's embedded asset bundle (#60) is reachable from a provider document under
 the path `/assets/...`:
 
 ```
@@ -309,10 +309,10 @@ Two rules come with it:
   renders as nothing, not as an error, so every one of these belongs in a box
   that still reads correctly when the image does not arrive — a glyph badge
   with a border, a preview plate with a background.
-- **It is EVO's asset set, not a stable API for third parties.** A bundle on a
+- **It is NoStream's asset set, not a stable API for third parties.** A bundle on a
   provider's own server should ship its own images in its manifest. The IPTV
-  bundle uses the shared ones because it is EVO's own first-party bundle and
-  the alternative was checking a copy of EVO's glyphs into this repo twice.
+  bundle uses the shared ones because it is NoStream's own first-party bundle and
+  the alternative was checking a copy of NoStream's glyphs into this repo twice.
 
 ### 6.4 The one real backend difference
 
@@ -330,18 +330,18 @@ backend sees it — so the host preview is a faithful preview.
 
 ### 6.5 Theme
 
-Provider contexts do **not** receive EVO's theme push. `evo_rmlui_set_theme`
+Provider contexts do **not** receive NoStream's theme push. `evo_rmlui_set_theme`
 stamps colours onto every element as inline properties, which would silently
 overwrite exactly what a bundle exists to supply. A bundle's colours are its
 own, and it must set every colour it wants.
 
-The consequence, for a bundle that wants to look like the rest of EVO: it has
-to write EVO's palette out as literals and it will not follow a theme change.
+The consequence, for a bundle that wants to look like the rest of NoStream: it has
+to write NoStream's palette out as literals and it will not follow a theme change.
 The IPTV bundle does exactly that — its stylesheet opens with the MIDNIGHT
 tokens spelled out, and the header of `main.rml` says why a first-party
 provider chooses to match. That choice is the bundle's; nothing about the seam
 pushes it either way, and what the seam proves is still on screen, because the
-IPTV bundle draws a channel grid that drills into groups where EVO draws a
+IPTV bundle draws a channel grid that drills into groups where NoStream draws a
 nine-row list.
 
 ---
@@ -441,7 +441,7 @@ to `avformat_open_input`, so none of those options had ever been applied.
 
 A channel resolves to a list of `evo_stream_choice_t`: the URL the playlist gave,
 and, for a `.m3u8` or `.ts` address, the same address with the other extension
-(a guess, derived in `provider_iptv.c`). Left to itself EVO plays the first and,
+(a guess, derived in `provider_iptv.c`). Left to itself NoStream plays the first and,
 if it does not open, tries the next.
 
 With **Settings → Interface & Storage → ASK WHICH LIVE STREAM** on (the default),
@@ -455,7 +455,7 @@ through `evo_net`, bounded to 8 s) and opens a list:
 | each quality variant, best first, up to six | `#EXT-X-STREAM-INF`: resolution, bitrate, codecs | `HLS` |
 | the `.ts` / `.m3u8` swap | the provider's other choices | `GUESS` |
 
-EVO plays only the row chosen. If it does not open, the toast says so and the
+NoStream plays only the row chosen. If it does not open, the toast says so and the
 list comes back with the cursor on it; nothing else is tried behind the user's
 back. A channel with one stream and nothing behind it (no HLS master, no
 alternative) has nothing to choose, so it plays directly. With the setting off

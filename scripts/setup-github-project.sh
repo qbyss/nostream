@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 #
-# setup-github-project.sh — build & sync the "EVO Player Roadmap" GitHub Project
+# setup-github-project.sh — build & sync the "NoStream Roadmap" GitHub Project
 # (Projects v2) so every issue is tracked and can be visualised.
 #
 # Idempotent — safe to re-run any time (e.g. after re-labelling issues) to
 # resync the Priority / Area / Status fields.
 #
 # What it does:
-#   1. creates the user-level Project "EVO Player Roadmap" if it doesn't exist
+#   1. creates the user-level Project "NoStream Roadmap" if it doesn't exist
 #   2. adds the custom fields  Priority  and  Area   (Status is built-in)
 #   3. adds every issue in the repo (open + closed) as a project item
 #   4. back-fills each item:
@@ -27,9 +27,9 @@
 #
 set -euo pipefail
 
-OWNER="${PROJECT_OWNER:-sainsaji}"
-REPO="${PROJECT_REPO:-EVO-PLAYER-PS5}"
-TITLE="${PROJECT_TITLE:-EVO Player Roadmap}"
+OWNER="${PROJECT_OWNER:-qbyss}"
+REPO="${PROJECT_REPO:-nostream}"
+TITLE="${PROJECT_TITLE:-NoStream Roadmap}"
 
 # Most specific domain label wins. "documentation" is mapped to "docs".
 AREA_RANK="native-decode rmlui gpu subtitles audio playback memory performance addons app-module network ci ui documentation"

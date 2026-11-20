@@ -1,17 +1,17 @@
 name: Bug report
-description: Something in EVO does not work as it should (screens, settings, controls, crashes outside playback).
+description: Something in NoStream does not work as it should (screens, settings, controls, crashes outside playback).
 title: "[Bug]: "
 labels: ["bug"]
 body:
   - type: markdown
     attributes:
       value: |
-        For questions and help with setup, ask on [Discord](https://discord.gg/47Nc8WtXh) instead. A problem playing a
+        A problem playing a
         file or a stream goes in a
-        [playback problem](https://github.com/sainsaji/EVO-PLAYER-PS5/issues/new?template=playback-problem.yml).
+        [playback problem](https://github.com/qbyss/nostream/issues/new?template=playback-problem.yml).
 
-        **Get EVO's report first.** Settings → System & Diagnostics → **Report a Problem**, or **Report the last run**
-        if EVO crashed or froze (start EVO again first). Scan the QR code on your phone, or press Cross to save the file
+        **Get NoStream's report first.** Settings → System & Diagnostics → **Report a Problem**, or **Report the last run**
+        if NoStream crashed or froze (start NoStream again first). Scan the QR code on your phone, or press Cross to save the file
         to your USB drive. Passwords, tokens and debrid keys in it are already masked.
   - type: dropdown
     id: area
@@ -25,7 +25,7 @@ body:
         - USB or NTFS drives
         - Controls, keyboard or on-screen display
         - Themes or interface look
-        - Start-up, updates or closing EVO
+        - Start-up, updates or closing NoStream
         - Other (say below)
     validations:
       required: true
@@ -33,7 +33,7 @@ body:
     id: what-happened
     attributes:
       label: What happened
-      description: What you did, step by step, what you saw and what you expected instead. Copy any message EVO showed.
+      description: What you did, step by step, what you saw and what you expected instead. Copy any message NoStream showed.
     validations:
       required: true
   - type: dropdown
@@ -49,7 +49,7 @@ body:
   - type: input
     id: version
     attributes:
-      label: EVO version
+      label: NoStream version
       description: On the About screen, or in the first lines of the report.
       placeholder: "0.13.0"
     validations:
@@ -84,5 +84,5 @@ body:
       options:
         - label: I searched the open issues first.
           required: true
-        - label: I am on the latest EVO release, or I said above why not.
+        - label: I am on the latest NoStream release, or I said above why not.
           required: true

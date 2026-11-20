@@ -23,9 +23,9 @@
 #   #94 SHOWED THAT DIAGNOSIS WAS WRONG (2026-09-25/26). FFmpeg was never the
 #   cause. A host build of this exact 7.1.1 - and of 7.0.1 - with the AV1
 #   parser, the obu demuxer, av1_frame_merge and libdav1d plays the console's
-#   own files with ZERO cbs_av1 errors (EVO-style probe and seeks, gcc and
+#   own files with ZERO cbs_av1 errors (NoStream-style probe and seeks, gcc and
 #   clang -O3, MALLOC_PERTURB_, valgrind). On the console the errors were the
-#   symptom of two EVO faults, both fixed in #94:
+#   symptom of two NoStream faults, both fixed in #94:
 #     - flexible memory ran out under 4K 10-bit dav1d (malloc shim map_fail);
 #       the first refused allocation broke av1_frame_merge / the parser for
 #       the rest of the file. The shim now falls back to direct memory.
@@ -34,7 +34,7 @@
 #   The parser and the raw demuxers are back ON, unpatched.
 #
 #   The pacbrew-matching rationale below is kept because it is still the reason
-#   the FIRST pin existed, and it explains the profile - but EVO has long since
+#   the FIRST pin existed, and it explains the profile - but NoStream has long since
 #   diverged from ProsperoPlayer's codec set, and matching a baseline is worth
 #   less than playing the files.
 #
@@ -44,7 +44,7 @@
 #       $(PS5_PAYLOAD_SDK)/target/user/homebrew/lib/libav*.a
 #   Those come from ps5-payload-dev/pacbrew-repo, whose ffmpeg/PKGBUILD says
 #   pkgver=7.0.1. So 7.0.1 IS the version ProsperoPlayer currently uses, and
-#   it is what EVO Player must reproduce before changing anything.
+#   it is what NoStream must reproduce before changing anything.
 #
 # THE THREE PROFILES
 #   baseline  Byte-for-byte the configure line from pacbrew's PKGBUILD. Use it
@@ -462,7 +462,7 @@ minimal)
         #
         # dash needs libxml2, which in turn has unresolved iconv_* symbols;
         # both libxml2.a and libiconv.a are in the pacbrew prefix and link,
-        # so -lxml2 joins the transitive list in build-evoplayer.sh,
+        # so -lxml2 joins the transitive list in build-nostream.sh,
         # package-app.sh and the Makefile alongside the -liconv already there.
         --enable-demuxer=hls
         --enable-demuxer=dash
@@ -502,7 +502,7 @@ minimal)
         # `seen_frame_header` after a frame's last tile group
         # (cbs_av1_syntax_template.c, tile_group_obu), so the "never cleared
         # without a temporal delimiter" reading was wrong. On the console the
-        # errors followed out-of-memory (map_fail in evo.log's alloc lines) and
+        # errors followed out-of-memory (map_fail in nostream.log's alloc lines) and
         # stopped once the malloc shim gained its direct-memory fallback;
         # 4K AV1 in .mkv and raw .obu both play clean on hardware (2026-09-26).
         # If cbs_av1 errors come back, check map_fail before blaming FFmpeg.

@@ -1,7 +1,7 @@
 # sceAgc reference
 
 Background for anyone working in `media/src/evo_agc_runtime.c`: where the `libSceAgc`
-ABI, the command-buffer layout and the render-target register model came from. EVO did
+ABI, the command-buffer layout and the render-target register model came from. NoStream did
 not invent them. They were read out of two reference projects, both cloned (git-ignored)
 under `third_party/`:
 
@@ -13,12 +13,12 @@ under `third_party/`:
   signature, the command-buffer book-keeping layout, the render-target register model and
   a clean-room GPU tiling library. Its own render loop is not documented as
   hardware-verified, so treat its ABI as reference, its sequencing as a strong hint, and
-  validate against EVO's own hardware runs.
+  validate against NoStream's own hardware runs.
 
-What EVO has that neither has: shaders compiled from open sources
+What NoStream has that neither has: shaders compiled from open sources
 ([shader-compilation.md](shader-compilation.md)) instead of embedded Sony-compiled blobs,
 and a runtime that draws the whole UI, video and every post-process through them
-([agc-runtime.md](agc-runtime.md)). The symbols EVO imports are listed in
+([agc-runtime.md](agc-runtime.md)). The symbols NoStream imports are listed in
 `tools/native-app/stubs/prx/libSceAgc.syms` and `libSceAgcDriver.syms`; the C
 declarations are in `media/include/sce/sce_agc.h`.
 
@@ -26,15 +26,15 @@ declarations are in `media/include/sce/sce_agc.h`.
 
 ## What SharpProspero documents
 
-| Piece | Where in the clone | Why it matters for EVO |
+| Piece | Where in the clone | Why it matters for NoStream |
 |---|---|---|
-| **Full `libSceAgc` API** — every command builder, every `*GetSize`, shader create/link, register defaults, with described args + packet sizes | `src/SharpProspero/Interop/Agc/SceAgc.cs`, `SceAgcDriver.cs` | The reverse-engineering EVO would otherwise redo by hand. These are plain exported-symbol calls (`[LibraryImport("libSceAgc")]`), so they map 1:1 to C. |
-| **DCB book-keeping struct** — the block the flat-C builders read/advance | `Graphics/Agc/DrawCommandBuffer.cs` `State` (offsets 0x00 Bottom / 0x08 Top / 0x10 UpCursor / 0x18 DownCursor / 0x20 Callback / 0x28 UserData / 0x30 ReservedDwords) | Lets EVO build its own DCB wrapper without guessing the struct the builders mutate. |
+| **Full `libSceAgc` API** — every command builder, every `*GetSize`, shader create/link, register defaults, with described args + packet sizes | `src/SharpProspero/Interop/Agc/SceAgc.cs`, `SceAgcDriver.cs` | The reverse-engineering NoStream would otherwise redo by hand. These are plain exported-symbol calls (`[LibraryImport("libSceAgc")]`), so they map 1:1 to C. |
+| **DCB book-keeping struct** — the block the flat-C builders read/advance | `Graphics/Agc/DrawCommandBuffer.cs` `State` (offsets 0x00 Bottom / 0x08 Top / 0x10 UpCursor / 0x18 DownCursor / 0x20 Callback / 0x28 UserData / 0x30 ReservedDwords) | Lets NoStream build its own DCB wrapper without guessing the struct the builders mutate. |
 | **A documented single-draw frame loop** | `Graphics/Renderer3D.cs`, `docs/graphics-gpu.md` | The exact call order: wait-for-display → assemble Cx/Sh/Uc register blocks in direct memory → `sceAgcLinkShaders` → `sceAgcDcbSet{Cx,Sh,Uc}RegistersIndirect` → bind descriptors into shader user-data → draw → `sceAgcDcbSetFlip` (flip on the GPU timeline) → `sceAgcDriverSubmitDcb` → wait-on-screen → rotate N per-frame sets. |
 | **Render-target-into-tiled-scanout** | `Graphics/Agc/CxRenderTarget.cs`, `AgcRenderTargetSetup.cs`, `RegisterDefaults.cs`, `DisplayDevice.cs` | The 16-register colour-target block filled from a `RenderTargetSpec`, pointing straight at the `sceVideoOut` back-buffer. This is what removes any CPU swizzle: the GPU writes the tiled layout directly. |
 | **Clean-room GPU tiling / swizzle** | `Graphics/Agc/AgcSurfaceTiling.cs`, `AgcTiler.cs`, `AgcSurface.cs`, `AgcTilingTables.cs` | A from-scratch reimplementation of the AMD address library: block dims, mip-tail tables, the `offset = (b_y·W_b + b_x)·S_block + e(x,y)` element swizzle, `Tile`/`Detile`. |
 | **Shader-binary container format** | `Graphics/Agc/ShaderBinary.cs`, `AgcShader.cs` | `.sb` = an ELF container with `.shader_header` (magic `0x34333231` = "1234", program-type byte @90, ctx-reg-count @91, sh-reg-count @92) + `.shader_text` microcode. Both copied to GPU-readable direct memory, then `sceAgcCreateShader(&handle, header, code)`. Header carries the register writes the program needs — `AgcShader.ContextRegisters` / `ShaderRegisters` read them straight out. |
-| **`DisplayDevice`** — VideoOut open + `SetBufferAttribute2(Bgra8Srgb, tiling)` + `RegisterBuffers2`, tiled vs linear, flip/vblank pacing, the "pitch field must stay 0" gotcha, the size whitelist (1920×1080 the only universally-accepted mode) | `Graphics/DisplayDevice.cs` | Cross-check against `evo_agc_runtime.c`'s VideoOut bring-up; the SRGB-BGRA + `kAlt` channel-order note explains EVO's `0xAABBGGRR` framebuffer rule from the other direction. |
+| **`DisplayDevice`** — VideoOut open + `SetBufferAttribute2(Bgra8Srgb, tiling)` + `RegisterBuffers2`, tiled vs linear, flip/vblank pacing, the "pitch field must stay 0" gotcha, the size whitelist (1920×1080 the only universally-accepted mode) | `Graphics/DisplayDevice.cs` | Cross-check against `evo_agc_runtime.c`'s VideoOut bring-up; the SRGB-BGRA + `kAlt` channel-order note explains NoStream's `0xAABBGGRR` framebuffer rule from the other direction. |
 | **Compute dispatch is in the ABI** | `sceAgcCbDispatch` / `sceAgcDcbDispatchIndirect` / `sceAgcAcbDispatchIndirect` in `SceAgc.cs` | A YUV→BGRA **compute** shader (rather than a fullscreen-quad pixel shader) is a viable alternative to a fullscreen-quad pixel shader. |
 
 ## The frame loop, distilled (from `Renderer3D.cs` + `graphics-gpu.md`)

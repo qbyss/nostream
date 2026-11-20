@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Compile EVO's AGC pipelines from .pipe files with AMD's LLPC (amdllpc).
+"""Compile NoStream's AGC pipelines from .pipe files with AMD's LLPC (amdllpc).
 
 Replaces tools/build_agc_shaders.py (GLSL -> glslangValidator -> opengnm-psbc ->
 ps5-opengl's package writer). That chain was a hand-written reimplementation of
@@ -96,9 +96,9 @@ def decode_pal_metadata(notes: str) -> dict:
 
     def stage(key: str) -> dict:
         value = stages[key]
-        # EVO's AGC runtime never programs a scratch (temp) ring, so a shader
+        # NoStream's AGC runtime never programs a scratch (temp) ring, so a shader
         # that spills to private memory writes to an unmapped address. The
-        # console kills the process with GPU_FAULT_PAGE_FAULT_ASYNC, EVO gets
+        # console kills the process with GPU_FAULT_PAGE_FAULT_ASYNC, NoStream gets
         # no log line of its own, and the only clue is ShadowMount's debug.log.
         # Refuse the shader here instead - see #105's interp_median, where a
         # `vec4 v[9]` indexed by a loop counter cost a console session.

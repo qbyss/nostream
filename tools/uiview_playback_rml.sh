@@ -21,7 +21,7 @@ python3 tools/bundle_rml_assets.py
 # tessellation with a finer GetNumPoints(); compiled into the binary it preempts
 # librmlui.so's copies of that TU. See rmlui_patch/VENDORED.md.
 #
-# The harness renders through EVO's CPU rasteriser. It used to also link
+# The harness renders through NoStream's CPU rasteriser. It used to also link
 # RmlUi's GL3 interface for a plane compare against the console's OpenGL path;
 # that path is gone (the console is bare-metal AGC only), so the compare had
 # nothing left to compare against and went with it.

@@ -35,11 +35,11 @@ clear the Shell DB entry.
 
 ## Build tail
 
-Compilation uses the SDK's `prospero-clang` with EVO's normal per-object Makefile
+Compilation uses the SDK's `prospero-clang` with NoStream's normal per-object Makefile
 and `-fno-plt -fno-stack-protector -ffunction-sections -fdata-sections`. TLS is
 native; the vendored `prospero-clang18` wrapper would force `-femulated-tls` and
 `package-app.sh` deliberately does not use it. The link, module conversion and signing come from `tools/native-app/`, vendored
-from `blackbearreloaded/ps5-native-app-boilerplate` (GPL-3.0-or-later; EVO is
+from `blackbearreloaded/ps5-native-app-boilerplate` (GPL-3.0-or-later; NoStream is
 too, so vendoring adds no obligation):
 
 | Piece | Role |
@@ -86,7 +86,7 @@ A registered title gets a strict namespace, not a permission wall. Measured with
 - `opendir()` fails with EPERM on every path (the clean-room libc cannot do its
   internal `fstatfs`), but `open(O_DIRECTORY)` + `getdents()` work.
 
-So EVO asks a resident jailbreak daemon (PS5-Lapy-JB-Daemon, or etaHEN) to lift
+So NoStream asks a resident jailbreak daemon (PS5-Lapy-JB-Daemon, or etaHEN) to lift
 its own process. `evo_jailbreak.c` writes `{"PID":"<pid>"}` to
 `/download0/etahen_jailbreak`; the daemon polls that file inside the sandbox
 mount every 250 ms, applies caps, uid and root/jail vnodes to that pid, and
@@ -94,7 +94,7 @@ deletes the file as its "done" signal. The lookup re-reads the root per `open`, 
 one request is enough and every later `/mnt/usb0` or `/data` path just resolves.
 A first request can lose a timing race; `evo_jailbreak_poll()` keeps re-dropping
 it from the frame loop. Without a daemon there is no other route: USB and internal
-storage stay empty and EVO logs the warning after about 300 frames.
+storage stay empty and NoStream logs the warning after about 300 frames.
 
 What follows from it:
 
@@ -115,19 +115,19 @@ What follows from it:
 | Trap | What happens | Rule |
 |---|---|---|
 | `#include <iostream>` | its priority-100 static initialiser builds the global locale and dereferences null in the CRT's `_init`; SIGSEGV at load, no log, and layout-sensitive so it can survive for weeks | never include it; use `<cstdio>` |
-| a libc function the shim lacks (`strcasestr`, `opendir`, ...) | the import binds to NULL; SIGSEGV at address 0 when first called | only call functions EVO already uses, or add a shim |
+| a libc function the shim lacks (`strcasestr`, `opendir`, ...) | the import binds to NULL; SIGSEGV at address 0 when first called | only call functions NoStream already uses, or add a shim |
 | `posix_fadvise` | SIGSYS-class fault from the app sandbox | already guarded by `#ifndef EVO_APP_MODULE` in `evo_stream_io.c`; keep it |
 | `stderr` / `printf` | there is no stdout; `fprintf(stderr, ...)` in FFmpeg's `av_log` crashed every file that made it log | log through `EVO_LOGI/W/E` (or `evo_bt()` at boot); FFmpeg's log callback is redirected |
 | `sceVideoOutOpen` | returns a bogus handle; panics the console once a compute queue exists | never call it. `evo_agc_runtime.c` owns VideoOut |
 | a mid-stream credential swap | libSceAudiodec dies | probe the audio decoders before `evo_jailbreak_self()` |
 | `getenv()` | always NULL | pass constants directly |
-| stale `.ffpfsc` | two debugging rounds were spent reading logs from an image that never deployed | check the build id in `evo.log` before trusting a run |
+| stale `.ffpfsc` | two debugging rounds were spent reading logs from an image that never deployed | check the build id in `nostream.log` before trusting a run |
 
 ## Memory
 
 Three pools, none of them what the ELF-payload era had: direct (about 12 GB, the
 only large one), flexible (448 MB by default, 1 GiB with the `param.json` key) and
-EVO's own heap through the malloc shim. A refused allocation (`map_fail` in the
+NoStream's own heap through the malloc shim. A refused allocation (`map_fail` in the
 `alloc` log lines) is what breaks FFmpeg, not the codec. Read
-[hardware/memory-budget.md](../hardware/memory-budget.md) before calling EVO
+[hardware/memory-budget.md](../hardware/memory-budget.md) before calling NoStream
 memory-limited.

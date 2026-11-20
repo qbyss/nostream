@@ -1,6 +1,6 @@
-# YouTube in EVO's player
+# YouTube in NoStream's player
 
-EVO plays YouTube in its own player two ways. Both live in the cast receiver
+NoStream plays YouTube in its own player two ways. Both live in the cast receiver
 (`src/evo_cast_receiver.c`, port 8765) and `core/src/services/CastService.cpp`.
 
 Every way in ends in `CastService`'s launch handler with a video id, and
@@ -8,7 +8,7 @@ resolves the same way: the full-length route first, then the 60 s route.
 
 | Started by | Notes |
 |---|---|
-| YouTube app on a phone (DIAL launch, then Lounge for later videos) | Needs Settings → CAST TO EVO PLAYER on; off sends the cast to the system browser instead. The phone's start time is kept |
+| YouTube app on a phone (DIAL launch, then Lounge for later videos) | Needs Settings → CAST TO NOSTREAM on; off sends the cast to the system browser instead. The phone's start time is kept |
 | Settings → PLAY A YOUTUBE LINK | Keyboard prompt; the phone keyboard link works for pasting |
 | The phone page (`<ps5>:9780/input`), "Play a YouTube link" box | `POST /youtube` with `X-EVO-Input`, same guard as the keyboard |
 | `curl -d "<link>" http://<ps5>:8765/cast/url` | For scripts |
@@ -22,7 +22,7 @@ resolves the same way: the full-length route first, then the 60 s route.
 
 The web_embedded HLS manifest plays in full without a PO token, but its
 segments answer 403 until the `/n/<challenge>/` part of the manifest path is
-replaced by the value YouTube's player script computes. EVO computes it the way
+replaced by the value YouTube's player script computes. NoStream computes it the way
 `yt-dlp --js-runtimes quickjs` does:
 
 1. `iframe_api` → player version → `/s/player/<id>/player_ias.vflset/en_US/base.js`
@@ -36,7 +36,7 @@ replaced by the value YouTube's player script computes. EVO computes it the way
 4. yt-dlp's solver (`third_party/yt-dlp-ejs`, embedded by
    `tools/gen_ytjs_blob.py`) runs in QuickJS-NG (`addons/src/quickjs-amalgam.c`)
    on its own 4 MiB thread and returns the new `n`. Its "preprocessed player"
-   output is cached in `/data/evoplayer/ytjs_player.cache`, keyed by player
+   output is cached in `/data/nostream/ytjs_player.cache`, keyed by player
    version.
 
 Cost on the console (PS5 Pro): first link after a player change about 6.5 s of
@@ -51,7 +51,7 @@ Log lines start with `yt-link:`; a failure names the step (`embed config`,
   `lib.min.js` and `core.min.js` from a newer `yt-dlp-ejs` release into
   `third_party/yt-dlp-ejs/`, run `python tools/gen_ytjs_blob.py`, rebuild. Test
   on the PC first: `yt-dlp --js-runtimes quickjs:<qjs>` with the same release.
-- **`not playable: ... unavailable`**: compare EVO's request with
+- **`not playable: ... unavailable`**: compare NoStream's request with
   `yt-dlp --print-traffic --extractor-args "youtube:player_client=web_embedded"`.
 - **No `hlsManifestUrl`, or the segments 403 with a correct `n`**: YouTube asks
   for a PO token on web_embedded HLS too. The route is closed; links fall back

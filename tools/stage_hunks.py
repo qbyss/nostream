@@ -3,7 +3,7 @@
 
 Stage only the -U0 hunks of FILE (index -> worktree) whose changed lines match
 REGEX (or do not, with --invert). For splitting one file between two commits
-by topic (the commit-evo skill), without an interactive `git add -p`.
+by topic (the commit-nostream skill), without an interactive `git add -p`.
 Builds the new blob itself, so zero-context hunks are fine where `git apply
 --unidiff-zero` refuses them. Check the result with `git diff --cached FILE`.
 

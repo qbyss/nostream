@@ -305,7 +305,7 @@ static void launch_build(evo_rmlui_launch_params_t& p, int row, int col, bool wi
 
     {
         memset(&p, 0, sizeof(p));
-        p.app_name = "EVO PLAYER";
+        p.app_name = "NOSTREAM";
         p.version = "v0.11.0";
         p.clock = "21:48";
         p.theme_name = "MIDNIGHT";
@@ -321,7 +321,7 @@ static void launch_build(evo_rmlui_launch_params_t& p, int row, int col, bool wi
             p.hero_art_h = 315;
         } else {
             p.hero_eyebrow = "WELCOME";
-            p.hero_title = "EVO PLAYER";
+            p.hero_title = "NOSTREAM";
             p.hero_detail = "Play video and audio from USB storage";
             p.hero_action = "BROWSE USB";
             p.hero_progress = -1;
@@ -955,7 +955,7 @@ static void render_reader_screen(std::vector<uint32_t>& fb, int width, int heigh
     p.footnote = "FIRST 2 MB OF 12 KB";
 
     static const char* lines[] = {
-        "EVO PLAYER 0.7.1 - RELEASE NOTES",
+        "NOSTREAM 0.1.0 - RELEASE NOTES",
         "",
         "This build brings the RmlUi retained-mode interface to the launch,",
         "browser and list screens. The immediate-mode renderer is still the",
@@ -1254,12 +1254,12 @@ static void render_toast_screens(std::vector<uint32_t>& fb, int width, int heigh
          * already drawn into the same framebuffer). */
         evo_rmlui_launch_params_t lp;
         memset(&lp, 0, sizeof(lp));
-        lp.app_name = "EVO PLAYER";
+        lp.app_name = "NOSTREAM";
         lp.version = "v0.11.0";
         lp.clock = "21:48";
         lp.theme_name = "MIDNIGHT";
         lp.hero_eyebrow = "WELCOME";
-        lp.hero_title = "EVO PLAYER";
+        lp.hero_title = "NOSTREAM";
         lp.hero_detail = "Play video and audio from USB storage";
         lp.hero_action = "BROWSE USB";
         lp.hero_progress = -1;
@@ -1288,12 +1288,12 @@ static void render_debug_overlay_screen(std::vector<uint32_t>& fb, int width, in
     hide_nav();
     evo_rmlui_launch_params_t lp;
     memset(&lp, 0, sizeof(lp));
-    lp.app_name = "EVO PLAYER";
+    lp.app_name = "NOSTREAM";
     lp.version = "v0.11.0";
     lp.clock = "21:48";
     lp.theme_name = "MIDNIGHT";
     lp.hero_eyebrow = "WELCOME";
-    lp.hero_title = "EVO PLAYER";
+    lp.hero_title = "NOSTREAM";
     lp.hero_detail = "Play video and audio from USB storage";
     lp.hero_action = "BROWSE USB";
     lp.hero_progress = -1;
@@ -1658,7 +1658,7 @@ static void render_stress_screens(std::vector<uint32_t>& fb, int width, int heig
         set_nav(0, 0);
         evo_rmlui_launch_params_t p;
         memset(&p, 0, sizeof(p));
-        p.app_name = "EVO PLAYER";
+        p.app_name = "NOSTREAM";
         p.version = "v0.11.0";
         p.clock = "21:48";
         p.theme_name = "MIDNIGHT";
@@ -2118,11 +2118,11 @@ int main(int argc, char** argv) {
         set.sidebar_focused = 0;
         set.rail_focused = 0;
         set.row_count = 5;
-        settings_row(set.rows[0], "REPORT A PROBLEM", "SEND EVO'S LOG FROM YOUR PHONE, OR SAVE IT TO USB", "projects/evoplayer/assets/icons/icon_report.png", EVO_RMLUI_ROW_ACTION, "SAVE", 0);
+        settings_row(set.rows[0], "REPORT A PROBLEM", "SEND NOSTREAM'S LOG FROM YOUR PHONE, OR SAVE IT TO USB", "projects/evoplayer/assets/icons/icon_report.png", EVO_RMLUI_ROW_ACTION, "SAVE", 0);
         settings_row(set.rows[1], "DEBUG OVERLAY", "ON-SCREEN HARDWARE PERFORMANCE METRICS", "projects/evoplayer/assets/icons/icon_activity.png", EVO_RMLUI_ROW_TOGGLE, "", 0);
         settings_row(set.rows[2], "DEVELOPER TOOLS", "SYSTEM DIAGNOSTICS & PERFORMANCE STATS", "projects/evoplayer/assets/icons/icon_developer_tools.png", EVO_RMLUI_ROW_ACTION, "OPEN", 0);
         settings_row(set.rows[3], "CONSOLE", "DETECTED HARDWARE MODEL", "projects/evoplayer/assets/icons/icon_tv.png", EVO_RMLUI_ROW_ACTION, "NOT DETECTED", 0);
-        settings_row(set.rows[4], "QUIT EVO", "RELEASE EVERYTHING, THEN CLOSE FROM THE SWITCHER", "projects/evoplayer/assets/icons/icon_power.png", EVO_RMLUI_ROW_ACTION, "QUIT", 0);
+        settings_row(set.rows[4], "QUIT NOSTREAM", "RELEASE EVERYTHING, THEN CLOSE FROM THE SWITCHER", "projects/evoplayer/assets/icons/icon_power.png", EVO_RMLUI_ROW_ACTION, "QUIT", 0);
         set.rows[0].is_focused = 1;
 
         evo_rmlui_update_settings(&set);
@@ -2275,7 +2275,7 @@ int main(int argc, char** argv) {
         set.rows[0].has_chevron = 0;
         set.rows[0].is_focused = 1;
 
-        set.rows[1].title = "EVO PLAYER PRO";
+        set.rows[1].title = "NOSTREAM PRO";
         set.rows[1].detail = "CINEMATIC MEDIA PLAYER FOR PS5 HOMEBREW";
         set.rows[1].icon_path = "projects/evoplayer/assets/icons/icon_resume.png";
         set.rows[1].badge = "";
@@ -2469,7 +2469,7 @@ int main(int argc, char** argv) {
 
         evo_rmlui_about_params_t ab;
         memset(&ab, 0, sizeof(ab));
-        ab.app_name = "EVO PLAYER PRO";
+        ab.app_name = "NOSTREAM PRO";
         ab.version = "v0.11.0";
         ab.build_tag = "PS5 HOMEBREW";
         ab.tagline = "CINEMATIC MEDIA PLAYER FOR PLAYSTATION 5 HOMEBREW";
@@ -2481,7 +2481,7 @@ int main(int argc, char** argv) {
         evo_rmlui_render_about(fb.data(), width, height);
         save_bmp_24("output/uiview/rml_about_support.bmp", fb.data(), width, height);
 
-        /* Same screen with the rail expanded and the cursor on QUIT EVO, the
+        /* Same screen with the rail expanded and the cursor on QUIT NOSTREAM, the
          * entry after the last section, pinned to the foot of the rail. */
         nav.rail_focused = 1;
         nav.cursor_index = 4;
@@ -2494,7 +2494,7 @@ int main(int argc, char** argv) {
     }
 
     // -------------------------------------------------------------
-    // Safe-to-close: the frame EVO parks on after QUIT EVO
+    // Safe-to-close: the frame NoStream parks on after QUIT NOSTREAM
     // -------------------------------------------------------------
     {
         /* A complete theme: the harness's midnight_th above sets only the

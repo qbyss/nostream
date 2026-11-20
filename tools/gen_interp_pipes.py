@@ -366,7 +366,7 @@ void main() {
     float t = clamp(vParams.x, 0.0, 1.0);
     /* uParams.y carries BOTH the mode and the debug view, as mode + 10*view.
      * The two live in one channel because .x and .y are the only components of
-     * this varying any EVO shader has ever read, and a debug switch that needs
+     * this varying any NoStream shader has ever read, and a debug switch that needs
      * its own debugging is no use.
      * /mnt/usb0/evo_interp_debug: 1 = vectors, 2 = confidence, 3 = warp weight.
      * Thresholds like the ones below cannot be tuned by looking at a correct

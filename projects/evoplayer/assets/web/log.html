@@ -718,7 +718,7 @@ function reportURL() {
     (saw.length ? "\n\nWhat NoStream's log viewer found:\n" + saw.map((s) => "- " + s).join("\n") : ""), 2500));
   if (ver) q.set("version", ver);
   // Never claims a file is attached: the box stays honest if the user skips it.
-  q.set("report", "Drag " + (RUN === "last" ? "evo-report-last-run" : "evo-report") + "-" + (INFO.build || "") +
+  q.set("report", "Drag " + (RUN === "last" ? "nostream-report-last-run" : "nostream-report") + "-" + (INFO.build || "") +
     ".txt (downloaded from NoStream) into this box.\n");
   return ISSUES + "?" + q.toString();
 }

@@ -4,7 +4,7 @@ Vendored verbatim from
 [ps5-homebrew-dev-protocol](https://github.com/blackbearreloaded/ps5-homebrew-dev-protocol)
 (`scripts/controllers/`, commit `51dc332`), GPL-3.0-or-later. `COPYING` is
 that licence. They are standalone payloads, built and sent by
-`tools/evo-remote.sh`, and never linked into EVO.
+`tools/nostream-remote.sh`, and never linked into NoStream.
 
 | File | Calls | Does |
 | --- | --- | --- |
@@ -14,15 +14,15 @@ that licence. They are standalone payloads, built and sent by
 The title ID is compiled in (`-DBOOTSTRAP_TITLE_ID="PPSA99273"`), so each ELF
 does exactly one thing to exactly one title. They go to elfldr on `:9021`.
 
-**Never call these directly. Use `tools/evo-remote.sh launch|quit|close|cycle`**,
+**Never call these directly. Use `tools/nostream-remote.sh launch|quit|close|cycle`**,
 which guard them:
 
 - `close` is a kill, the same thing a PS-button close does. That panicked the
-  console on 2026-09-18 when EVO was still submitting GPU work. `evo-remote.sh
-  close` only sends it once `evo_status` says `parked=1`, which means the soft
+  console on 2026-09-18 when NoStream was still submitting GPU work. `nostream-remote.sh
+  close` only sends it once `nostream_status` says `parked=1`, which means the soft
   close (`quit`) has drained the GPU and stopped the frame loop.
 - `launch` is refused while ShadowMount's log shows PPSA99273 started and not
-  yet released, and while the `evo_status` heartbeat is advancing. That keeps
+  yet released, and while the `nostream_status` heartbeat is advancing. That keeps
   it from stacking a launch.
 
 A zero exit from the send only means elfldr took the bytes. The result comes

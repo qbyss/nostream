@@ -42,17 +42,17 @@ If you really need a listener in the container, publish the port in the commente
 | 9021 | `ps5-payload-elfldr` | `launch`, `close` |
 | 3232 | `ps5-payload-klogsrv` | `klog.sh`, `cycle` |
 | 8080 | `ps5-payload-websrv` | `shot.sh`; read-only `/fs` |
-| 9780 (default) | EVO's own log server | `/raw`, `/stats`, the phone input page, `evo-dash.py`. User-settable (1024–65535) in Settings → PHONE & LOG PORT with n+1..n+9 fallback; dev tools accept `PS5_LOG_PORT` |
+| 9780 (default) | NoStream's own log server | `/raw`, `/stats`, the phone input page, `nostream-dash.py`. User-settable (1024–65535) in Settings → PHONE & LOG PORT with n+1..n+9 fallback; dev tools accept `PS5_LOG_PORT` |
 | 9295 and discovery | Remote Play | [remote-play.md](remote-play.md) |
 
-All of these except EVO's log server (port 9780 by default) need the jailbreak re-run after every console reboot.
+All of these except NoStream's log server (port 9780 by default) need the jailbreak re-run after every console reboot.
 
 ## Setting `PS5_HOST`
 
 The console's address is never committed. Put it in `.env` at the repo root
 (`cp .env.example .env`); `docker compose` reads that file only, so a `.env.local`
 on its own leaves the container pointing at the old address. Or per command:
-`PS5_HOST=192.168.1.50 ./tools/evo-remote.sh status`. Find it under Settings →
+`PS5_HOST=192.168.1.50 ./tools/nostream-remote.sh status`. Find it under Settings →
 Network → Connection Status. It moves after a power cut or a router change; if
 every tool suddenly times out, check this first.
 
@@ -72,5 +72,5 @@ nc -vz "$PS5_HOST" 9021        # elfldr
 | nothing resolves `ps5` | the SDK's default hostname relies on mDNS, which the container does not use. Use the IP |
 | `ping` and the port both fail | not the same subnet or VLAN; AP/client isolation on a guest or wireless network; a third-party security suite. Test with `Test-NetConnection <ip> -Port 2121` from PowerShell; if that works and the container fails, restart Docker Desktop |
 | `PS5_HOST=localhost` | that is the container itself. To reach something on Windows use `host.docker.internal` |
-| a tool times out but the console is up | the far end holds the socket; a `timeout` or curl 28 on an `evo-remote.sh` call is a normal outcome ([hardware-cycle.md](hardware-cycle.md)) |
-| EVO's DNS lookup fails | EVO resolves through the console's own resolver, so check the console's DNS setting; a DNS filter that answers `0.0.0.0` for a blocked name is logged as "blocked by the network's DNS" |
+| a tool times out but the console is up | the far end holds the socket; a `timeout` or curl 28 on an `nostream-remote.sh` call is a normal outcome ([hardware-cycle.md](hardware-cycle.md)) |
+| NoStream's DNS lookup fails | NoStream resolves through the console's own resolver, so check the console's DNS setting; a DNS filter that answers `0.0.0.0` for a blocked name is logged as "blocked by the network's DNS" |

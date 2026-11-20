@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Simple high-performance FTP server for sharing E:\ on the local network.
-Allows anonymous access with read-only permissions (ideal for media streaming to EVO Player).
+Allows anonymous access with read-only permissions (ideal for media streaming to NoStream).
 """
 import os
 import sys
@@ -37,7 +37,7 @@ def main():
     handler.authorizer = authorizer
     handler.masquerade_address = lan_ip
     handler.passive_ports = range(60000, 60050)
-    handler.banner = "EVO Player Laptop FTP Server Ready."
+    handler.banner = "NoStream Laptop FTP Server Ready."
 
     address = ('0.0.0.0', port)
     try:
@@ -49,7 +49,7 @@ def main():
         server = FTPServer(address, handler)
 
     print("=" * 60)
-    print("  EVO Player — Local Laptop FTP Server")
+    print("  NoStream — Local Laptop FTP Server")
     print("=" * 60)
     print(f"  Serving Directory : {share_dir}")
     print(f"  Laptop IP Address : {lan_ip}")
@@ -57,9 +57,9 @@ def main():
     print(f"  Anonymous Access  : Enabled (read-only)")
     print("-" * 60)
     if port == 21:
-        print(f"  To connect in EVO: Type '{lan_ip}' (or '{lan_ip}:21')")
+        print(f"  To connect in NoStream: Type '{lan_ip}' (or '{lan_ip}:21')")
     else:
-        print(f"  To connect in EVO: Type '{lan_ip}:{port}'")
+        print(f"  To connect in NoStream: Type '{lan_ip}:{port}'")
     print("=" * 60)
     print("Server running. Press Ctrl+C to stop.")
 

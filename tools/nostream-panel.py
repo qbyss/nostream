@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-evo-panel.py - a Tkinter control panel for EVO Player's dev workflow.
+nostream-panel.py - a Tkinter control panel for NoStream's dev workflow.
 
 One window over the scripts in scripts/ and tools/: package the app module with
 any flag combination, deploy it, run the host compile check, drive the console
@@ -13,7 +13,7 @@ into the console pane - the scripts re-exec themselves through
 
 Stdlib only (tkinter + ftplib). Run on the host:
 
-    python tools/evo-panel.py
+    python tools/nostream-panel.py
 
 Host / FTP port default from .env (PS5_HOST=...) at the repo root.
 One command runs at a time; Stop terminates it (and the docker run it spawned).
@@ -46,11 +46,11 @@ LOG_OUT = REPO_ROOT / "output" / "logs"
 DEFAULT_FTP_PORT = 2121
 BASH = shutil.which("bash") or "bash"
 
-# ---- the files EVO writes to /mnt/usb0 -------------------------------------
+# ---- the files NoStream writes to /mnt/usb0 -------------------------------------
 KNOWN_LOGS = [
-    ("/mnt/usb0/nostream.log", "evo.log  —  the one diagnostic log "
+    ("/mnt/usb0/nostream.log", "nostream.log  —  the one diagnostic log "
                           "(boot + breadcrumbs + decode + stats)", True),
-    ("/mnt/usb0/nostream_status", "evo_status  —  live state snapshot (--usb-remote)", False),
+    ("/mnt/usb0/nostream_status", "nostream_status  —  live state snapshot (--usb-remote)", False),
     ("/mnt/usb0/nostream_report.txt", "evo_report.txt  —  saved problem report", False),
 ]
 
@@ -175,7 +175,7 @@ def ftp_delete(host: str, port: int, remotes: list[str]) -> list[str]:
 
 def ftp_put(host: str, port: int, remote: str, data: bytes = b"1\n") -> None:
     """Create/overwrite a small file on the console (STOR to /mnt/usb0 works -
-    it's how evo-remote.sh delivers evo_cmd)."""
+    it's how nostream-remote.sh delivers nostream_cmd)."""
     import io as _io
     with FTP() as f:
         f.connect(host, port, timeout=15)
@@ -201,7 +201,7 @@ def ftp_exists(host: str, port: int, remote: str) -> bool:
         return False
 
 
-# Runtime hook files EVO access()-checks at boot (survive until the next
+# Runtime hook files NoStream access()-checks at boot (survive until the next
 # deploy-app.sh --ffpfsc, which wipes /mnt/usb0/nostream_*).
 HOOK_GL_RMLUI = "/mnt/usb0/nostream_gl_rmlui"
 
@@ -212,7 +212,7 @@ HOOK_GL_RMLUI = "/mnt/usb0/nostream_gl_rmlui"
 class EvoPanel:
     def __init__(self, root: tk.Tk) -> None:
         self.root = root
-        self.root.title("EVO control panel")
+        self.root.title("NoStream control panel")
         self.root.geometry("1040x900")
         self.root.minsize(900, 640)
         self.q: queue.Queue = queue.Queue()
@@ -313,10 +313,10 @@ class EvoPanel:
         ttk.Button(drow, text="Deploy", command=lambda: self._run_deploy(False)).pack(side="left")
         ttk.Button(drow, text="Undeploy", command=lambda: self._run_deploy(True)).pack(side="left", padx=6)
         ttk.Label(dp, text="ShadowMount+ re-mounts + auto-launches on the .ffpfsc change; "
-                           "PS-button-close a running EVO first.",
+                           "PS-button-close a running NoStream first.",
                   foreground="#888", wraplength=760).pack(anchor="w", pady=(4, 0))
 
-        cc = self._section(t, "Host compile check  ·  scripts/build-evoplayer.sh  (never deploys)")
+        cc = self._section(t, "Host compile check  ·  scripts/build-nostream.sh  (never deploys)")
         srow = ttk.Frame(cc)
         srow.pack(anchor="w")
         ttk.Label(srow, text="--stage (optional):").pack(side="left")
@@ -351,16 +351,16 @@ class EvoPanel:
         self.run(argv, "undeploy" if undeploy else "deploy")
 
     def _do_compile_check(self):
-        argv = [BASH, "scripts/build-evoplayer.sh"]
+        argv = [BASH, "scripts/build-nostream.sh"]
         if self.build_stage.get().strip():
             argv += ["--stage", self.build_stage.get().strip()]
         self.run(argv, "compile check")
 
-    # ---- Remote (evo-remote.sh) ------------------------------------
+    # ---- Remote (nostream-remote.sh) ------------------------------------
     def _tab_remote(self, nb):
         t = ttk.Frame(nb, padding=6)
         nb.add(t, text="Remote")
-        s = self._section(t, "FTP dev remote  ·  tools/evo-remote.sh  (needs a --usb-remote build)")
+        s = self._section(t, "FTP dev remote  ·  tools/nostream-remote.sh  (needs a --usb-remote build)")
 
         pr = ttk.Frame(s)
         pr.pack(anchor="w", pady=2)
@@ -398,13 +398,13 @@ class EvoPanel:
         ttk.Label(g, textvariable=self.gl_mode, foreground="#888").pack(anchor="w", pady=(2, 0))
 
     def _remote(self, sub: str, arg: str = ""):
-        argv = [BASH, "tools/evo-remote.sh", sub]
+        argv = [BASH, "tools/nostream-remote.sh", sub]
         if arg.strip():
             argv.append(arg.strip())
         elif sub in ("play", "seek"):
-            messagebox.showinfo("evo-remote", f"{sub} needs a value.")
+            messagebox.showinfo("nostream-remote", f"{sub} needs a value.")
             return
-        self.run(argv, f"evo-remote {sub}")
+        self.run(argv, f"nostream-remote {sub}")
 
     # ---- GL-3 render mode (evo_gl_rmlui hook) --------------------
     def _hostport(self):

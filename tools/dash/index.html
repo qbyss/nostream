@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>EVO Health</title>
+<title>NoStream Health</title>
 <style>
 :root{
   --bg:#f5f6f8;--panel:#fff;--fg:#1b2130;--dim:#646d80;--line:#e2e5eb;--grid:#eef0f4;
@@ -89,7 +89,7 @@ canvas{display:block;width:100%;height:170px}
 <body>
 <main>
   <div class="top">
-    <b>EVO health</b>
+    <b>NoStream health</b>
     <span><span class="dot" id="dot"></span><span id="conn">connecting...</span></span>
     <span class="grow"></span>
     <span>Show the last</span>
@@ -98,7 +98,7 @@ canvas{display:block;width:100%;height:170px}
 
   <section class="hero" id="hero">
     <div class="h" id="headline">Connecting to the console...</div>
-    <div class="d" id="detail">This page reads EVO's status once a second.</div>
+    <div class="d" id="detail">This page reads NoStream's status once a second.</div>
     <div class="p" id="progress" hidden><span id="pos"></span><span class="track"><i id="posbar"></i></span><span id="dur"></span></div>
   </section>
 
@@ -163,17 +163,17 @@ function derive(s) {
 
 // ---- headline: one sentence for "is it OK?" -------------------------------
 function verdict(s) {
-  if (!online) return ["bad", "Can't reach EVO", "Is EVO open on the console? This page keeps trying."];
+  if (!online) return ["bad", "Can't reach NoStream", "Is NoStream open on the console? This page keeps trying."];
   const recentMemFail = S.slice(-10).some(x => x.memFail);
   const p = s.play, n = s.net;
   if (!p.active) {
-    if (recentMemFail) return ["bad", "EVO ran out of memory", "Something failed to load just now."];
-    return ["", "Nothing playing", "EVO is open. Start a video and its health shows here."];
+    if (recentMemFail) return ["bad", "NoStream ran out of memory", "Something failed to load just now."];
+    return ["", "Nothing playing", "NoStream is open. Start a video and its health shows here."];
   }
   if (p.fatal) return ["bad", "The video decoder failed", "This file can't be decoded. Try another version of it."];
-  if (recentMemFail || s.mem.flex_free_mb < 16) return ["bad", "Out of memory", "EVO has run out of memory. The picture may freeze while sound carries on."];
-  if (n.recovering) return ["bad", "Connection lost, reconnecting", "The stream dropped. EVO is reconnecting and will carry on from the same spot."];
-  if (n.stall_ms > 2000) return ["bad", "Waiting for the server", `No data for ${r0(n.stall_ms / 1000)} seconds. EVO keeps retrying.`];
+  if (recentMemFail || s.mem.flex_free_mb < 16) return ["bad", "Out of memory", "NoStream has run out of memory. The picture may freeze while sound carries on."];
+  if (n.recovering) return ["bad", "Connection lost, reconnecting", "The stream dropped. NoStream is reconnecting and will carry on from the same spot."];
+  if (n.stall_ms > 2000) return ["bad", "Waiting for the server", `No data for ${r0(n.stall_ms / 1000)} seconds. NoStream keeps retrying.`];
   if (p.eof) return ["", "Finished", "The video reached its end."];
   if (p.buffering) return ["warn", "Buffering", s.mbps != null && s.need && s.mbps < s.need
       ? `Loading more video. Your connection (${r0(s.mbps)} Mbit/s) is slower than this video needs (${r0(s.need)} Mbit/s).`
@@ -235,7 +235,7 @@ function render() {
   if (s.net.recoveries) parts.push(`${s.net.recoveries} reconnects`);
   if (s.net.chunk_failures) parts.push(`${s.net.chunk_failures} download retries`);
   card("c-err", s.mem.map_fail ? "bad" : parts.length ? "warn" : "ok", parts.length ? (s.mem.map_fail ? "Memory errors" : "Some") : "None",
-       parts.length ? parts.join(", ") : "no errors since EVO started");
+       parts.length ? parts.join(", ") : "no errors since NoStream started");
   for (const k of Object.keys(G)) draw(k);
 }
 
@@ -347,15 +347,15 @@ async function tick() {
     if (j.events.length) renderEvents();
     if (j.lines.length) renderLog();
   } catch (_) {
-    online = false; $("conn").textContent = "the dashboard program (evo-dash.py) has stopped";
-    $("hero").className = "hero bad"; $("headline").textContent = "Dashboard stopped"; $("detail").textContent = "Run python tools/evo-dash.py again.";
+    online = false; $("conn").textContent = "the dashboard program (nostream-dash.py) has stopped";
+    $("hero").className = "hero bad"; $("headline").textContent = "Dashboard stopped"; $("detail").textContent = "Run python tools/nostream-dash.py again.";
   }
   setTimeout(tick, 1000);
 }
 $("win").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return;
   for (const x of $("win").children) x.classList.toggle("on", x === b); winSec = +b.dataset.s;
-  try { localStorage.setItem("evo-dash-win", winSec); } catch (_) {} render(); });
-try { const w = localStorage.getItem("evo-dash-win"); if (w != null) { winSec = +w; for (const x of $("win").children) x.classList.toggle("on", +x.dataset.s === winSec); } } catch (_) {}
+  try { localStorage.setItem("nostream-dash-win", winSec); } catch (_) {} render(); });
+try { const w = localStorage.getItem("nostream-dash-win"); if (w != null) { winSec = +w; for (const x of $("win").children) x.classList.toggle("on", +x.dataset.s === winSec); } } catch (_) {}
 $("filter").oninput = renderLog; $("raw").addEventListener("toggle", renderLog);
 addEventListener("resize", render);
 tick();

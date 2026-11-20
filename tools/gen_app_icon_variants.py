@@ -207,27 +207,27 @@ def v2(cv):
 
 
 def v3(cv):
-    """Mark above, EVO PRO set on one line beneath, measured not guessed."""
+    """Mark above, NoStream PRO set on one line beneath, measured not guessed."""
     s, c = cv.s, cv.c
     ring(cv, c - s * 0.115, s * 0.205, s * 0.048)
     play(cv, c - s * 0.115, s * 0.109, s * 0.013)
 
     cap, tr = s * 0.140, 0.02
     f = font(cv.face)
-    w_evo = f.measure("EVO", cap, tr)
+    w_evo = f.measure("NoStream", cap, tr)
     w_pro = f.measure("PRO", cap, tr)
     gap = cap * 0.34
     total = w_evo + gap + w_pro
     left = c - total / 2.0
     y = c + s * 0.250
-    cv.text("EVO", cap, left + w_evo / 2.0, y, WHITE, tracking=tr)
+    cv.text("NoStream", cap, left + w_evo / 2.0, y, WHITE, tracking=tr)
     cv.text("PRO", cap, left + w_evo + gap + w_pro / 2.0, y, ACCENT, tracking=tr)
 
 
 def v4(cv):
-    """Wordmark-led: EVO large, PRO in an accent pill beneath."""
+    """Wordmark-led: NoStream large, PRO in an accent pill beneath."""
     s, c = cv.s, cv.c
-    cv.text("EVO", s * 0.290, c, c - s * 0.115, WHITE, tracking=0.01)
+    cv.text("NoStream", s * 0.290, c, c - s * 0.115, WHITE, tracking=0.01)
     by = c + s * 0.190
     pill(cv, c, by, s * 0.235, s * 0.092)
     cv.text("PRO", s * 0.108, c, by, WHITE, tracking=0.06, knockout=True)
@@ -243,17 +243,17 @@ def v5(cv):
 
 
 def v6(cv):
-    """Mark, EVO under it, PRO as a small accent line under that."""
+    """Mark, NoStream under it, PRO as a small accent line under that."""
     s, c = cv.s, cv.c
     ring(cv, c - s * 0.140, s * 0.195, s * 0.046)
     play(cv, c - s * 0.140, s * 0.104, s * 0.012)
-    cv.text("EVO", s * 0.165, c, c + s * 0.175, WHITE, tracking=0.02)
+    cv.text("NoStream", s * 0.165, c, c + s * 0.175, WHITE, tracking=0.02)
     cv.text("PRO", s * 0.090, c, c + s * 0.350, ACCENT, tracking=0.34)
 
 
 
 # --------------------------------------------------------------------------
-# refinements of candidate 2: PRO moved to the top, EVO wordmark added
+# refinements of candidate 2: PRO moved to the top, NoStream wordmark added
 # --------------------------------------------------------------------------
 
 def _pro_top(cv, cx, cy, hw, hh, cap, tracking=0.05):
@@ -262,17 +262,17 @@ def _pro_top(cv, cx, cy, hw, hh, cap, tracking=0.05):
 
 
 def r1(cv):
-    """PRO centred at the top, mark in the middle, EVO along the bottom."""
+    """PRO centred at the top, mark in the middle, NoStream along the bottom."""
     s, c = cv.s, cv.c
     _pro_top(cv, c, c - s * 0.345, s * 0.150, s * 0.060, s * 0.070)
     ring(cv, c - s * 0.010, s * 0.200, s * 0.048)
     play(cv, c - s * 0.010, s * 0.107, s * 0.013)
-    cv.text("EVO", s * 0.155, c, c + s * 0.320, WHITE, tracking=0.02)
+    cv.text("NoStream", s * 0.155, c, c + s * 0.320, WHITE, tracking=0.02)
 
 
 def r2(cv):
     """
-    The shipping tile. PRO top-right, mark centred, EVO across the bottom.
+    The shipping tile. PRO top-right, mark centred, NoStream across the bottom.
 
     The mark sits a little higher and the wordmark a little lower than the
     version this was picked from: at 512 they were ~15px apart and read as one
@@ -283,25 +283,25 @@ def r2(cv):
     _pro_top(cv, c + s * 0.245, c - s * 0.340, s * 0.150, s * 0.060, s * 0.070)
     ring(cv, c - s * 0.030, s * 0.198, s * 0.047)
     play(cv, c - s * 0.030, s * 0.105, s * 0.013)
-    cv.text("EVO", s * 0.158, c, c + s * 0.335, WHITE, tracking=0.02)
+    cv.text("NoStream", s * 0.158, c, c + s * 0.335, WHITE, tracking=0.02)
 
 
 def r3(cv):
-    """PRO top-centre, larger mark, smaller EVO - mark-led."""
+    """PRO top-centre, larger mark, smaller NoStream - mark-led."""
     s, c = cv.s, cv.c
     _pro_top(cv, c, c - s * 0.355, s * 0.135, s * 0.053, s * 0.062)
     ring(cv, c - s * 0.020, s * 0.228, s * 0.054)
     play(cv, c - s * 0.020, s * 0.121, s * 0.014)
-    cv.text("EVO", s * 0.128, c, c + s * 0.330, WHITE, tracking=0.03)
+    cv.text("NoStream", s * 0.128, c, c + s * 0.330, WHITE, tracking=0.03)
 
 
 def r4(cv):
-    """PRO top-centre, smaller mark, larger EVO - wordmark-led."""
+    """PRO top-centre, smaller mark, larger NoStream - wordmark-led."""
     s, c = cv.s, cv.c
     _pro_top(cv, c, c - s * 0.350, s * 0.145, s * 0.057, s * 0.066)
     ring(cv, c - s * 0.030, s * 0.175, s * 0.042)
     play(cv, c - s * 0.030, s * 0.093, s * 0.011)
-    cv.text("EVO", s * 0.195, c, c + s * 0.300, WHITE, tracking=0.01)
+    cv.text("NoStream", s * 0.195, c, c + s * 0.300, WHITE, tracking=0.01)
 
 
 REFINE = [r1, r2, r3, r4]

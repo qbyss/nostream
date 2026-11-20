@@ -288,7 +288,7 @@ class Font:
         """Advance width of `text` at cap height `cap_px`, in pixels.
 
         Layout should position from this rather than guessing: the first
-        attempt at a two-colour EVO PRO lockup placed each word by eye and they
+        attempt at a two-colour NoStream PRO lockup placed each word by eye and they
         overlapped."""
         scale = float(cap_px) / self._cap_height()
         w = 0.0

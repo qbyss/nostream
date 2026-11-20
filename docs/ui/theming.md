@@ -1,4 +1,4 @@
-# Theming EVO Player
+# Theming NoStream
 
 Every colour and spacing value the UI draws with lives in one struct
 (`evo_theme`, in [`pp/include/evo_theme.h`](../../projects/evoplayer/pp/include/evo_theme.h)).
@@ -11,7 +11,7 @@ element (`evo_rmlui_set_theme`).
 There are two ways to get a theme in:
 
 1. **Built-in** — compiled into the binary. Four ship today.
-2. **`.theme` file** — dropped in **`/data/evoplayer/themes/`** on the console (over
+2. **`.theme` file** — dropped in **`/data/nostream/themes/`** on the console (over
    FTP), discovered at startup. No rebuild, no repack. (Host builds and the sample
    files in [`themes/`](../../themes) use `/mnt/usb0/evo_themes/`; the app module
    cannot see USB until the self-unjail and reads its data root instead.)
@@ -34,7 +34,7 @@ every theme. The choice is saved by name and restored on the next launch.
 
 ## Writing a `.theme` file
 
-Create `/data/evoplayer/themes/mytheme.theme`. Format is `key = value`, one per
+Create `/data/nostream/themes/mytheme.theme`. Format is `key = value`, one per
 line. `#` starts a comment **except** directly after `=`, where it introduces a
 colour literal.
 

@@ -9,10 +9,10 @@ stayed black, so "it returned 0" is not evidence of anything on screen.
 |---|---|---|
 | CI and the container | it compiles, packs and links; unit logic holds | `build.yml`, `tests/run_tests.sh` |
 | The host | logic that needs no console: parsers, policy, layout | `tools/*_host.sh`, `tools/hui_preview.sh` |
-| The console | it works | `evo-remote.sh verify`, `cycle`, `sweep`, a screenshot |
+| The console | it works | `nostream-remote.sh verify`, `cycle`, `sweep`, a screenshot |
 
 Record a hardware result in the issue or commit, not in a doc: date, build id (from
-`evo.log`), what you saw, the evidence line.
+`nostream.log`), what you saw, the evidence line.
 
 ---
 
@@ -77,22 +77,22 @@ CJK), live video under the OSD, theme repaint timing, D-pad timing, and RCSS
 ## Hardware checks
 
 ```bash
-./tools/evo-remote.sh verify                         # every script in tools/checks/
-./tools/evo-remote.sh verify --check audio-delay --clip "/mnt/usb0/media/x.mkv"
+./tools/nostream-remote.sh verify                         # every script in tools/checks/
+./tools/nostream-remote.sh verify --check audio-delay --clip "/mnt/usb0/media/x.mkv"
 ```
 
 `verify` is one bounded cycle that ends in a check instead of a timed wait: it
 soft-closes, closes at `parked=1`, packages and deploys, launches, runs
 `tools/checks/<name>.sh`, quits and closes, and prints `PASS`/`FAIL` plus an
 evidence line. It stops at the first anomaly and never retries. Each check sets its
-setting with `evo-remote.sh set`, plays a clip, reads real telemetry back from
-`evo.log`, `evo_ui.json` or `evo_status`, and restores the setting on exit. Today:
+setting with `nostream-remote.sh set`, plays a clip, reads real telemetry back from
+`nostream.log`, `nostream_ui.json` or `nostream_status`, and restores the setting on exit. Today:
 `audio-delay`, `volume-boost`, `network-buffer`, `diagnostics-panel`. A new
 setting or feature should come with one. The surrounding cycle rules are in
 [../console/hardware-cycle.md](../console/hardware-cycle.md).
 
 Other measured captures, all driven over the dev remote on a playing video:
-`evo-remote.sh upcompare` (the same held frame with the upscaler Off, Sharp, AI
+`nostream-remote.sh upcompare` (the same held frame with the upscaler Off, Sharp, AI
 Standard and Large, saved as BMPs), `dbcompare` (Deep Blacks Off/Low/High), and
 `tools/seekstutter_run.py`, `tools/subsync_run.py` with their `*_report.py`
 readers for seek stutter and subtitle drift.
@@ -100,12 +100,12 @@ readers for seek stutter and subtitle drift.
 ### The codec sweep
 
 ```bash
-./tools/evo-remote.sh sweep [--dir /mnt/usb0/clips] [--secs 30] [--max 3] [--skip name]
+./tools/nostream-remote.sh sweep [--dir /mnt/usb0/clips] [--secs 30] [--max 3] [--skip name]
 python3 tools/sweep_report.py output/logs/evo.log -o output/logs/sweep.md
 ```
 
 Plays every clip in a directory for a window, moving on at the window, the end or a
-stall. EVO measures: each file writes one `sweep v=1 ...` line to `evo.log` when
+stall. NoStream measures: each file writes one `sweep v=1 ...` line to `nostream.log` when
 its decoder closes (`media/src/evo_sweep.c`, compiled into every build, so any
 playback session leaves the same line), which is why the runner's next `play`
 and a trailing `stop` matter: they flush the previous row. The report is host-only,
@@ -125,14 +125,14 @@ more than a checkmark:
 
 `make_sweep_clips.sh` builds the corpus (a host tool: the container's FFmpeg is the
 cross-build) and `push_sweep_clips.sh` copies it to the console. Compare two runs
-with `--colour-ref <earlier evo.log>`.
+with `--colour-ref <earlier nostream.log>`.
 
 ### Before you tell the user it works
 
-- Check the build id in `evo.log` against the build you meant to test. A stale
+- Check the build id in `nostream.log` against the build you meant to test. A stale
   `.ffpfsc` cost two debugging rounds.
 - `map_fail` in the `alloc` lines means a real out-of-memory; check it before
   blaming a codec ([../hardware/memory-budget.md](../hardware/memory-budget.md)).
 - Look at the picture (`key l3`, `tools/shot.sh grab`) for anything about layout,
   colour or rendering, and read the pixels (`shot.sh probe`, `diff`) rather than
-  squinting. Use `evo-remote.sh ui` for navigation questions.
+  squinting. Use `nostream-remote.sh ui` for navigation questions.

@@ -1,5 +1,5 @@
 /*
- * tests/test_cast_dial.cpp - Unit tests for EVO Player DIAL cast receiver
+ * tests/test_cast_dial.cpp - Unit tests for NoStream DIAL cast receiver
  * (SSDP + DIAL protocol matching CastDesk).
  */
 
@@ -60,8 +60,8 @@ static void test_param_parsing()
 static void test_friendly_name_and_status()
 {
     TEST_START("cast: friendly name and app state toggling");
-    evo_cast_receiver_set_friendly_name("Living Room EVO");
-    TEST_ASSERT(strcmp(evo_cast_receiver_friendly_name(), "Living Room EVO") == 0, "friendly name updated");
+    evo_cast_receiver_set_friendly_name("Living Room NoStream");
+    TEST_ASSERT(strcmp(evo_cast_receiver_friendly_name(), "Living Room NoStream") == 0, "friendly name updated");
 
     TEST_ASSERT(evo_cast_receiver_app_is_running() == 0, "initial app state stopped");
     evo_cast_receiver_set_app_running(1);

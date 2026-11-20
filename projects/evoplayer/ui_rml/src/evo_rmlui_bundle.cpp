@@ -16,7 +16,7 @@ namespace {
  */
 const char* const kPrefixes[] = {
     "/workspace/projects/evoplayer/assets/",
-    "/data/homebrew/EVOPlayer/assets/",
+    "/data/homebrew/NoStream/assets/",
     "projects/evoplayer/assets/",
     "/mnt/usb0/assets/",
     "/app0/assets/",

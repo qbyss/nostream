@@ -10,7 +10,7 @@
   {"q": "crash at load from iostream static initialisation", "expect": ["app-module-no-iostream"]},
   {"q": "multi-line python patch script on Windows breaks in git bash heredoc", "expect": ["CLAUDE.md", "block-heredoc-escapes", "windows-writes-break-container-scripts"]},
   {"q": "provider seam architecture for Emby Jellyfin Xtream", "expect": ["provider-architecture.md", "provider-seam-90"]},
-  {"q": "soft close parked=1 before sending the close controller", "expect": ["evo_usb_remote", "remote-launch-close-protocol", "tooling.md", "CLAUDE.md", "evo-remote.sh"]},
+  {"q": "soft close parked=1 before sending the close controller", "expect": ["evo_usb_remote", "remote-launch-close-protocol", "tooling.md", "CLAUDE.md", "nostream-remote.sh"]},
   {"q": "framebuffer pixel format colours swap silently", "expect": ["CLAUDE.md"]},
   {"q": "detect PS5 Pro for the AI network auto choice", "expect": ["evo_hw.c", "upscaler.md", "dev-console-is-ps5-pro"]},
   {"q": "strip Dolby Vision RPU NAL units from HEVC before the hardware decoder", "expect": ["evo_vdec_native.c", "issue#122"]},

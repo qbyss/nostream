@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Derive ui_screen_2d_pq_out.pipe - the UI pipeline for real HDR10 output.
 
-When a HDR10 / HLG video is on screen EVO registers the display as
+When a HDR10 / HLG video is on screen NoStream registers the display as
 Bgr10A2Bt2100Pq (media/src/evo_agc_runtime.c, evo_agc_runtime_set_hdr_output),
 so everything drawn to the scanout must be a BT.2020 PQ code value. The OSD,
 subtitles and toasts are authored in sRGB, so this variant is ui_screen_2d

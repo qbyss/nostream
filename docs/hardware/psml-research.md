@@ -1,11 +1,11 @@
-# PSML / PSSR on PS5 Pro — can EVO use Sony's upscaler? (#103 step 4)
+# PSML / PSSR on PS5 Pro — can NoStream use Sony's upscaler? (#103 step 4)
 
 **Status (2026-09-26): researched offline + by read-only FTP on the dev PS5 Pro
 (FW 12.70). No PSML function has been called or loaded. Route 1 (Pro mode)
-was tried and hit a wall: EVO has no way to observe Trinity mode. See the
+was tried and hit a wall: NoStream has no way to observe Trinity mode. See the
 [experiment log](#experiment-log). All experiment code has been removed; only
-these notes remain.** EVO's shipped AI upscaling
-is Anime4K in EVO's own shaders ([upscaler.md](upscaler.md)); it does **not**
+these notes remain.** NoStream's shipped AI upscaling
+is Anime4K in NoStream's own shaders ([upscaler.md](upscaler.md)); it does **not**
 use PSML.
 
 Method, all safe: `LIST`/`RETR` over the console's FTP (read-only), then
@@ -75,9 +75,9 @@ Recovered MFSR names: `3WVD91e12ZQ scePsmlMfsrInit`,
 | The Last of Us Part I | yes | `{"mfsrVersion": "09.60"}` | `0x004400D4` |
 | Assassin's Creed Shadows | yes | `{"mfsrVersion": "11.00"}` | `0x08440054` |
 | Alan Wake Remastered | no | — | `0` |
-| **EVO Player (PPSA99273)** | no | — | `0x00080040` |
+| **NoStream (PPSA99273)** | no | — | `0x00080040` |
 
-The only `attribute3` bit all three Pro titles share and EVO lacks is
+The only `attribute3` bit all three Pro titles share and NoStream lacks is
 **`0x00400000`**, the strongest candidate for "PS5 Pro enhanced", which would
 make the system launch the title in Trinity mode. **Unverified.**
 
@@ -90,16 +90,16 @@ make the system launch the title in Trinity mode. **Unverified.**
 
 `libScePsml` imports `sceKernelIsTrinityMode` as `#G#H`: module 7 /
 library 6, which is its libkernel entry, and the same slot as
-`sceKernelUsleep`. So it is a plain libkernel export, not a private one. EVO's
+`sceKernelUsleep`. So it is a plain libkernel export, not a private one. NoStream's
 original probe never asked it; see the experiment log for how it is asked
 now.
 
 ## Routes, cheapest first
 
 1. **Trinity-mode experiment (cheap, reversible).** Set `attribute3 |=
-   0x400000` and add `"psml": {"mfsrVersion": "11.00"}` to EVO's
+   0x400000` and add `"psml": {"mfsrVersion": "11.00"}` to NoStream's
    `sce_sys/param.json`, rebuild, launch.
-   - **Pass/fail:** EVO still launches, and something observable changes,
+   - **Pass/fail:** NoStream still launches, and something observable changes,
      e.g. `evo_hw` also tries `sceKernelIsTrinityMode`.
    - **Worst case:** the title fails to launch. Revert the change.
    - **Benefits either way:** Auto network selection, and any Pro-only
@@ -109,11 +109,11 @@ now.
    module has never worked for undeclared system PRXs. It also drags in
    `libSceAgcVsh`, the system shell's AGC, whose packets and state it would
    expect. Don't attempt it without a strong reason.
-3. **Run the BcSisr model with EVO's own runtime (big).** The `.psp` holds
+3. **Run the BcSisr model with NoStream's own runtime (big).** The `.psp` holds
    compiled PSSL shaders and weights.
    - **What it takes:** reverse-engineer the container, load the shaders from
-     the user's own console at runtime, and dispatch them through EVO's AGC
-     runtime. That needs compute dispatch, which EVO doesn't have yet.
+     the user's own console at runtime, and dispatch them through NoStream's AGC
+     runtime. That needs compute dispatch, which NoStream doesn't have yet.
    - **Licensing:** the model must be **read from the user's own console at
      runtime** (`/system/common/psml_package/`), never shipped. It is Sony's
      copyrighted work.
@@ -130,14 +130,14 @@ depends on. Decide on **3** after that.
 
 | Date | Build | Result |
 |---|---|---|
-| 2026-09-26 | `--pro-mode` (`attribute3 \|= 0x400000`, `psml.mfsrVersion "11.00"`) | EVO **launches normally**. The flags are accepted. |
+| 2026-09-26 | `--pro-mode` (`attribute3 \|= 0x400000`, `psml.mfsrVersion "11.00"`) | NoStream **launches normally**. The flags are accepted. |
 | 2026-09-26 | probe asks `sceKernelIsTrinityMode` by `sceKernelDlsym` | `0x80020003`, like the other two queries: still blind. |
 | 2026-09-26 | control: `sceKernelDlsym` of `sceKernelUsleep` | **`0x80020003` too.** `sceKernelDlsym` is unusable from the app module for any name, on handles `0x2001` / `0x2` and via `sceKernelLoadStartModule("libkernel.sprx")`. Every earlier "not found" was dlsym, not the Trinity functions. |
-| 2026-09-27 | **direct import** of `sceKernelIsTrinityMode`, via a one-line `libkernel.sprx` link stub (`tU5e3f9gSiU#G#H`, the same module/library record `libScePsml` uses), with the Pro-mode flags | **Crashes at launch; no `evo.log` is written.** The loader rejects the module: libkernel does not export this function to a fake-signed app, even though a system PRX imports it the same way. **Don't retry.** |
+| 2026-09-27 | **direct import** of `sceKernelIsTrinityMode`, via a one-line `libkernel.sprx` link stub (`tU5e3f9gSiU#G#H`, the same module/library record `libScePsml` uses), with the Pro-mode flags | **Crashes at launch; no `nostream.log` is written.** The loader rejects the module: libkernel does not export this function to a fake-signed app, even though a system PRX imports it the same way. **Don't retry.** |
 
 ### Conclusion
 
-EVO cannot read the Trinity state:
+NoStream cannot read the Trinity state:
 - `sceKernelDlsym` resolves nothing from the app module.
 - The direct import is refused by the loader.
 - The other two queries are behind the same wall.

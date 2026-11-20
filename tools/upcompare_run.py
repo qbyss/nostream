@@ -2,13 +2,13 @@
 """
 tools/upcompare_run.py - the #103 upscaler A/B/C capture, driven over FTP.
 
-Invoked by `tools/evo-remote.sh upcompare` (needs PS5_HOST / FTP_PORT). With a
+Invoked by `tools/nostream-remote.sh upcompare` (needs PS5_HOST / FTP_PORT). With a
 video playing on a --usb-remote build it:
 
-  1. sends `upcompare`: EVO pauses, then redraws the SAME held frame with the
+  1. sends `upcompare`: NoStream pauses, then redraws the SAME held frame with the
      upscaler Off, Sharp, AI Standard and AI Large (OSD suppressed), saving the
      scanout after each to /mnt/usb0/nostream_up_{off,sharp,ai,ai_large}.bmp, and restores Settings/pause state;
-  2. waits for the last capture's line in evo.log;
+  2. waits for the last capture's line in nostream.log;
   3. pulls the three BMPs into output/upcompare/ and, where Pillow is
      available, writes PNGs, a side-by-side 1:1 crop (compare.png) and
      per-mode difference stats against Off.
@@ -78,7 +78,7 @@ def capture(timeout_s: float) -> int:
         if any(" ai_max -> " in l for l in lines):
             break
     else:
-        print("\n".join(lines[-4:]) or "(no upcompare lines in evo.log)")
+        print("\n".join(lines[-4:]) or "(no upcompare lines in nostream.log)")
         print("timed out - is a video playing, and is this a --usb-remote build?")
         return 1
     print("\n".join(lines[-4:]))

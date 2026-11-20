@@ -6,7 +6,7 @@
 # libps5platform), so it runs in that stack's image, not ps5-dev:
 #
 #   MSYS_NO_PATHCONV=1 docker run --rm \
-#     -v "D:/Projects/EVO Player:/work" -v "D:/Projects/Prospero Browser:/pb" \
+#     -v "D:/Projects/NoStream:/work" -v "D:/Projects/Prospero Browser:/pb" \
 #     prospero-gpu-dev:llvm18 /work/tools/build_gpu_client.sh
 #
 # GPU stack: /pb/output/gpu (MANIFEST.txt there: PS5_Mesa 1ba9874, PS5_Vulkan

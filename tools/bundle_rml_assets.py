@@ -7,7 +7,7 @@ WHY THIS EXISTS (#60)
     (/app0) fails with EPERM - fstatfs/getdents are blocked on that virtual
     mount point - so the RmlUi runtime could never reliably load its .rml/
     .rcss/.ttf/.png files straight out of the .ffpfsc, and commit edc3a08
-    worked around it with an out-of-band FTP push to /data/evoplayer/app/
+    worked around it with an out-of-band FTP push to /data/nostream/app/
     assets/ on every deploy. That left the package not actually self-
     contained: a bare PPSA99273.ffpfsc copied to another console had no UI.
 
@@ -34,7 +34,7 @@ OUTPUT
 USAGE
     python3 tools/bundle_rml_assets.py
     Re-run after adding/removing/editing anything under assets/rml, fonts,
-    icons or wallpaper. package-app.sh, build-evoplayer.sh, uiview_playback_rml.sh
+    icons or wallpaper. package-app.sh, build-nostream.sh, uiview_playback_rml.sh
     and prof_rmlui.sh all run this automatically before compiling. The output
     is not tracked in git (it is ~60 MB); a fresh checkout gets it on the
     first build.

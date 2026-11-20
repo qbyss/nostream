@@ -5,7 +5,7 @@ time:
 
 - **Never call `make` directly.** The Makefile does not list FFmpeg's transitive
   dependencies; static archives carry no dependency metadata, so a bare `make` fails
-  at link. `scripts/package-app.sh` (real build) and `scripts/build-evoplayer.sh`
+  at link. `scripts/package-app.sh` (real build) and `scripts/build-nostream.sh`
   (compile check) supply them.
 - **Everything runs in the pinned container.** Scripts re-run themselves through
   `docker compose` when started from Windows. `./tools/dx.sh <cmd>` runs any of
@@ -25,8 +25,8 @@ Logs, screenshots, the dashboard and the debug switches:
 | Script | What it does |
 |---|---|
 | `package-app.sh` | **The real build.** Compile, link, convert, sign, assemble `output/app/PPSA99273/`; `--ffpfsc` packs the image ([packaging.md](packaging.md)) |
-| `deploy-app.sh` | Upload the image or folder over FTP, sha256-verified, with the resident-EVO interlock ([packaging.md](packaging.md#deploy-appsh)) |
-| `build-evoplayer.sh` | **Host compile check only.** Builds `output/elf/EVOPlayer.elf` so the non-app-module code path stays green; it cannot deploy and errors on `--run` |
+| `deploy-app.sh` | Upload the image or folder over FTP, sha256-verified, with the resident-NoStream interlock ([packaging.md](packaging.md#deploy-appsh)) |
+| `build-nostream.sh` | **Host compile check only.** Builds `output/elf/EVOPlayer.elf` so the non-app-module code path stays green; it cannot deploy and errors on `--run` |
 | `build-ffmpeg.sh`, `build-dav1d.sh` | FFmpeg 7.1.1 (profiles `minimal` / `baseline` / `full`) and libdav1d ([building.md](building.md#ffmpeg)) |
 | `setup-sdk.sh`, `install-sdk-image.sh`, `install-pacbrew-image.sh`, `setup-native-app-deps.sh`, `setup-pfs-tool.sh` | Image-build and bootstrap helpers: the SDK health check, the SDK and pacbrew sets, static zlib, MkPFS |
 | `gen-compile-commands.sh`, `gen-sonar-commands.py` | `compile_commands.json` for clangd; the Sonar command list |
@@ -38,24 +38,24 @@ Logs, screenshots, the dashboard and the debug switches:
 
 | Tool | What it does |
 |---|---|
-| `evo-remote.sh` | The dev remote: lifecycle, keys, `ui`, `go`, `set`, sweeps, comparisons ([remote-control.md](../console/remote-control.md)); `logs` honours `PS5_LOG_PORT` (default 9780) |
-| `evo_ui.py`, `evo_lifecycle.py` | Its helpers: the UI state reader and ShadowMount lifecycle evidence (`foreign`: another game still running, checked before every `launch`) |
+| `nostream-remote.sh` | The dev remote: lifecycle, keys, `ui`, `go`, `set`, sweeps, comparisons ([remote-control.md](../console/remote-control.md)); `logs` honours `PS5_LOG_PORT` (default 9780) |
+| `nostream_ui.py`, `nostream_lifecycle.py` | Its helpers: the UI state reader and ShadowMount lifecycle evidence (`foreign`: another game still running, checked before every `launch`) |
 | `make_ntfs_image.sh` (host, Docker) | NTFS test images (whole disk, MBR, GPT; a file in ~2300 pieces) for `tests/test_ntfs.cpp` and the console's `/data/nostream/test/ntfs.img` ([../hardware/ntfs.md](../hardware/ntfs.md)) |
-| `make_sample.sh` (host, ffmpeg) + `evo-remote.sh sample-install` / `play --sample` | A 20 s 1080p H.264 + AAC + subtitle test clip in `/data/nostream/test/`, which EVO can always read: a playback check with no USB stick or SMB server |
-| `evo-remote.sh play --share <id> <path>` | Play a file on a saved SMB/FTP server through the URL Browse builds (`play --share ps5_local /data/Media/x.mkv`) |
-| `evo-remote.sh logq <text> [n]` | `evo.log` lines containing `<text>` from the log server (`:9780/snapshot`), FTP only when EVO is not answering |
+| `make_sample.sh` (host, ffmpeg) + `nostream-remote.sh sample-install` / `play --sample` | A 20 s 1080p H.264 + AAC + subtitle test clip in `/data/nostream/test/`, which NoStream can always read: a playback check with no USB stick or SMB server |
+| `nostream-remote.sh play --share <id> <path>` | Play a file on a saved SMB/FTP server through the URL Browse builds (`play --share ps5_local /data/Media/x.mkv`) |
+| `nostream-remote.sh logq <text> [n]` | `nostream.log` lines containing `<text>` from the log server (`:9780/snapshot`), FTP only when NoStream is not answering |
 | `testenv.py up` / `down` / `status` | Swap in the test configs (a dead IPTV playlist, a dead FTP server) and always put the real ones back; backups in git-ignored `output/testenv/` |
 | `ps5-controllers/` | The title-aware launch and close payloads. Never send them by hand |
 | `klog.sh`, `shot.sh`, `grab_shot.sh`, `shot.py`, `fetch_shot.sh` | Kernel log capture, screenshots and pixel measurement ([diagnostics.md](../console/diagnostics.md)) |
-| `evo-dash.py`, `evo-panel.py`, `dash/` | The health dashboard (`evo-dash` honours `PS5_LOG_PORT`, default 9780) and the Tkinter control panel |
-| `wipe-evo.py` | The EVO-only console wipe behind `deploy-app.sh --fresh` |
+| `nostream-dash.py`, `nostream-panel.py`, `dash/` | The health dashboard (`nostream-dash` honours `PS5_LOG_PORT`, default 9780) and the Tkinter control panel |
+| `wipe-nostream.py` | The NoStream-only console wipe behind `deploy-app.sh --fresh` |
 | `chiaki.ps1` | Launcher for the PC Remote Play client ([../console/remote-play.md](../console/remote-play.md)) |
 | `provider-server.sh`, `gen_provider_manifest.py` | Serve and regenerate provider UI bundles ([../providers/architecture.md](../providers/architecture.md)) |
 | `test-addon/`, `mock_xtream_server.py`, `mydebrid/`, `laptop_ftp_server.py`, `testdata/` | Test servers and fixtures that run on the host: a Stremio addon, an Xtream server, a personal debrid, a read-only FTP share, a playlist and guide |
-| `checks/` | Per-feature hardware checks run by `evo-remote.sh verify` ([../build/validation.md](validation.md#hardware-checks)) |
+| `checks/` | Per-feature hardware checks run by `nostream-remote.sh verify` ([../build/validation.md](validation.md#hardware-checks)) |
 | `sweep_run.py`, `sweep_report.py`, `combined_sweep_report.py`, `make_sweep_clips.sh`, `push_sweep_clips.sh` | The codec sweep |
 | `dbcompare_run.py`, `upcompare_run.py`, `upscale_ref.py` | Held-frame captures for Deep Blacks and the upscaler, and the numpy reference the upscaler is diffed against |
-| `seekstutter_run.py`, `seekstutter_report.py`, `subsync_run.py`, `subsync_report.py` | Seek-stutter and subtitle-drift measurement from `evo.log` |
+| `seekstutter_run.py`, `seekstutter_report.py`, `subsync_run.py`, `subsync_report.py` | Seek-stutter and subtitle-drift measurement from `nostream.log` |
 | `dualsense_dump.py` | Read a real DualSense's report descriptor over USB, for the wake-board spike |
 
 ## `tools/`: the host
@@ -63,13 +63,13 @@ Logs, screenshots, the dashboard and the debug switches:
 | Tool | What it does |
 |---|---|
 | `hui_preview.sh` (+ `hui_preview/`) | Render every kit screen to PNG ([../ui/hui-kit.md](../ui/hui-kit.md)) |
-| `logview_preview.py` | Serve the phone/PC log viewer (`assets/web/log.html`) on the host from a real `evo.log`, with fake `/stats` and `/stream`; `--demo` adds a buffering 4K film, `--shots` lets headless Edge screenshot it (add `?noscroll` to the URL) ([../console/diagnostics.md](../console/diagnostics.md)) |
+| `logview_preview.py` | Serve the phone/PC log viewer (`assets/web/log.html`) on the host from a real `nostream.log`, with fake `/stats` and `/stream`; `--demo` adds a buffering 4K film, `--shots` lets headless Edge screenshot it (add `?noscroll` to the URL) ([../console/diagnostics.md](../console/diagnostics.md)) |
 | `uiview.sh`, `uiview_playback_rml.sh/.cpp`, `uiplay.sh`, `prof_rmlui.sh/.cpp` | The RmlUi preview, its contact sheet and its profiler |
 | `*_host.sh` / `*_host.c` (`subsync`, `dualsub`, `dns`, `streamopts`, `hls`, `netconnect`, `iptv_epg`) | Host harnesses for single source files ([validation.md](validation.md#host-harnesses)) |
 | `host-ffmpeg-probe.sh` | Probe a media file with a host build of the same FFmpeg and flags, **before** spending a console cycle on a file that crashes the app. Needs `MSYS_NO_PATHCONV=1` |
-| `rag/` | `evo_search`: search code, docs, issues, memory notes and the `third_party/` repos and their commit messages. Reindex after changing docs (`python tools/rag/evo_rag.py index`) |
+| `rag/` | `nostream_search`: search code, docs, issues, memory notes and the `third_party/` repos and their commit messages. Reindex after changing docs (`python tools/rag/nostream_rag.py index`) |
 | `agy-run.sh`, `oc-run.sh`, `agy-prune.sh`, `agy-task.md` | Delegating mechanical work to a worker agent ([agy.md](agy.md)) |
-| `check_raw_connect.sh` | Run by `build-evoplayer.sh` and `package-app.sh`: fails on a raw `connect()` in EVO's code (it blocks ~75 s on a dead host on the PS5; use `evo_net_connect_addr`). A connect that cannot hang carries `connect-ok: <why>` |
+| `check_raw_connect.sh` | Run by `build-nostream.sh` and `package-app.sh`: fails on a raw `connect()` in NoStream's code (it blocks ~75 s on a dead host on the PS5; use `evo_net_connect_addr`). A connect that cannot hang carries `connect-ok: <why>` |
 | `stage_hunks.py` | Stage only the hunks of a file that match a regex, to split one file between two commits |
 | `ui_consistency.py` | Drift report across kit screens from `hui_preview`'s `hui_metrics.tsv` |
 

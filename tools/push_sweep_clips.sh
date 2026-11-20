@@ -5,7 +5,7 @@
 #   PS5_HOST=192.168.0.7 ./tools/push_sweep_clips.sh [srcdir]
 #
 # Skips anything already on the console at the same size, so a re-run after
-# adding one clip uploads only that clip. Safe to run with EVO closed or open —
+# adding one clip uploads only that clip. Safe to run with NoStream closed or open —
 # it writes to /mnt/usb0 and never touches /data/homebrew.
 # =============================================================================
 source "$(dirname "${BASH_SOURCE[0]}")/../scripts/common.sh"

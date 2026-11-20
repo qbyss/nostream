@@ -2,7 +2,7 @@
 
 **Measured on hardware** (the original figures 2026-09-25, app module `PPSA99273`,
 firmware 12.70). Every figure here comes from a kernel query, not from an
-inference. If you are about to say "EVO is memory-limited", say which pool, and
+inference. If you are about to say "NoStream is memory-limited", say which pool, and
 check it against this page first.
 
 **Current configuration:**
@@ -52,7 +52,7 @@ mem budget [boot] direct_total=12288MB direct_largest_free=11000MB
                   flex_total=448MB flex_free=268MB evo_pool=0/64MB peak=0MB hw=1
 ```
 
-| Pool | Size | Free | What uses it | EVO's share |
+| Pool | Size | Free | What uses it | NoStream's share |
 |---|---|---|---|---|
 | **Direct memory** | **12288 MB** | 11000 MB largest contiguous run | GPU / sceAgc / VideoOut, anything explicitly allocated + mapped | a **64 MiB** pool, peak 17 MB — **0.5%** |
 | **Flexible memory** | **448 MB** | 268 MB at boot, 144–192 MB during playback | `malloc`, and therefore FFmpeg, dav1d, RmlUi, everything ordinary | ~50 MB live, 93–102 MB peak |
@@ -63,13 +63,13 @@ separate ~490 MB direct allocation made at boot. The #103 upscaler adds a
 **180 MB** direct block (5 x 36 MB scratch surfaces) on the first frame it
 actually upscales, plus **288 MB** more only if AI NETWORK = Maximum is used,
 never at boot - `agc upscale: 180 MB scratch at ...` in
-`evo.log`, or `scratch alloc ... FAILED` if the kernel refused it (the
+`nostream.log`, or `scratch alloc ... FAILED` if the kernel refused it (the
 upscaler then stays off). See [upscaler.md](upscaler.md).
 
 Two things worth stating plainly, because both contradict what this repo
 believed for months:
 
-- **Direct memory is not scarce.** 12 GB, of which EVO reserves 64 MiB. The
+- **Direct memory is not scarce.** 12 GB, of which NoStream reserves 64 MiB. The
   pool size was chosen because it was proven not to wedge the GPU, never
   because anything asked the kernel what was available.
 - **`malloc` could not reach any of it** — until #94. Flexible and direct are
@@ -150,7 +150,7 @@ an FFmpeg bug.
 granularity, a table so `free()` can release by physical offset). #94 first
 added it as a last resort after flexible memory and anon `mmap`; dav1d then
 held a steady ~245–280 MB of direct memory through full-length 4K playback
-with `map_fail=0`, all of it released at stop. `evo.log`'s `alloc [...]` lines carry
+with `map_fail=0`, all of it released at stop. `nostream.log`'s `alloc [...]` lines carry
 `direct= direct_live= direct_peak=` at decode-open, every 2 s of playback,
 and at stop.
 
@@ -162,7 +162,7 @@ cached-shared-with-GPU), mapped CPU read/write only, and runs at full speed.
 
 As a last resort it still left flexible memory at **0 MB**, and whatever
 needs flexible memory outside the shim (system libraries, thread stacks) got
-nothing: EVO twice died silently a few seconds after a far seek, with
+nothing: NoStream twice died silently a few seconds after a far seek, with
 `flex_avail=0`, `map_fail=0` and no crash-handler line. So blocks of **1 MB
 and up now come from direct memory first** (commit `115d9ff`); smaller ones
 still use flexible memory, then anon `mmap`, then direct. The large-block
@@ -173,7 +173,7 @@ Hardware, 2026-09-26, the same 4K AV1 `.mkv` and Chimera `.obu` with 11 seeks
 including a far one: `flex_avail` **200–235 MB** throughout, `map_fail=0`,
 `direct_peak` 478 MB, no crash.
 
-## How much direct memory EVO can actually take
+## How much direct memory NoStream can actually take
 
 **Measured 2026-09-26** with the boot probe (`/mnt/usb0/evo_dm_probe`, see
 [diagnostics.md](../console/diagnostics.md#switches)), after the GPU runtime and resident
@@ -196,7 +196,7 @@ to refuse anything the CPU can decode in time.
 
 ## Open, and not explained by capacity
 
-`evo_direct_mem.h` records that raising EVO's pool to 192 MiB "wedged the first
+`evo_direct_mem.h` records that raising NoStream's pool to 192 MiB "wedged the first
 4K V8 present" (#6, backed out → #55). There were gigabytes free then too, so
 **capacity is not the explanation** — something else about a larger WB_ONION
 reservation is wrong, and it has to be found rather than assumed away.
@@ -219,7 +219,7 @@ issue and helps standard and Pro alike.
 
 ## Related
 
-- `media/src/evo_direct_mem.c` — the reporter, and EVO's pool
+- `media/src/evo_direct_mem.c` — the reporter, and NoStream's pool
 - `core/src/services/PlaybackController.cpp` — the 1080p guard and its switch
 - [codec-support.md](codec-support.md) — which codecs land on which path
 - [video-decode.md](video-decode.md) — the resident decoders and how they are sized

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-tools/sweep_report.py — turn the `sweep` lines in evo.log into the
+tools/sweep_report.py — turn the `sweep` lines in nostream.log into the
 docs/build/validation.md codec table.
 
     python3 tools/sweep_report.py output/logs/evo.log -o output/logs/sweep.md
@@ -20,14 +20,14 @@ import sys
 
 # `file=` is last on the line precisely so a name with spaces survives parsing.
 SWEEP_RE = re.compile(r"\bsweep v=1 (.*?)\bfile=(.*)$")
-# evo.log's own timestamp prefix, e.g. "[11123.780] ". Seconds since boot.
+# nostream.log's own timestamp prefix, e.g. "[11123.780] ". Seconds since boot.
 STAMP_RE = re.compile(r"^\[(\d+(?:\.\d+)?)\]")
 
 
 def parse_log(text, after=None):
     """
-    evo.log is cumulative across launches, so a log can hold rows from several
-    sweeps. `after` (console seconds, from the `t=` in evo_status) keeps only
+    nostream.log is cumulative across launches, so a log can hold rows from several
+    sweeps. `after` (console seconds, from the `t=` in nostream_status) keeps only
     rows written since then — what you want when reporting one run rather than
     everything the console has ever played.
     """
@@ -219,14 +219,14 @@ def load_colour_ref(path):
 def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("log", help="evo.log containing the sweep lines")
+    ap.add_argument("log", help="nostream.log containing the sweep lines")
     ap.add_argument("-o", "--out", help="write the markdown here (default stdout)")
     ap.add_argument("--after", type=float, metavar="T",
                     help="keep only rows written after console time T "
-                         "(the `t=` field in evo_status) - use it to report a "
+                         "(the `t=` field in nostream_status) - use it to report a "
                          "single sweep out of a cumulative log")
-    ap.add_argument("--colour-ref", metavar="EVO.LOG",
-                    help="an earlier evo.log to compare colour signatures "
+    ap.add_argument("--colour-ref", metavar="NoStream.LOG",
+                    help="an earlier nostream.log to compare colour signatures "
                          "against — turns the Colour column into match/differs")
     args = ap.parse_args()
 

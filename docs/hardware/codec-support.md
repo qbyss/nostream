@@ -1,6 +1,6 @@
 # Codec support
 
-What EVO decodes. **Built** means the decoder is compiled into the FFmpeg `minimal`
+What NoStream decodes. **Built** means the decoder is compiled into the FFmpeg `minimal`
 profile (`scripts/build-ffmpeg.sh`); **Verified** means it was played on a real PS5
 and seen decoding, not inferred from the build configuration. Hardware rows come
 from `g_codec[]` in `media/src/evo_vdec_native.c`. How video decode is arranged is in
@@ -93,7 +93,7 @@ Subtitle files in legacy code pages (Windows-1250..1257, 874, GBK, Big5, Shift-J
 EUC-KR) are converted to UTF-8 on load (`media/src/evo_charset.c`). Latin
 extended, Greek, Cyrillic, Hebrew, Arabic, Thai and the Indic scripts render from
 embedded fonts through the kit's text path; Chinese, Japanese and Korean need
-`NotoSans{SC,JP,KR}-Regular.otf` in `/data/evoplayer/fonts/`
+`NotoSans{SC,JP,KR}-Regular.otf` in `/data/nostream/fonts/`
 ([../ui/hui-kit.md](../ui/hui-kit.md#text-in-every-script-128)). Two subtitle tracks
 can show at once, and Subtitle Picker → Auto-Sync aligns an external SRT to the audio
 (#102).

@@ -3,13 +3,13 @@
 # tools/checks/audio-delay.sh — Hardware check for audio delay / lip-sync (#170).
 #
 # Sets audio-delay to +100 ms via dev remote, plays a clip, verifies that
-# PlaybackController logs the applied delay (delay=100ms) in evo.log, and restores
+# PlaybackController logs the applied delay (delay=100ms) in nostream.log, and restores
 # the original setting on exit.
 # =============================================================================
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-EVO_REMOTE="${EVO_REMOTE:-$ROOT/tools/evo-remote.sh}"
+EVO_REMOTE="${EVO_REMOTE:-$ROOT/tools/nostream-remote.sh}"
 CLIP="${1:-${EVO_CHECK_CLIP:-/mnt/usb0/test.mkv}}"
 TIMEOUT="${EVO_TIMEOUT:-15}"
 
@@ -43,7 +43,7 @@ fi
 # 4. Wait for audio pipeline initialization
 sleep 4
 
-# 5. Read evo.log and inspect the real log line written by PlaybackController.cpp:1308:
+# 5. Read nostream.log and inspect the real log line written by PlaybackController.cpp:1308:
 # evo_boot_log("audio: source %dch -> port %dch (output=%s, pt=%d, boost=%d%%, delay=%dms) handle=%d", ...)
 log_out="$(remote log 2>/dev/null || true)"
 if [[ -z "${log_out}" && -f "${ROOT}/output/logs/evo.log" ]]; then
@@ -57,6 +57,6 @@ if [[ -n "${evidence}" ]]; then
     exit 0
 else
     last_audio="$(echo "${log_out}" | grep -E 'audio:' | tail -1 || true)"
-    echo "FAIL audio-delay: expected 'delay=100ms' in evo.log, saw: ${last_audio:-no audio log entry found}"
+    echo "FAIL audio-delay: expected 'delay=100ms' in nostream.log, saw: ${last_audio:-no audio log entry found}"
     exit 1
 fi

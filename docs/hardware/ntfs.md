@@ -1,7 +1,7 @@
 # NTFS drives (#217)
 
 The PS5 mounts exFAT and FAT32 USB drives at `/mnt/usbN`. An NTFS drive is not
-mounted; it shows up only as a raw disk, `/dev/da0`, `/dev/da1`, ... EVO reads
+mounted; it shows up only as a raw disk, `/dev/da0`, `/dev/da1`, ... NoStream reads
 those disks itself, read-only, with its own NTFS reader (`src/evo_ntfs.c`).
 
 ## How it fits in
@@ -27,14 +27,14 @@ those disks itself, read-only, with its own NTFS reader (`src/evo_ntfs.c`).
 
 ## Reaching the disk: the helper payload
 
-EVO's own `/dev` has no disk nodes, even after the jailbreak (measured
-2026-11-03: EVO sees `usbctl usb ugen*`; a root payload sees `da1 da1s1`). So
-EVO carries a small payload, `helpers/ntfs_helper.c`, built by
+NoStream's own `/dev` has no disk nodes, even after the jailbreak (measured
+2026-11-03: NoStream sees `usbctl usb ugen*`; a root payload sees `da1 da1s1`). So
+NoStream carries a small payload, `helpers/ntfs_helper.c`, built by
 `tools/gen_ntfs_helper.sh` and embedded as `src/generated/evo_ntfs_helper_elf.c`:
 
-- When the set of USB devices EVO can see (`/dev/ugen*`) changes, and once per
-  launch, EVO asks the helper on `127.0.0.1:9796` for the disks (`LIST`). If it
-  is not running, EVO sends it to the ELF loader on `127.0.0.1:9021` (at most 3
+- When the set of USB devices NoStream can see (`/dev/ugen*`) changes, and once per
+  launch, NoStream asks the helper on `127.0.0.1:9796` for the disks (`LIST`). If it
+  is not running, NoStream sends it to the ELF loader on `127.0.0.1:9021` (at most 3
   tries per change) and asks again on the next refresh.
 - The helper reports the backing partition for each `/mnt/usbN` mount. NoStream uses it to read FAT32 and exFAT labels and serials.
 - The helper runs as root, lists `/dev/daN`, opens a disk read-only on `OPEN daN`
@@ -46,7 +46,7 @@ EVO carries a small payload, `helpers/ntfs_helper.c`, built by
 
 ## The reader
 
-Written for EVO from the NTFS on-disk layout. PS5-NTFS-BROWSER
+Written for NoStream from the NTFS on-disk layout. PS5-NTFS-BROWSER
 (GPL-3.0) showed the approach - a payload opening `/dev/daN` and parsing NTFS in
 user space - and no code was taken from it.
 
@@ -57,7 +57,7 @@ user space - and no code was taken from it.
   aliases and the root's `$` system files hidden; names case-insensitive.
 - Device reads: `lseek` + `read` through a 4 KiB-aligned bounce buffer per volume
   (a raw disk takes sector-aligned reads only; 4 KiB suits 512 and 4K sectors).
-  No `pread`/`ioctl`: they are not in EVO's import list.
+  No `pread`/`ioctl`: they are not in NoStream's import list.
 
 ## Testing without a drive
 
@@ -68,4 +68,4 @@ split into one-cluster pieces (an attribute list), a 300-file folder, Unicode
 names and the sample clip. `tests/test_ntfs.cpp` reads them byte for byte.
 
 On the console, a `--usb-remote` build also mounts
-`/data/evoplayer/test/ntfs.img` as volume `img0`.
+`/data/nostream/test/ntfs.img` as volume `img0`.

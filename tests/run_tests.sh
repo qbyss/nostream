@@ -18,7 +18,7 @@ COV_OUT="${REPO_ROOT}/output/coverage"
 mkdir -p "${OUT}" "${COV_OUT}"
 rm -f "${OUT}"/*.gcda
 
-echo "==> Building EVO Player Test Suite with Coverage Instrumentation..."
+echo "==> Building NoStream Test Suite with Coverage Instrumentation..."
 
 if [ -x "/usr/bin/gcc" ]; then
     CC="/usr/bin/gcc"

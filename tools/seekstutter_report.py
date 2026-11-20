@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-tools/seekstutter_report.py — measure the post-seek stutter from evo.log.
+tools/seekstutter_report.py — measure the post-seek stutter from nostream.log.
 
     python3 tools/seekstutter_report.py output/logs/evo.log
 
-Reads the `seekstutter` lines EVO writes when /mnt/usb0/nostream_seektrace exists:
+Reads the `seekstutter` lines NoStream writes when /mnt/usb0/nostream_seektrace exists:
 one SEEK_BEGIN, one SEEK_COMMIT, and one `tick` line per render-loop iteration
 for the 6s window after the seek commits (media/main.c, right next to the #8
 present-timing hooks — reuses their microsecond clock).

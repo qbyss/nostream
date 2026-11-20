@@ -238,7 +238,7 @@ static const char k_report_page[] =
 "<p class=dim>Passwords, tokens and keys are removed from the report. Server addresses, folder and file names stay in, "
 "because they help find the problem. <a href='/log'>Live log</a></p></main><textarea id=ta></textarea><script>"
 "var S=document.getElementById('sum'),M=document.getElementById('msg'),LA=document.getElementById('last'),"
-"SH=document.getElementById('sh'),TA=document.getElementById('ta'),txt='',name='evo-report.txt',"
+"SH=document.getElementById('sh'),TA=document.getElementById('ta'),txt='',name='nostream-report.txt',"
 "LR=location.search.indexOf('run=last')>=0,U='/report.txt'+(LR?'?run=last':'');"
 "document.getElementById('dl').href=U;document.getElementById('gh').href='/log#report'+(LR?'-last':'');document.getElementById('runs').children[LR?1:0].style.fontWeight='700';"
 "fetch(U,{cache:'no-store'}).then(function(r){var d=r.headers.get('Content-Disposition')||'',m=/filename=\"([^\"]+)\"/.exec(d);"
@@ -762,7 +762,7 @@ static void serve_report_txt(int fd, int last_run)
     char head[320];
     snprintf(head, sizeof head,
              "HTTP/1.1 200 OK\r\nContent-Type: text/plain; charset=utf-8\r\n"
-             "Content-Disposition: attachment; filename=\"evo-report-%s%s.txt\"\r\n"
+             "Content-Disposition: attachment; filename=\"nostream-report-%s%s.txt\"\r\n"
              "Cache-Control: no-store\r\nConnection: close\r\n\r\n", last_run ? "last-run-" : "", EVO_BUILD_ID);
     if (send_str(fd, head) != 0) return;
     const long n = evo_report_write_run(rp_sock_sink, (void *)(intptr_t)fd, last_run);

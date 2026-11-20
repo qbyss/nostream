@@ -2,7 +2,7 @@
 
 The goal is to switch the TV to the video's own rate (23.976 / 24 Hz for film,
 50 Hz for PAL), the way the PS5's Blu-ray player does with its 24p output. On
-FW 12.70 a game-slot app like EVO **cannot do this**. The console refuses
+FW 12.70 a game-slot app like NoStream **cannot do this**. The console refuses
 everything except the default rate and 119.88 Hz. So the setting is
 **Experimental**: Settings → Experimental → `MATCH VIDEO FRAME RATE`. It tries
 the exact rate once per session, and if that is refused it falls back:
@@ -45,7 +45,7 @@ The Blu-ray player (`/system_ex/app/NPXS40140/UHDBdPlayerCore.elf`, function
 For example, `0xc00000802` = HDR 4K 23.976. Its fallback `0xb0000040a` is the
 "SDR-2K-59.94Hz" in its log string.
 
-## Why EVO is refused (hardware, 2026-10-09)
+## Why NoStream is refused (hardware, 2026-10-09)
 
 Each step was tested on the console, a PS5 Pro on 12.70, with a 1440p monitor
 that does offer 23.98/24/50 Hz. The display is not the limit.
@@ -85,5 +85,5 @@ Notes for whoever picks this up:
 - Why step 3 still fails after the setter returned 0. Either the setter took a
   path that does not set `0x80`, or another check in the options validator
   (`0x163e0`) or the flag mask applies.
-- Full modes would also change resolution and HDR. EVO only ever asks for the
+- Full modes would also change resolution and HDR. NoStream only ever asks for the
   small ones, so the HDR retype path (#114) is unchanged.

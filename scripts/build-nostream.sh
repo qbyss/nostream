@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # =============================================================================
-# scripts/build-evoplayer.sh - HOST COMPILE CHECK for the EVO Player fork.
+# scripts/build-nostream.sh - HOST COMPILE CHECK for the NoStream fork.
 #
-#   ./scripts/build-evoplayer.sh              build the ELF (compile check only)
-#   ./scripts/build-evoplayer.sh --stage 0    build a specific 4K stage
+#   ./scripts/build-nostream.sh              build the ELF (compile check only)
+#   ./scripts/build-nostream.sh --stage 0    build a specific 4K stage
 #
 # This produces output/elf/EVOPlayer.elf purely so the payload / non-app-module
 # code path stays green (issues #31 §4, #36, docs/architecture/architecture.md parity).
@@ -27,7 +27,7 @@ while (( $# )); do
     case "$1" in
         --stage)   shift; STAGE="${1:?--stage needs a value}" ;;
         -h|--help) sed -n '2,20p' "$0"; exit 0 ;;
-        --run)     die "--run is gone. EVO deploys via the app module only:
+        --run)     die "--run is gone. NoStream deploys via the app module only:
        scripts/package-app.sh && scripts/deploy-app.sh" ;;
         *) die "unknown option: $1 (try --help)" ;;
     esac
@@ -37,7 +37,7 @@ done
 if ! in_container; then
     FWD=()
     [[ -n "${STAGE}" ]] && FWD+=(--stage "${STAGE}")
-    reexec_in_container "build-evoplayer.sh" "${FWD[@]+"${FWD[@]}"}"
+    reexec_in_container "build-nostream.sh" "${FWD[@]+"${FWD[@]}"}"
 fi
 
 need_file "${DEST}/Makefile" "projects/evoplayer is empty. Fork it first:
@@ -99,14 +99,14 @@ fi
 
 # A raw connect() is a 75 s freeze on a dead host on the PS5 (see the script).
 "${REPO_ROOT}/tools/check_raw_connect.sh" || die "raw connect() found - see above"
-# #217: the NTFS disk helper payload, embedded in EVO (src/generated/).
+# #217: the NTFS disk helper payload, embedded in NoStream (src/generated/).
 bash "${REPO_ROOT}/tools/gen_ntfs_helper.sh" || die "NTFS helper payload did not build"
 
 # The embedded UI asset bundle is generated, not tracked in git, so a fresh
 # checkout has none until this runs. See tools/bundle_rml_assets.py.
 python3 "${REPO_ROOT}/tools/bundle_rml_assets.py" || die "UI asset bundle did not generate"
 
-begin "building EVO Player${STAGE:+ (stage ${STAGE})}"
+begin "building NoStream${STAGE:+ (stage ${STAGE})}"
 BUILD_LOG="${LOG_OUT}/evoplayer-$(date -u +%Y%m%dT%H%M%SZ).log"
 
 # Force a relink and rebuild of object files
@@ -121,7 +121,7 @@ if ! make -C "${DEST}" "${MAKE_ARGS[@]}" > "${BUILD_LOG}" 2>&1; then
     echo ""
     echo "--- last 40 lines ---"
     tail -40 "${BUILD_LOG}" | sed 's/^/  /'
-    die "EVO Player build failed. Full log: ${BUILD_LOG#"${REPO_ROOT}/"}"
+    die "NoStream build failed. Full log: ${BUILD_LOG#"${REPO_ROOT}/"}"
 fi
 
 # Prove the switches asked for actually reached the compiler.

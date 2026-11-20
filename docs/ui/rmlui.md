@@ -1,18 +1,18 @@
 # RmlUi
 
-RmlUi (the retained-mode HTML/RCSS engine) was EVO's whole UI layer from v0.8.0, and
-every screen call still goes through its bridge. Today **EVO's own screens are drawn by
+RmlUi (the retained-mode HTML/RCSS engine) was NoStream's whole UI layer from v0.8.0, and
+every screen call still goes through its bridge. Today **NoStream's own screens are drawn by
 the ps5-homebrew-ui kit** ([hui-kit.md](hui-kit.md)); RmlUi remains for:
 
 - **provider screens**: a provider's UI is a set of `.rml`/`.rcss` documents, the
-  embedded ones EVO ships (`mediaserver`, `iptv`, `xtream`, the fallback skin) and
+  embedded ones NoStream ships (`mediaserver`, `iptv`, `xtream`, the fallback skin) and
   bundles a provider serves over HTTP at run time
   ([../providers/architecture.md](../providers/architecture.md)). For the embedded
   documents RmlUi still does the data binding, focus and layout while the kit
   rasterises; a downloaded bundle is drawn by RmlUi itself;
 - **the fallback** for any screen the kit declines (the kit failed to start, or
   `/mnt/usb0/evo_no_hui` exists);
-- **the dev tooling**: `evo-remote.sh ui` reads focus from RmlUi's DOM
+- **the dev tooling**: `nostream-remote.sh ui` reads focus from RmlUi's DOM
   ([../console/remote-control.md](../console/remote-control.md)), and `uiview.sh`
   renders the documents on the host.
 
@@ -27,7 +27,7 @@ the ps5-homebrew-ui kit** ([hui-kit.md](hui-kit.md)); RmlUi remains for:
 | `evo_rmlui_provider.cpp`, `evo_rmlui_provider_art.cpp` | the provider host: data model, focus, events, remote artwork through the `evo:mem/` registry |
 | `evo_rmlui_bundle.cpp`, `evo_rmlui_bundle_data.cpp` | the embedded assets. `tools/bundle_rml_assets.py` generates the `_data.cpp` on every build (git-ignored, ~60 MB) because the app's own `/app0` mount cannot be traversed (`fstatfs`/`getdents` fail with EPERM) |
 | `evo_rmlui_fileinterface.cpp` | RmlUi file access to the bundle, `evo:mem/` textures and `/assets/...` paths |
-| `evo_rmlui_devstate.cpp` | the `evo_ui.json` writer for the dev remote |
+| `evo_rmlui_devstate.cpp` | the `nostream_ui.json` writer for the dev remote |
 | `rmlui_patch/` | RmlUi's corner tessellation with a finer point count, swapped over a build-local copy of `librmlui.a` |
 | `../assets/rml/` | `*.rml` + `*.rcss` per screen (`launch`, `browser`, `settings`, `playback`, `dialog`, `keyboard`, `toast`, `mediaserver`, `iptv`, `xtream`, `provider_fallback`, ...) |
 | `../assets/fonts/`, `../assets/icons/` | Lato, Roboto, Noto (Latin, Thai, Indic) and DejaVu; PNG icons (Lucide-derived concept icons, controller button glyphs, provider brand marks) |
@@ -53,7 +53,7 @@ Every one of these produced a silent wrong result, not an error.
 - `filter:` and `backdrop-filter:` work on the console (blur) and **not** in the host
   preview (`Could not compile filter`): a bundle using them looks broken in `uiview`
   and correct on hardware, the opposite of the usual risk.
-- Provider contexts do not receive EVO's theme push (it stamps inline colours that
+- Provider contexts do not receive NoStream's theme push (it stamps inline colours that
   would overwrite what a bundle exists to supply); a bundle sets every colour itself.
 - RmlUi scripting is off. A bundle is markup, styles, fonts and images, never code.
 

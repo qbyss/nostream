@@ -1,9 +1,9 @@
 ---
 name: triage-session
-description: Work out why EVO froze, stalled, buffered, crashed or would not close on the PS5, from its status line and evo.log. Use when the user says it is stuck / frozen / buffering / lagging after a seek, audio switch or stream change, or when evo-remote.sh quit refuses to park. Read-only: it sends no commands to the console.
+description: Work out why NoStream froze, stalled, buffered, crashed or would not close on the PS5, from its status line and nostream.log. Use when the user says it is stuck / frozen / buffering / lagging after a seek, audio switch or stream change, or when nostream-remote.sh quit refuses to park. Read-only: it sends no commands to the console.
 ---
 
-# Triage a stuck or crashed EVO session
+# Triage a stuck or crashed NoStream session
 
 Read only. Do not send keys or seeks while the user may be driving the console. A tool
 call the user rejected means they are using it: stop and wait for their word.
@@ -11,8 +11,8 @@ call the user rejected means they are using it: stop and wait for their word.
 ## 1. Snapshot (two calls)
 
 ```bash
-./tools/dx.sh ./tools/evo-remote.sh status | tail -1
-./tools/dx.sh ./tools/evo-remote.sh log > output/triage.log 2>&1; wc -l output/triage.log
+./tools/dx.sh ./tools/nostream-remote.sh status | tail -1
+./tools/dx.sh ./tools/nostream-remote.sh log > output/triage.log 2>&1; wc -l output/triage.log
 ```
 
 Status fields: `t=` is the main loop's own clock (frozen `t` over several samples = the UI
@@ -23,8 +23,8 @@ picker, 23 provider browse, 32 closing), `pos=` playback clock, `be=1` a backend
 ## 2. Is it dead? (check this before anything else)
 
 `grep -n "CRASH signal" output/triage.log | tail`. A `CRASH` line with `t=` no longer
-advancing means EVO crashed. A crashed EVO is already closed: relaunch with
-`evo-remote.sh launch`, and deploy with `--force` (memory: crashed-evo-is-closed). If
+advancing means NoStream crashed. A crashed NoStream is already closed: relaunch with
+`nostream-remote.sh launch`, and deploy with `--force` (memory: crashed-evo-is-closed). If
 `quit` says "did not report parked" and status shows `scr=32 active=0`, look for CRASH
 before concluding anything. Never `close` remotely without `parked=1`.
 
@@ -48,7 +48,7 @@ grep -vE "alloc \[play\]|agc health|evo_opendir|pace:" output/triage.log | tail 
 | `status` still shows `scrub` after 40 s | A pad scrub never committed (fixed 2026-10-24 by the 3 s preview cap in `tickScrubAutoCommit`). |
 | `P8_03_PREBUFFER_DONE deadline packets=0` | The server delivered nothing for 5 s after a reopen: slow server, not a player bug. |
 | `net GET ... in 1100-1700 ms` | The Jellyfin proxy is slow per request; every browse step costs seconds. |
-| `http=400` on `Sessions/Playing/Progress` | Jellyfin rejects EVO's progress report after a reopen. Known, harmless so far. |
+| `http=400` on `Sessions/Playing/Progress` | Jellyfin rejects NoStream's progress report after a reopen. Known, harmless so far. |
 
 ## 5. Report
 

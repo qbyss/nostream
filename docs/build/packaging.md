@@ -11,10 +11,10 @@ repo does not have ([../proprietary.md](../proprietary.md)).
 ```bash
 docker compose run --rm ps5-dev ./scripts/package-app.sh --usb-remote
 docker compose run --rm ps5-dev ./scripts/deploy-app.sh    # upload the app folder
-./tools/evo-remote.sh launch      # launch the registered app folder
+./tools/nostream-remote.sh launch      # launch the registered app folder
 ```
 
-Never build or deploy by hand over a running EVO. The close sequence and the
+Never build or deploy by hand over a running NoStream. The close sequence and the
 bounded hardware cycle are in [../console/hardware-cycle.md](../console/hardware-cycle.md).
 
 ## `package-app.sh`
@@ -23,9 +23,9 @@ bounded hardware cycle are in [../console/hardware-cycle.md](../console/hardware
 |---|---|
 | `--ffpfsc` | also PFS-pack the app folder into `output/app/PPSA99273.ffpfsc` with MkPFS |
 | `--zip` | also write `PPSA99273.zip`, the folder-title archive (the layout Kodi PS5 uses) |
-| `--usb-remote` | add the scriptable FTP dev remote (`evo_cmd`, `evo_status`, `evo_ui.json`, verbose decoder log). **Always use it for testing; off in releases** |
+| `--usb-remote` | add the scriptable FTP dev remote (`nostream_cmd`, `nostream_status`, `nostream_ui.json`, verbose decoder log). **Always use it for testing; off in releases** |
 | `--pro-memory` | set `attribute3` bit 22 in the packaged `param.json` only, so a PS5 Pro gives the app about 1.2 GiB more direct memory (#143) |
-| `--virtual-keyboard` | debug: always use EVO's own keyboard, never the system IME that the dev remote can neither press nor see |
+| `--virtual-keyboard` | debug: always use NoStream's own keyboard, never the system IME that the dev remote can neither press nor see |
 | `--breadcrumbs` | pop each boot-trace line as an on-screen notification (off by default; klog carries the same lines) |
 | `--probe` | build the sandbox probe instead of the player |
 | `--rebuild-libc` | force-regenerate the clean-room `libc.prx` |
@@ -33,7 +33,7 @@ bounded hardware cycle are in [../console/hardware-cycle.md](../console/hardware
 | `--agc` | accepted and redundant: bare-metal `sceAgc` is the only render path. `--gl`, `--no-gl`, `--gl-smoke` and `--gl-hdr-probe` were removed with the OpenGL path and fail with that explanation |
 
 What the script does, in order: validate `param.json` (`titleId` and the version
-format); build the native-app converter against static zlib; compile EVO; patch a
+format); build the native-app converter against static zlib; compile NoStream; patch a
 build-local copy of `librmlui.a`; build the PRX import stubs from
 `tools/native-app/stubs/prx/*.syms` (refusing dead entries); link; convert the
 PIE into a PS5 module; sign it to `eboot.bin` (FSELF); assemble the app folder; and,
@@ -73,16 +73,16 @@ PS5_HOST=<ip> ./scripts/deploy-app.sh    # upload the app folder
 - On macOS, folder upload uses `/usr/bin/python3` directly. The owner closes
   NoStream before updating it and launches it after the upload.
 - The legacy `--ffpfsc` uploader clears the console logs before transfer.
-- **Legacy image deployment checks whether EVO is resident.** It asks ShadowMount's
-  `/data/shadowmount/debug.log` (via `tools/evo_lifecycle.py`): started and not
-  released means resident, a parked EVO included. A heartbeat that is still moving
+- **Legacy image deployment checks whether NoStream is resident.** It asks ShadowMount's
+  `/data/shadowmount/debug.log` (via `tools/nostream_lifecycle.py`): started and not
+  released means resident, a parked NoStream included. A heartbeat that is still moving
   is refused outright and `--force` does not override it. `--force` only applies
   when there is no heartbeat to read.
 - Launch the registered folder title from the Media tab after the upload.
-- `--fresh` goes through `tools/wipe-evo.py`: the app, `/data/nostream` (settings,
+- `--fresh` goes through `tools/wipe-nostream.py`: the app, `/data/nostream` (settings,
   logins, playlists, calibration) and `/mnt/usb0/nostream*`. A dry run
-  (`python3 tools/wipe-evo.py <host>`) lists what would go; `--do` deletes. It never
-  touches other homebrew, games or non-EVO USB files.
+  (`python3 tools/wipe-nostream.py <host>`) lists what would go; `--do` deletes. It never
+  touches other homebrew, games or non-NoStream USB files.
 
 ## CI and releases
 

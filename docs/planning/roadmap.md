@@ -1,7 +1,7 @@
 # Roadmap
 
 What is open, grouped by area, as of **2026-11-08** (v0.13.6 prepared).
-GitHub is the live source: `gh issue list --state open`, or the "EVO Player Roadmap"
+GitHub is the live source: `gh issue list --state open`, or the "NoStream Roadmap"
 project board ([project-tracking.md](project-tracking.md)). This page is the map across
 them. Each issue body ends with a "References & sequencing" block naming the docs and files
 to read first.
@@ -48,8 +48,8 @@ selection on the played item (#214). See [../../CHANGELOG.md](../../CHANGELOG.md
 | #209 | Hardware verification pass: sync, video, audio, IPTV, providers, text (`priority: medium`, `hw-verify-pending`) |
 | #122 | Hardware-test the Nuvio/Stremio port fixes: HEVC cleaning, seek decoder renew, parallel reader, stream headers |
 | #198 | Startup failures are visible: boot phase and reason written where users can read them (`medium`) |
-| #216 | Network, provider and FTP failures leave no trace in `evo.log` |
-| #113 | On-console test runner that reads PASS/FAIL back (`medium`). Partly met by `evo-remote.sh verify` and `tools/checks/` |
+| #216 | Network, provider and FTP failures leave no trace in `nostream.log` |
+| #113 | On-console test runner that reads PASS/FAIL back (`medium`). Partly met by `nostream-remote.sh verify` and `tools/checks/` |
 | #125 | Playback backend: host tests and a split `decode_one`, so a fix stops breaking something else |
 
 ## Playback
@@ -71,14 +71,14 @@ selection on the played item (#214). See [../../CHANGELOG.md](../../CHANGELOG.md
 |---|---|
 | #47 | Native audio decode and bitstream passthrough (`medium`). Passthrough shipped in 0.12.0 and AAC/MP3 decode on `libSceAudiodec`; the issue remains for the rest ([../hardware/audio.md](../hardware/audio.md)) |
 | #163 | AAC passthrough and a split audio reader broke A/V sync and were rolled back; redo in measured steps |
-| #178 | A network stall must not flush the audio queue; find out how much audio EVO drops (`medium`) |
+| #178 | A network stall must not flush the audio queue; find out how much audio NoStream drops (`medium`) |
 | #210 | Audio processing: loudness, night mode, downmix, calibration, room EQ, bass, virtual surround |
 
 ## Picture and GPU
 
 | # | Story |
 |---|---|
-| #119 | Deep Blacks shader (`medium`). In as Settings → Experimental → Deep Blacks with a held-frame comparison (`evo-remote.sh dbcompare`); the issue is still open |
+| #119 | Deep Blacks shader (`medium`). In as Settings → Experimental → Deep Blacks with a held-frame comparison (`nostream-remote.sh dbcompare`); the issue is still open |
 | #123 | A live-action AI upscaler network: ship FSRCNNX (licence checked) (`medium`) |
 | #87 | Analytical anti-aliasing and shadows for UI geometry in the AGC shaders (`medium`) |
 | #211 | Decoder, memory, upscaler and test-suite follow-ups |
@@ -89,7 +89,7 @@ selection on the played item (#214). See [../../CHANGELOG.md](../../CHANGELOG.md
 |---|---|
 | #43 | Render styled `.ass`/`.ssa` subtitles: position and colour (investigate) |
 | #112 | Faster subtitle auto-sync: reuse the played audio, stop early, cache results (`medium`) |
-| #128 | Fonts for every script. Latin extended, Greek, Cyrillic, Hebrew, Arabic, Thai and Indic are in; CJK loads from `/data/evoplayer/fonts/`; emoji is not |
+| #128 | Fonts for every script. Latin extended, Greek, Cyrillic, Hebrew, Arabic, Thai and Indic are in; CJK loads from `/data/nostream/fonts/`; emoji is not |
 
 ## Providers and storage
 

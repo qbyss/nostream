@@ -1,5 +1,5 @@
 /*
- * EVO Player - Phase 1b task 4: small libc gap fillers for the app module.
+ * NoStream - Phase 1b task 4: small libc gap fillers for the app module.
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
  * The static SDK libc.a (linked last, for __emutls_get_address) already carries
@@ -14,7 +14,7 @@
  *                          resolves; a local no-op def keeps that object out.
  *   __dl* internals      - belt-and-braces stubs in case something else pulls
  *                          the rtld path; harmless if unreferenced.
- *   recvmmsg / sendmmsg  - absent everywhere; EVO's networking is TCP, and the
+ *   recvmmsg / sendmmsg  - absent everywhere; NoStream's networking is TCP, and the
  *                          UDP callers all fall back per-message.
  *   getaddrinfo / etc    - now in evo_dns.c (#91): the console's own resolver,
  *                          not a hand-rolled DNS client.

@@ -6,8 +6,8 @@
 #   ./scripts/deploy-app.sh --ffpfsc          # upload the PFS image instead
 #   Add --skip-residency-check to upload a test build without an app-closed check.
 #   ./scripts/deploy-app.sh --undeploy        # remove the staged title (+ image)
-#   ./scripts/deploy-app.sh --ffpfsc --fresh  # FRESH INSTALL: wipe every EVO
-#                                             # file first (tools/wipe-evo.py)
+#   ./scripts/deploy-app.sh --ffpfsc --fresh  # FRESH INSTALL: wipe every NoStream
+#                                             # file first (tools/wipe-nostream.py)
 #
 # Uploads output/app/<TITLE_ID>/ to ftp://<host>:2121/data/homebrew/<TITLE_ID>/.
 # Folder files are uploaded under temporary names and then renamed into place.
@@ -21,12 +21,12 @@
 # The --ffpfsc deploy also DELETEs /mnt/usb0/{nostream.log, nostream_status,
 # nostream_report.txt}, so each launch starts with a fresh log.
 #
-# After an --ffpfsc deploy it restarts ShadowMount+ (evo-remote.sh smrestart):
+# After an --ffpfsc deploy it restarts ShadowMount+ (nostream-remote.sh smrestart):
 # every deploy leaves ShadowMount's launch hook dead, so the next launch would
 # fail with 0x80940033. It waits for ShadowMount to check the new image and go
 # quiet first. --no-sm-restart skips it.
 #
-# This does NOT launch anything - launch with evo-remote.sh launch, once.
+# This does NOT launch anything - launch with nostream-remote.sh launch, once.
 # See docs/console/hardware-cycle.md.
 # =============================================================================
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
@@ -81,14 +81,14 @@ t=json.load(open(sys.argv[1]))["titleId"]
 sys.exit("bad titleId") if not re.fullmatch(r"PPSA\d{5}",t) else print(t)' "${PARAM}")"
 
 lc() { PS5_HOST="${PS5_HOST}" FTP_PORT="${FTP_PORT}" TITLE_ID="${TITLE_ID}" \
-       python3 "${REPO_ROOT}/tools/evo_lifecycle.py" "$@"; }
+       python3 "${REPO_ROOT}/tools/nostream_lifecycle.py" "$@"; }
 
 APPDIR="${OUTPUT_DIR}/app/${TITLE_ID}"
 FFPFSC_IMG="${OUTPUT_DIR}/app/${TITLE_ID}.ffpfsc"
 
 # --- .ffpfsc image path: one file to /data/homebrew/<TITLE_ID>.ffpfsc --------
 #
-# Refuse to deploy on top of an EVO that has been launched.
+# Refuse to deploy on top of a NoStream that has been launched.
 #
 # Deploying replaces the .ffpfsc that ShadowMountPlus has MOUNTED and that a
 # live process has its code pages mapped from, and the file change then makes
@@ -96,21 +96,21 @@ FFPFSC_IMG="${OUTPUT_DIR}/app/${TITLE_ID}.ffpfsc"
 # Either of those can panic the console; both have. Closing from the switcher
 # is the only thing that frees the slot, and there is no remote equivalent.
 #
-# A soft close (Settings -> QUIT EVO) is NOT sufficient here and must not be
+# A soft close (Settings -> QUIT NoStream) is NOT sufficient here and must not be
 # treated as if it were: it parks the app and drains the GPU, which makes the
 # subsequent switcher-close safe, but the process stays resident with the image
 # still mounted.
 #
 # Two signals, because one was not enough.
 #
-# A deploy clears /mnt/usb0, so nostream.log is absent until EVO next runs: its
-# presence means EVO has been launched since, and may still hold the slot.
+# A deploy clears /mnt/usb0, so nostream.log is absent until NoStream next runs: its
+# presence means NoStream has been launched since, and may still hold the slot.
 # That alone cannot tell "running now" from "ran and was closed", so it blocked
 # every deploy after the first and --force became reflex - which is exactly the
 # habit you do not want when the dangerous case comes along.
 #
 # nostream_status carries a monotonic `t=`, rewritten every frame by a --usb-remote
-# build. Sampling it twice says whether EVO is alive right now:
+# build. Sampling it twice says whether NoStream is alive right now:
 #
 #   t advancing        RUNNING  - the panic case. Refused, and --force does not
 #                                 override it; there is no reading of "deploy
@@ -121,9 +121,9 @@ FFPFSC_IMG="${OUTPUT_DIR}/app/${TITLE_ID}.ffpfsc"
 #   nostream.log absent     FREE     - nothing has run since the last deploy.
 #
 # The IDLE ambiguity is settled by ShadowMount+'s own lifecycle log
-# (tools/evo_lifecycle.py slot): "[LINK] runtime layers released: <TID>" after
+# (tools/nostream_lifecycle.py slot): "[LINK] runtime layers released: <TID>" after
 # the last "[GAME] started: <TID>" means the process is gone - closed from the
-# switcher or by `evo-remote.sh close` - and the deploy goes ahead without
+# switcher or by `nostream-remote.sh close` - and the deploy goes ahead without
 # --force. Started-and-not-released means resident (parked counts), refused.
 #
 check_evo_not_resident() {
@@ -138,10 +138,10 @@ def verdict(host, port):
     f.connect(host, port, timeout=10)
     f.login()
     try:
-        # EVO writes its log and heartbeat to the USB stick, or to
+        # NoStream writes its log and heartbeat to the USB stick, or to
         # /data/nostream when there is none. Looking only at /mnt/usb0 read
         # "never ran" on a console without a stick and let a deploy go over a
-        # running EVO (2026-11-03).
+        # running NoStream (2026-11-03).
         root = None
         for d in ("/mnt/usb0", "/data/nostream"):
             lines = []
@@ -194,15 +194,15 @@ PY
             # No log anywhere is not proof by itself: ShadowMount has the last word.
             local sm0
             sm0="$(PS5_HOST="${PS5_HOST}" FTP_PORT="${FTP_PORT}" TITLE_ID="${TITLE_ID}" \
-                   python3 "${REPO_ROOT}/tools/evo_lifecycle.py" slot 2>/dev/null || true)"
+                   python3 "${REPO_ROOT}/tools/nostream_lifecycle.py" slot 2>/dev/null || true)"
             if [[ "${sm0}" == RESIDENT ]] && (( ! FORCE )); then
                 die "ShadowMount shows ${TITLE_ID} started and NOT released - it is resident.
 
-   Free it first: tools/evo-remote.sh quit, then close."
+   Free it first: tools/nostream-remote.sh quit, then close."
             fi
-            ok "EVO has not run since the last deploy - slot is free" ;;
+            ok "NoStream has not run since the last deploy - slot is free" ;;
         RUNNING)
-            die "EVO is RUNNING on ${PS5_HOST} right now - its status heartbeat is advancing.
+            die "NoStream is RUNNING on ${PS5_HOST} right now - its status heartbeat is advancing.
 
    Deploying now replaces the mounted image under a live process, which has
    kernel-panicked this console. --force does not override this.
@@ -211,38 +211,38 @@ PY
         PRESENT)
             local sm
             sm="$(PS5_HOST="${PS5_HOST}" FTP_PORT="${FTP_PORT}" TITLE_ID="${TITLE_ID}" \
-                  python3 "${REPO_ROOT}/tools/evo_lifecycle.py" slot 2>/dev/null || true)"
+                  python3 "${REPO_ROOT}/tools/nostream_lifecycle.py" slot 2>/dev/null || true)"
             if [[ "${sm}" == FREE ]]; then
-                ok "EVO ran since the last deploy, and ShadowMount confirms its runtime was released - slot is free"
+                ok "NoStream ran since the last deploy, and ShadowMount confirms its runtime was released - slot is free"
             elif [[ "${sm}" == RESIDENT ]] && (( ! FORCE )); then
                 die "ShadowMount shows ${TITLE_ID} started and NOT released - it is resident (parked by QUIT, or wedged).
 
-   Free it first: tools/evo-remote.sh close (after quit), or PS-button-close it."
+   Free it first: tools/nostream-remote.sh close (after quit), or PS-button-close it."
             elif (( FORCE )); then
-                warn "EVO has been launched since the last deploy - --force given, continuing"
+                warn "NoStream has been launched since the last deploy - --force given, continuing"
             else
-                die "EVO has run since the last deploy, and is not running now.
+                die "NoStream has run since the last deploy, and is not running now.
 
    One case this cannot see: Settings -> QUIT parks the app but does NOT free
-   the slot, and a parked EVO looks exactly like a closed one from here. Deploying over a resident EVO replaces the
+   the slot, and a parked NoStream looks exactly like a closed one from here. Deploying over a resident NoStream replaces the
    mounted image under a live process and stacks an auto-launch on top of it -
    both have kernel-panicked this console.
 
-   Close EVO from the switcher (PS button -> close the application), then
-   deploy again. Settings -> QUIT EVO parks it and makes that close safe, but
+   Close NoStream from the switcher (PS button -> close the application), then
+   deploy again. Settings -> QUIT NoStream parks it and makes that close safe, but
    does NOT free the slot on its own.
 
    Override with --force if you know the slot is free."
             fi ;;
         *)
             if (( FORCE )); then
-                warn "could not check ${PS5_HOST}:${FTP_PORT} for a resident EVO - --force given, continuing"
+                warn "could not check ${PS5_HOST}:${FTP_PORT} for a resident NoStream - --force given, continuing"
             else
-                die "could not check ${PS5_HOST}:${FTP_PORT} for a resident EVO.
+                die "could not check ${PS5_HOST}:${FTP_PORT} for a resident NoStream.
 
    Not reaching the console is not evidence that the app slot is free, and
    this check failing open is how a deploy once landed on top of a running
-   EVO. Fix the connection, or pass --force if you know the slot is free."
+   NoStream. Fix the connection, or pass --force if you know the slot is free."
             fi ;;
     esac
 }
@@ -252,11 +252,11 @@ if (( FFPFSC )) && [[ "${ACTION}" == "deploy" ]]; then
     require_ps5_host
     (( SKIP_RESIDENCY )) || check_evo_not_resident
     if (( FRESH )); then
-        # A fresh install: every EVO file goes - the app, /data/nostream
-        # (settings, logins, playlists, calibration) and EVO's USB files -
-        # AFTER the resident check above, never over a running EVO.
-        begin "fresh install: wiping every EVO file on ${PS5_HOST}"
-        python3 "${REPO_ROOT}/tools/wipe-evo.py" "${PS5_HOST}" --do ||
+        # A fresh install: every NoStream file goes - the app, /data/nostream
+        # (settings, logins, playlists, calibration) and NoStream's USB files -
+        # AFTER the resident check above, never over a running NoStream.
+        begin "fresh install: wiping every NoStream file on ${PS5_HOST}"
+        python3 "${REPO_ROOT}/tools/wipe-nostream.py" "${PS5_HOST}" --do ||
             die "wipe failed - nothing was deployed"
     fi
     # ShadowMount's log length before the upload: the image check after it,
@@ -298,7 +298,7 @@ def rmtree(ftp, path):
 
 
 # The runtime files the app module writes - cleared on each deploy so a launch
-# always starts fresh (evo-remote.sh / evo-panel read these back).
+# always starts fresh (nostream-remote.sh / nostream-panel read these back).
 USB_LOGS = ["nostream.log", "nostream_status", "nostream_report.txt"]
 
 with FTP() as ftp:
@@ -313,7 +313,7 @@ with FTP() as ftp:
         try: ftp.sendcmd(f"DELE /mnt/usb0/{name}"); cleared += 1
         except error_perm: pass
     print(f"cleared {cleared} stale /mnt/usb0 log file(s)")
-    # evo_lifecycle.py reads /data/nostream/nostream_status FIRST; a stale parked=1
+    # nostream_lifecycle.py reads /data/nostream/nostream_status FIRST; a stale parked=1
     # left there by the last close blocked the next launch (2026-11-12).
     try: ftp.sendcmd("DELE /data/nostream/nostream_status"); print("cleared /data/nostream/nostream_status")
     except error_perm: pass
@@ -358,19 +358,19 @@ PY
         begin "restart ShadowMount (a deploy leaves its launch hook dead)"
         if [[ -z "${SM_BASE}" ]]; then
             warn "could not read ShadowMount's log before the upload - not restarting it.
-   Run evo-remote.sh smrestart before the launch."
+   Run nostream-remote.sh smrestart before the launch."
         elif [[ "$(lc wait-registered "${SM_BASE}" 90)" != REGISTERED ]]; then
             warn "ShadowMount did not check the new image within 90 s - not restarting it.
-   Look at /data/shadowmount/debug.log, then evo-remote.sh smrestart before the launch."
+   Look at /data/shadowmount/debug.log, then nostream-remote.sh smrestart before the launch."
         elif [[ "$(lc wait-quiet 15 120)" != QUIET ]]; then
             warn "ShadowMount's log is still moving after 120 s - not restarting it mid-scan.
-   Run evo-remote.sh smrestart before the launch."
+   Run nostream-remote.sh smrestart before the launch."
         else
-            "${REPO_ROOT}/tools/evo-remote.sh" smrestart \
+            "${REPO_ROOT}/tools/nostream-remote.sh" smrestart \
                 || die "ShadowMount restart failed - do not launch; check the console"
         fi
     fi
-    echo "   Next: evo-remote.sh launch (once). Never stack launches."
+    echo "   Next: nostream-remote.sh launch (once). Never stack launches."
     exit 0
 fi
 

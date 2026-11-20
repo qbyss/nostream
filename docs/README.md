@@ -1,6 +1,6 @@
-# EVO Player documentation
+# NoStream documentation
 
-EVO Player is a native media player for a jailbroken PS5 (FW 13.60), built against the
+NoStream is a native media player for a jailbroken PS5 (FW 13.60), built against the
 PS5 Payload SDK and shipped as an app module (`.ffpfsc`, title `PPSA99273`). The UI is
 the ps5-homebrew-ui kit and RmlUi on bare-metal `sceAgc`; video decodes on
 `sceVideodec2` with an FFmpeg fallback.
@@ -33,8 +33,8 @@ ones expensive to relearn on real hardware) are in the root [CLAUDE.md](../CLAUD
 | | |
 |---|---|
 | [hardware-cycle.md](console/hardware-cycle.md) | Quit, close, deploy, launch without panicking it; `cycle`; the services it needs |
-| [remote-control.md](console/remote-control.md) | `evo-remote.sh`: keys, `ui`, `go`, `set`, the status line |
-| [diagnostics.md](console/diagnostics.md) | `evo.log`, klog, the live endpoints (default `:9780`), screenshots, debug switches, the files EVO keeps |
+| [remote-control.md](console/remote-control.md) | `nostream-remote.sh`: keys, `ui`, `go`, `set`, the status line |
+| [diagnostics.md](console/diagnostics.md) | `nostream.log`, klog, the live endpoints (default `:9780`), screenshots, debug switches, the files NoStream keeps |
 | [networking.md](console/networking.md) | Container to console, ports, running servers on the host |
 | [remote-play.md](console/remote-play.md) | PS Remote Play from the PC for system dialogs |
 | [console-wake.md](console/console-wake.md) | A plan (not started) to wake the console after a power cut |
@@ -47,21 +47,21 @@ ones expensive to relearn on real hardware) are in the root [CLAUDE.md](../CLAUD
 | [videodec2-abi.md](hardware/videodec2-abi.md) | The verified ABI and call sequence |
 | [codec-support.md](hardware/codec-support.md) | What plays, on which decoder, and what was verified |
 | [audio.md](hardware/audio.md) | The audio path, gain and delay, and bitstream passthrough |
-| [ntfs.md](hardware/ntfs.md) | NTFS USB drives: EVO's own read-only reader on `/dev/daN`, `ntfs://` paths, test images |
+| [ntfs.md](hardware/ntfs.md) | NTFS USB drives: NoStream's own read-only reader on `/dev/daN`, `ntfs://` paths, test images |
 | [agc-runtime.md](hardware/agc-runtime.md) | The `sceAgc` runtime: what runs on the GPU, bugs fixed, how to verify a build |
 | [shader-compilation.md](hardware/shader-compilation.md) | `.pipe` to amdllpc to AGC registers, the `gfx1013` patch |
 | [agc-reference.md](hardware/agc-reference.md) | Where the `libSceAgc` ABI and frame loop came from |
-| [memory-budget.md](hardware/memory-budget.md) | Direct, flexible and heap pools, measured. Read before calling EVO memory-limited |
+| [memory-budget.md](hardware/memory-budget.md) | Direct, flexible and heap pools, measured. Read before calling NoStream memory-limited |
 | [upscaler.md](hardware/upscaler.md) | Sharp (FSR 1) and AI (Anime4K) upscaling |
 | [motion-smoothing.md](hardware/motion-smoothing.md) | Frame interpolation (experimental) |
 | [refresh-rate-modes.md](hardware/refresh-rate-modes.md) | VideoOut modes and why 24p is refused on 12.70 |
-| [psml-research.md](hardware/psml-research.md) | Sony's PSSR on the Pro and what EVO cannot reach |
+| [psml-research.md](hardware/psml-research.md) | Sony's PSSR on the Pro and what NoStream cannot reach |
 
 ## [ui/](ui/): the interface
 
 | | |
 |---|---|
-| [hui-kit.md](ui/hui-kit.md) | EVO's screens on ps5-homebrew-ui: how they reach `sceAgc`, how to add one, text in every script |
+| [hui-kit.md](ui/hui-kit.md) | NoStream's screens on ps5-homebrew-ui: how they reach `sceAgc`, how to add one, text in every script |
 | [rmlui.md](ui/rmlui.md) | What RmlUi still does, where it lives, and the rules that cost hardware cycles |
 | [settings.md](ui/settings.md) | Every setting, the config file format, how to add a setting |
 | [theming.md](ui/theming.md) | Themes and the `.theme` format |
@@ -72,7 +72,7 @@ ones expensive to relearn on real hardware) are in the root [CLAUDE.md](../CLAUD
 
 | | |
 |---|---|
-| [youtube.md](providers/youtube.md) | YouTube in EVO's player: phone casts (60 s), full-length links (QuickJS + yt-dlp's solver), what breaks and how to fix it |
+| [youtube.md](providers/youtube.md) | YouTube in NoStream's player: phone casts (60 s), full-length links (QuickJS + yt-dlp's solver), what breaks and how to fix it |
 
 ## [planning/](planning/): what to do next
 
@@ -98,4 +98,4 @@ ones expensive to relearn on real hardware) are in the root [CLAUDE.md](../CLAUD
   [CHANGELOG](../CHANGELOG.md); a doc states how things are now. Superseded text is deleted
   (git keeps it).
 - When code moves or is deleted, grep the docs for the old name. `python
-  tools/rag/evo_rag.py index` refreshes the search index after you change any of this.
+  tools/rag/nostream_rag.py index` refreshes the search index after you change any of this.

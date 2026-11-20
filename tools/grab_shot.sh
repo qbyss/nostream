@@ -2,7 +2,7 @@
 # tools/grab_shot.sh NAME - press L3 on the console, fetch the shot it wrote over
 # FTP and save it as output/screenshots/NAME.png (1920x1080).
 #
-# EVO writes evo_shot_NNN.bmp to /mnt/usb0, or to /data/nostream when no USB
+# NoStream writes evo_shot_NNN.bmp to /mnt/usb0, or to /data/nostream when no USB
 # stick is in. Both are listed before and after the press, and the file whose
 # listing line changed is the new shot - FTP times are only to the minute, and
 # the numbers wrap at 32, so neither "newest" nor "highest" is reliable.
@@ -26,7 +26,7 @@ list_shots() {
     done
 }
 
-# EVO's own "screenshot: wrote <path>" line (log server, seconds resolution) is
+# NoStream's own "screenshot: wrote <path>" line (log server, seconds resolution) is
 # the best evidence; the listing diff covers a build without the log server.
 last_wrote() {
     curl -s --max-time 5 "http://${HOST}:${PS5_LOG_PORT:-9780}/snapshot?grep=screenshot:%20wrote" |
@@ -36,11 +36,11 @@ last_wrote() {
 wrote_before=$(last_wrote)
 before=$(list_shots)
 if [ -f /.dockerenv ]; then
-    timeout 20 ./tools/evo-remote.sh key l3 >/dev/null 2>&1
+    timeout 20 ./tools/nostream-remote.sh key l3 >/dev/null 2>&1
 else
     # The long-lived dev container (tools/dx.sh) answers in ~0.2 s instead of
     # several seconds for a fresh `docker compose run`; it is started if needed.
-    timeout 60 ./tools/dx.sh ./tools/evo-remote.sh key l3 >/dev/null 2>&1
+    timeout 60 ./tools/dx.sh ./tools/nostream-remote.sh key l3 >/dev/null 2>&1
 fi
 
 path=""
@@ -56,7 +56,7 @@ for _ in 1 2 3 4 5 6; do
     [ -n "$path" ] && break
 done
 if [ -z "$path" ]; then
-    echo "grab_shot: no new evo_shot_*.bmp in $DIRS (is EVO running, and the screen not a system dialog?)" >&2
+    echo "grab_shot: no new evo_shot_*.bmp in $DIRS (is NoStream running, and the screen not a system dialog?)" >&2
     exit 1
 fi
 echo "newest=$path"

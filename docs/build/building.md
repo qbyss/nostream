@@ -1,4 +1,4 @@
-# Building EVO Player
+# Building NoStream
 
 Developer setup: a Windows host, Docker, the PS5 Payload SDK toolchain, FFmpeg,
 and the commands that produce the app folder. Everything toolchain-related runs in
@@ -30,8 +30,8 @@ Contents: [prerequisites](#prerequisites) · [first build](#first-build) ·
 ## First build
 
 ```bash
-git clone --recursive <fork-url> "EVO Player"      # --recursive fetches third_party/ps5-homebrew-ui
-cd "EVO Player"
+git clone --recursive <fork-url> "NoStream"      # --recursive fetches third_party/ps5-homebrew-ui
+cd "NoStream"
 cp .env.example .env                               # then edit PS5_HOST (git-ignored)
 docker compose build                               # the pinned image, once
 docker compose run --rm ps5-dev bash               # a shell inside it
@@ -43,8 +43,8 @@ docker compose run --rm ps5-dev bash               # a shell inside it
 - Use `run`, not `up`: the container is a dev shell, not a service.
 - Health check inside the container: `./scripts/setup-sdk.sh` (also builds the
   SDK's own sample).
-- **FFmpeg is not in the image at the version EVO needs.** The pacbrew sysroot
-  ships 7.0.1 and EVO needs 7.1.1 (`evo_dovi.c` refuses to build against anything
+- **FFmpeg is not in the image at the version NoStream needs.** The pacbrew sysroot
+  ships 7.0.1 and NoStream needs 7.1.1 (`evo_dovi.c` refuses to build against anything
   else), so on a fresh volume run `./scripts/build-ffmpeg.sh --profile minimal
   --install` once. The result lives in the `evoplayer_ps5_sdk` volume.
 
@@ -122,13 +122,13 @@ Details and the traps: [../hardware/shader-compilation.md](../hardware/shader-co
 # the real build (all flags: packaging.md)
 docker compose run --rm ps5-dev ./scripts/package-app.sh --usb-remote
 # compile check only: never deploys, never touches the console
-docker compose run --rm ps5-dev ./scripts/build-evoplayer.sh
+docker compose run --rm ps5-dev ./scripts/build-nostream.sh
 # host unit tests (build/validation.md)
 docker compose run --rm ps5-dev ./tests/run_tests.sh
 # render every UI screen on the PC
 ./tools/hui_preview.sh
 # a long-lived container for fast repeated calls (~0.2 s instead of seconds)
-./tools/dx.sh ./tools/evo-remote.sh status        # ./tools/dx.sh --stop before `docker compose build`
+./tools/dx.sh ./tools/nostream-remote.sh status        # ./tools/dx.sh --stop before `docker compose build`
 ```
 
 On Windows the scripts re-run themselves through `docker compose` when started

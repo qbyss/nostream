@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-tools/evo_lifecycle.py - where PPSA99273 is in its lifecycle, from evidence.
+tools/nostream_lifecycle.py - where PPSA99273 is in its lifecycle, from evidence.
 
-Used by tools/evo-remote.sh (launch/quit/close/cycle) and scripts/deploy-app.sh.
+Used by tools/nostream-remote.sh (launch/quit/close/cycle) and scripts/deploy-app.sh.
 Two sources, both read over FTP:
 
   /data/shadowmount/debug.log   ShadowMount+'s own lifecycle record:
@@ -15,7 +15,7 @@ Two sources, both read over FTP:
                                                      and does NOT auto-launch)
         [GAME] started: <TID>                        launched
         [LINK] runtime layers released: <TID>        process gone, slot free
-  /mnt/usb0/nostream_status          EVO's own heartbeat (--usb-remote builds):
+  /mnt/usb0/nostream_status          NoStream's own heartbeat (--usb-remote builds):
         t=<s> advancing                              running right now
         parked=1                                     soft-closed, GPU drained
 
@@ -296,7 +296,7 @@ def main(argv):
         else:
             sys.exit(__doc__)
     except Exception as e:
-        sys.stderr.write(f"evo_lifecycle {cmd}: {e}\n")
+        sys.stderr.write(f"nostream_lifecycle {cmd}: {e}\n")
         if cmd in ("slot", "heartbeat"):
             print("UNKNOWN")   # a verdict, not a failure: callers branch on it
             sys.exit(0)

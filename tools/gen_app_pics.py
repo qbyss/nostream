@@ -7,7 +7,7 @@ WHY THIS EXISTS
 
         for asset in icon0.png pic0.png pic1.png snd0.at9; do
 
-    and neither has ever existed, so EVO sat on a plain shell background while
+    and neither has ever existed, so NoStream sat on a plain shell background while
     every commercial title showed artwork. param.json even carries a
     loudnessSnd0 value, so the packaging expected a full asset set.
 
@@ -60,10 +60,10 @@ def render_pic(w, h, face="Lato-Bold"):
     ly = h * 0.760
     cap = s * 0.092
     f = V.font(face)
-    w_evo = f.measure("EVO", cap, 0.02)
+    w_evo = f.measure("NoStream", cap, 0.02)
     w_pro = f.measure("PRO", cap, 0.02)
     gap = cap * 0.34
-    cv.text("EVO", cap, lx + w_evo / 2.0, ly, V.WHITE, tracking=0.02)
+    cv.text("NoStream", cap, lx + w_evo / 2.0, ly, V.WHITE, tracking=0.02)
     cv.text("PRO", cap, lx + w_evo + gap + w_pro / 2.0, ly, V.ACCENT, tracking=0.02)
 
     # A thin accent rule under the lockup, tying it to the tile's hairline edge.

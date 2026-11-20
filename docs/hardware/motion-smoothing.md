@@ -94,7 +94,7 @@ Four defects, none of which a compile or a host render would have shown:
   `vec4 v[9]` indexed by a loop counter made amdllpc spill to private memory
   (`scratch_en: true, scratch_memory_size: 160`). The AGC runtime programs no
   scratch ring, so the GPU wrote to an unmapped address: the process died with
-  **no EVO log line at all**, and the only evidence was
+  **no NoStream log line at all**, and the only evidence was
   `GPU_FAULT_PAGE_FAULT_ASYNC` in ShadowMount's `debug.log`. Every tap is now a
   named variable, and **`tools/build_agc_pipes.py` refuses any shader that
   reports scratch**, so this cannot reach the console again.
@@ -112,7 +112,7 @@ Four defects, none of which a compile or a host render would have shown:
   session: `downgrade_notice` defaults to 0, and 0 is `MOTION_SMOOTH_OFF`. It
   is initialised to -1 ("nothing to report").
 
-**Do not judge motion quality from `evo-remote.sh key l3` screenshots.**
+**Do not judge motion quality from `nostream-remote.sh key l3` screenshots.**
 `evo_agc_runtime_read_scanout` reads a live 33 MB scanout with the CPU while
 the GPU keeps flipping, so a capture taken during fast motion mixes several
 frames into full-width horizontal bands that look exactly like a torn warp.

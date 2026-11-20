@@ -14,8 +14,8 @@ they hold saved server logins), then writes the test setup:
 refuses while a backup exists (the test setup is already up), so the real
 configs can never be overwritten by a second `up`.
 
-EVO reads these files at start: run it with EVO closed (evo-remote.sh quit,
-close), then launch. It refuses while EVO's heartbeat is advancing.
+NoStream reads these files at start: run it with NoStream closed (nostream-remote.sh quit,
+close), then launch. It refuses while NoStream's heartbeat is advancing.
 
 Env: PS5_HOST (or .env), FTP_PORT (2121), TESTENV_DEAD_HOST (192.168.0.253 - an
 address on the LAN that nothing answers).
@@ -69,7 +69,7 @@ def put(f, path, data):
 
 def evo_running():
     env = dict(os.environ, PS5_HOST=host())
-    r = subprocess.run([sys.executable, str(ROOT / "tools" / "evo_lifecycle.py"), "heartbeat"],
+    r = subprocess.run([sys.executable, str(ROOT / "tools" / "nostream_lifecycle.py"), "heartbeat"],
                        capture_output=True, text=True, env=env, timeout=60)
     return r.stdout.strip() == "RUNNING"
 
@@ -82,7 +82,7 @@ def up():
     if BACKUP.exists():
         sys.exit("testenv: already up (output/testenv/backup exists) - run `down` first")
     if evo_running():
-        sys.exit("testenv: EVO is running - quit and close it first (it reads these files at start)")
+        sys.exit("testenv: NoStream is running - quit and close it first (it reads these files at start)")
     dead = os.environ.get("TESTENV_DEAD_HOST", "192.168.0.253")
     with ftp() as f:
         saved = get(f, SHARES_FILE)
@@ -100,7 +100,7 @@ def up():
                        "startPath": "/"})
         put(f, SHARES_FILE, json.dumps(shares, indent=2).encode())
     print(f"  ok test setup up (dead host {dead}); real configs saved in output/testenv/backup")
-    print("     launch EVO; put them back with: tools/testenv.py down (EVO closed)")
+    print("     launch NoStream; put them back with: tools/testenv.py down (NoStream closed)")
 
 
 def down():
@@ -108,7 +108,7 @@ def down():
         print("  ok nothing to restore (test setup is not up)")
         return
     if evo_running():
-        sys.exit("testenv: EVO is running - quit and close it first, or it may save over the restore")
+        sys.exit("testenv: NoStream is running - quit and close it first, or it may save over the restore")
     with ftp() as f:
         for p in (SHARES_FILE, LEGACY_PLAYLIST_FILE):
             saved = BACKUP / local_name(p)

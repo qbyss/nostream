@@ -1,5 +1,5 @@
 #!/bin/bash
-# tools/check_raw_connect.sh - fail when EVO's own code calls connect() directly.
+# tools/check_raw_connect.sh - fail when NoStream's own code calls connect() directly.
 #
 # On the console connect() ignores O_NONBLOCK and SO_SNDTIMEO: to an address
 # that drops packets it sits in the kernel's SYN retry for ~75 s, whatever the
@@ -10,7 +10,7 @@
 #
 # A connect() that cannot hang (loopback, UDP, or the bounded worker itself)
 # carries "connect-ok: <why>" on the same line.
-# Run by scripts/build-evoplayer.sh and scripts/package-app.sh.
+# Run by scripts/build-nostream.sh and scripts/package-app.sh.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 SRC=projects/evoplayer

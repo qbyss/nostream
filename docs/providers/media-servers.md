@@ -4,23 +4,23 @@ What each media source does, how it is set up, and what was learned the hard way
 seam they all sit behind is [architecture.md](architecture.md); the system-browser
 fallback is [web-ui.md](web-ui.md).
 
-All of them are browsed in **EVO's own screens** through one `ProviderHostScreen`: the
+All of them are browsed in **NoStream's own screens** through one `ProviderHostScreen`: the
 shelves home, "See all" levels, details and cast, a stream picker, resume, and progress
 reports back to the server. The system browser is only an optional "web version" (Triangle
 or OPTIONS in the provider chooser).
 
 | Provider | Source | Sign-in | Config (data root) | Catalog and playback |
 |---|---|---|---|---|
-| **Emby** | an Emby server | username and password on EVO's keyboard (the server's first public user is pre-filled) | `emby.conf` | libraries, Continue Watching, Next Up, TV drill-down, resume, watched and favourites, transcode fallback, skip intro |
+| **Emby** | an Emby server | username and password on NoStream's keyboard (the server's first public user is pre-filled) | `emby.conf` | libraries, Continue Watching, Next Up, TV drill-down, resume, watched and favourites, transcode fallback, skip intro |
 | **Jellyfin** | a Jellyfin server | Quick Connect (a six-digit code approved in another Jellyfin app) or password | `jellyfin.conf` | same as Emby |
 | **Plex** | a Plex account | PIN: enter the code shown on screen at `plex.tv/link` on a phone or PC | `plex.conf` (the token) | libraries, shows, seasons, episodes; LAN server discovery with connection scoring; direct play; timeline reports (playing, paused, stopped, resume) |
 | **Stremio** | Stremio addons | none | `addons.json` (manifest URLs) | catalogs, series, seasons, episodes; every stream source labelled in the picker |
-| **Nuvio** | the addons installed in a Nuvio web app (self-hosted, hosted, or EVO's bundled `local:nuvio`) | none | `nuvio.conf`, and the page storage in `webui/<host>_<port>.json` | the Stremio engine over Nuvio's addon list |
+| **Nuvio** | the addons installed in a Nuvio web app (self-hosted, hosted, or NoStream's bundled `local:nuvio`) | none | `nuvio.conf`, and the page storage in `webui/<host>_<port>.json` | the Stremio engine over Nuvio's addon list |
 | **IPTV** | an M3U/M3U8 playlist, optional XMLTV | none | `iptv.conf` (`playlist=`, `xmltv=`, `bundle=`); USB fallback `/mnt/usb0/.evo_iptv.conf` | channel groups, a guide with now and next, logos, favourites, a stream picker |
 | **Xtream** | an Xtream Codes account | host, port, user, password, https | `xtream.conf`; USB fallback `/mnt/usb0/.evo_xtream.conf` | Live, Movies and Series by category, with the EPG streamed through a worker thread |
 
 Server addresses come from LAN discovery where the protocol allows, otherwise they are
-typed on EVO's keyboard. Every prompt that asks for an address, playlist URL or addon link
+typed on NoStream's keyboard. Every prompt that asks for an address, playlist URL or addon link
 also accepts text from a phone: the keyboard title shows `phone: <console ip>:<port>/input`
 (default port 9780, user-settable in Settings; open it on a phone on the same
 network, paste, Send). With no free port, it shows `PHONE LINK OFF` and a Set port
@@ -74,23 +74,23 @@ over the addons saved in a Nuvio web app.
 - A Stremio addon is four JSON requests: `/manifest.json`, `/catalog/{type}/{id}.json`,
   `/meta/{type}/{id}.json` (a series lists its videos) and `/stream/{type}/{id}.json`. Only
   streams with a direct http(s) `url` are played. An **`infoHash`** stream is a torrent and
-  needs a debrid resolver, which EVO does not have, so it is skipped; Play with nothing
+  needs a debrid resolver, which NoStream does not have, so it is skipped; Play with nothing
   playable says why (no stream addon, or torrent links only). Debrid services (TorBox,
-  Real-Debrid) arrive through Nuvio's addons, with no debrid code in EVO.
+  Real-Debrid) arrive through Nuvio's addons, with no debrid code in NoStream.
 - **Cinemeta is built in** (`builtin_sync()`): it rides at the end of every instance's list
   while it has user addons, is never saved or offered for removal, lends its catalogs only
   when no added addon has any (Torrentio has none), and always serves meta and search. It
   is skipped when the user added Cinemeta themselves. A catalog item keyed on its own ids
   (`tmdb:`) with an `imdb_id` is mapped to the IMDb id, which is what stream addons look up.
 - **Adding and removing addons** is OPTIONS ("Add & manage addons") inside the card:
-  "Add addon" takes a manifest URL, a base URL or a `stremio://` link (EVO keyboard or
+  "Add addon" takes a manifest URL, a base URL or a `stremio://` link (NoStream keyboard or
   phone page), and there is a "Remove <name>" row per saved addon. For Nuvio these edit the
   same page-storage keys the web version uses (`installedAddonUrls` and
   `installedAddonEnabledStates`, per profile), so both show the same list; the list is
   re-read each time the root opens. With nothing saved, the first add saves Cinemeta plus
   the new addon. Addresses with settings (`providers=yts,eztv|qualityfilter=...`) load fine.
 - Every Nuvio request goes through FFmpeg's HTTP client (`evo_net_request_async_avio`).
-- Catalog item ids are opaque to EVO and prefixed by kind: `c:` a catalog, `s:` a series,
+- Catalog item ids are opaque to NoStream and prefixed by kind: `c:` a catalog, `s:` a series,
   `ss:` a season, `m:` a title, `e:` an episode, `x:` an addon that failed to load.
 - The addon list is saved with the `cJSON` printer; it once printed every array as `null`,
   so every added addon vanished at the next start (fixed 2026-10-21, with a round-trip
@@ -128,7 +128,7 @@ saved copy. Nuvio's set (`avio`) is not cached.
 Stremio shows subtitles that are not in the video file: addons with a
 `subtitles` resource answer `<base>/subtitles/<type>/<id>.json`
 (`{subtitles: [{url, lang}]}`), and a stream may carry its own `subtitles` array.
-EVO asks for them while it resolves a title (`resolve_subtitles` in
+NoStream asks for them while it resolves a title (`resolve_subtitles` in
 `provider_stremio.c`), beside the stream requests and never holding them up:
 every added addon that declares the resource, or, when none does, OpenSubtitles
 v3 (`https://opensubtitles-v3.strem.io`, IMDb ids), the addon the Stremio app
@@ -160,7 +160,7 @@ reloaded.
 
 ## Testing a provider
 
-Everything is checked on the console through EVO's own screens: `evo-remote.sh provider
+Everything is checked on the console through NoStream's own screens: `nostream-remote.sh provider
 <id>`, `key`, `ui`, `key l3` ([../console/remote-control.md](../console/remote-control.md)).
 Build with `--usb-remote --virtual-keyboard` so `type` works. Test servers run on the dev PC
 (not in the container, see [../console/networking.md](../console/networking.md)): Emby on

@@ -1,5 +1,5 @@
 #!/bin/bash
-# tools/make_ntfs_image.sh [OUT_DIR] - build NTFS test images for EVO's NTFS reader (#217).
+# tools/make_ntfs_image.sh [OUT_DIR] - build NTFS test images for NoStream's NTFS reader (#217).
 #
 # Runs a throwaway privileged Linux container (needs Docker) with ntfs-3g:
 #   whole.img   NTFS straight on the "disk" (no partition table), 4 KB clusters

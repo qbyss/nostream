@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# tools/evo-remote.sh — scriptable dev remote for the PPSA99273 app module.
+# tools/nostream-remote.sh — scriptable dev remote for the PPSA99273 app module.
 #
 # One deployed build (built with --usb-remote) is driven over FTP with no
 # controller and no rebuild between tests. It writes /mnt/usb0/nostream_status once
@@ -8,7 +8,7 @@
 # ONE diagnostic log, /mnt/usb0/nostream.log (boot trace + breadcrumbs + decoder
 # notes + playback stats, timestamped).
 #
-#   PS5_HOST=192.168.0.6 ./tools/evo-remote.sh <subcommand>
+#   PS5_HOST=192.168.0.6 ./tools/nostream-remote.sh <subcommand>
 #
 #   build [--breadcrumbs ...]               package --usb-remote + deploy the app folder
 #   launch [--no-sm-restart]                restart ShadowMount (smrestart: its
@@ -24,9 +24,9 @@
 #                                           "hooks installed ... launch=1". A
 #                                           deploy kills the launch hook
 #                                           (0x80940033); deploy-app.sh --ffpfsc
-#                                           runs this itself. Refused while EVO
+#                                           runs this itself. Refused while NoStream
 #                                           is running or resident
-#   quit                                    soft close (= Settings -> QUIT EVO):
+#   quit                                    soft close (= Settings -> QUIT NoStream):
 #                                           stop media, drain the GPU, park.
 #                                           Waits for parked=1 in nostream_status
 #   close [--force]                         free the slot: the title-aware close
@@ -99,7 +99,7 @@
 #                                           Interface & Storage -> KEYBOARD
 #                                           INPUT = VIRTUAL KEYBOARD: the
 #                                           native PS5 IME is a system dialog
-#                                           and nothing EVO injects reaches it
+#                                           and nothing NoStream injects reaches it
 #   kbdone                                  press DONE on the virtual keyboard
 #   kbclose                                 cancel any open keyboard, the native IME too
 #   weburl <url>                            Web section: open <url> in its tab
@@ -141,7 +141,7 @@
 #
 # launch/close send the vendored controllers in tools/ps5-controllers/ (from
 # ps5-homebrew-dev-protocol). Their evidence is ShadowMount+'s debug.log, read
-# by tools/evo_lifecycle.py; elfldr accepting the bytes proves nothing.
+# by tools/nostream_lifecycle.py; elfldr accepting the bytes proves nothing.
 # Protocol, safety rules, outcome classes: docs/console/hardware-cycle.md
 # =============================================================================
 source "$(dirname "${BASH_SOURCE[0]}")/../scripts/common.sh"
@@ -151,7 +151,7 @@ FTP_PORT="${FTP_PORT:-2121}"
 WEB_PORT="${PS5_WEB_PORT:-8080}"
 
 if ! in_container; then
-    reexec_in_container "../tools/evo-remote.sh" "${SUB}" "$@"
+    reexec_in_container "../tools/nostream-remote.sh" "${SUB}" "$@"
 fi
 require_ps5_host
 need_cmd python3 curl nc timeout
@@ -242,7 +242,7 @@ ask_set() {
         out="$(get_file /mnt/usb0/nostream_set.txt 2>/dev/null)" && [[ -n "${out}" ]] && break
         out=""
     done
-    [[ -n "${out}" ]] || die "no answer from EVO (running? built with --usb-remote?)"
+    [[ -n "${out}" ]] || die "no answer from NoStream (running? built with --usb-remote?)"
     echo "${out}"
     [[ "${out}" != ERR* ]]
 }
@@ -252,7 +252,7 @@ USB_LOG="/mnt/usb0/nostream.log"
 USB_UI="/mnt/usb0/nostream_ui.json"
 
 evo_ui() { PS5_HOST="${PS5_HOST}" FTP_PORT="${FTP_PORT}" \
-           python3 "$(dirname "${BASH_SOURCE[0]}")/evo_ui.py" "$@"; }
+           python3 "$(dirname "${BASH_SOURCE[0]}")/nostream_ui.py" "$@"; }
 
 # --- lifecycle: controllers + ShadowMount evidence ---------------------------
 TITLE_ID="PPSA99273"
@@ -261,7 +261,7 @@ CTRL_SRC="$(dirname "${BASH_SOURCE[0]}")/ps5-controllers"
 CTRL_OUT="${OUTPUT_DIR}/controllers"
 
 lc() { PS5_HOST="${PS5_HOST}" FTP_PORT="${FTP_PORT}" TITLE_ID="${TITLE_ID}" \
-       python3 "$(dirname "${BASH_SOURCE[0]}")/evo_lifecycle.py" "$@"; }
+       python3 "$(dirname "${BASH_SOURCE[0]}")/nostream_lifecycle.py" "$@"; }
 
 send_controller() {   # send_controller launch|close
     local mode="$1" elf="${CTRL_OUT}/${1}-${TITLE_ID}.elf"
@@ -293,7 +293,7 @@ do_smrestart() {
     [[ "$(sha256sum "${SM_ELF}" | cut -d' ' -f1)" == "${SM_SHA}" ]] \
         || die "${SM_ELF} is not ShadowMount+ v1.7beta4 (sha256 differs) - only b4 matches the console's."
     hb="$(lc heartbeat)"
-    [[ "${hb}" == RUNNING ]] && die "EVO is running - quit + close it before restarting ShadowMount."
+    [[ "${hb}" == RUNNING ]] && die "NoStream is running - quit + close it before restarting ShadowMount."
     slot="$(lc slot)"
     [[ "${slot}" == RESIDENT ]] && die "ShadowMount shows ${TITLE_ID} started and not released - close it first."
     base="$(lc smlen)" || die "could not read ShadowMount's log"
@@ -309,14 +309,14 @@ do_smrestart() {
 do_launch() {
     local slot hb base
     slot="$(lc slot)"; hb="$(lc heartbeat)"
-    [[ "${hb}" == RUNNING ]] && die "EVO's heartbeat is advancing - it is running. Not stacking a launch."
+    [[ "${hb}" == RUNNING ]] && die "NoStream's heartbeat is advancing - it is running. Not stacking a launch."
     if [[ "${slot}" == UNKNOWN ]]; then
         # ShadowMount has no verdict, so the heartbeat is all there is, and a
-        # parked EVO still holds the slot. (With a slot verdict this check is
+        # parked NoStream still holds the slot. (With a slot verdict this check is
         # wrong: `close` leaves /mnt/usb0/nostream_status behind with parked=1, so a
         # freed slot still reads PARKED until the next launch deletes it.)
-        [[ "${hb}" == PARKED ]] && die "EVO is parked (soft-closed) - the slot is still held. Not launching.
-   Free it first: evo-remote.sh close."
+        [[ "${hb}" == PARKED ]] && die "NoStream is parked (soft-closed) - the slot is still held. Not launching.
+   Free it first: nostream-remote.sh close."
         # A fresh boot: the slot stays UNKNOWN until something launches, and
         # nothing may launch while it is UNKNOWN. coldboot() breaks that by
         # proving the slot is free instead of assuming it - ShadowMount's log
@@ -329,14 +329,14 @@ do_launch() {
         warn "cold boot: ShadowMount has logged no launch of ${TITLE_ID} since it started, heartbeat ${hb} - slot is free"
     else
         [[ "${slot}" == FREE ]] || die "ShadowMount says ${TITLE_ID} is ${slot} (started, not released). Not launching.
-   If it is parked: evo-remote.sh close. Otherwise PS-button-close it first."
+   If it is parked: nostream-remote.sh close. Otherwise PS-button-close it first."
     fi
     # Launching while ShadowMount is still busy (a fresh deploy: scan, verify,
     # remount) raises "Can't start game or app" on the PS5. Wait it out.
     [[ "$(lc wait-quiet 15 120)" == QUIET ]] \
         || die "ShadowMount's log is still moving after 120 s - it is not idle. Not launching."
     # ShadowMount's launch hook serves one launch: after a deploy, and after
-    # EVO has run and closed, the next launch gets 0x80940033 (2026-11-05). So
+    # NoStream has run and closed, the next launch gets 0x80940033 (2026-11-05). So
     # every launch restarts it first, then waits out the startup scan - unless
     # the hook installed last has not served a launch yet (deploy-app.sh just
     # restarted it): a second restart then only adds a way to fail.
@@ -371,7 +371,7 @@ do_launch() {
    Never retry automatically."
         die "no '[GAME] started: ${TITLE_ID}' within 30 s - launch did not take${code:+ (launchApp returned ${code})}.
    Look at the TV: if \"Can't start game or app\" is showing, press X on the pad to clear it
-   (nothing here can), or start EVO from the home screen. Never retry automatically."
+   (nothing here can), or start NoStream from the home screen. Never retry automatically."
     fi
     ok "launched (ShadowMount: started)"
 }
@@ -384,7 +384,7 @@ do_quit() {
         *) die "no live heartbeat (${hb}) - not a running --usb-remote build, so \`quit\` cannot reach it." ;;
     esac
     put_cmd "quit"
-    [[ "$(lc wait-parked 30)" == PARKED ]] || die "EVO did not report parked=1 within 30 s. Do NOT close it remotely - check the TV."
+    [[ "$(lc wait-parked 30)" == PARKED ]] || die "NoStream did not report parked=1 within 30 s. Do NOT close it remotely - check the TV."
     ok "parked - GPU drained, safe to close"
 }
 
@@ -396,10 +396,10 @@ do_close() {
     hb="$(lc heartbeat)"
     case "${hb}" in
         PARKED) ;;
-        RUNNING) die "EVO is running (heartbeat advancing). Killing a submitting GPU panicked the console
-   on 2026-09-18. Run evo-remote.sh quit first; --force does not override this." ;;
-        *) (( force )) || die "cannot see EVO's state (heartbeat ${hb}): not a --usb-remote build, or not parked.
-   Park it first (Settings -> QUIT EVO), then: evo-remote.sh close --force"
+        RUNNING) die "NoStream is running (heartbeat advancing). Killing a submitting GPU panicked the console
+   on 2026-09-18. Run nostream-remote.sh quit first; --force does not override this." ;;
+        *) (( force )) || die "cannot see NoStream's state (heartbeat ${hb}): not a --usb-remote build, or not parked.
+   Park it first (Settings -> QUIT NoStream), then: nostream-remote.sh close --force"
            warn "closing without a parked=1 receipt (--force)" ;;
     esac
     base="$(lc smlen)" || die "could not read ShadowMount's log"
@@ -420,7 +420,7 @@ do_cycle() {
             --no-build) build=0; shift ;;
             --check)    checks+=("$2"); shift 2 ;;
             --)         shift; pkg=("$@"); break ;;
-            *) die "usage: evo-remote.sh cycle [--secs n] [--play <path>] [--no-build] [--check <name>]... [-- package-app args]" ;;
+            *) die "usage: nostream-remote.sh cycle [--secs n] [--play <path>] [--no-build] [--check <name>]... [-- package-app args]" ;;
         esac
     done
     local stamp dir commit dirty eboot sha="" base stage="none" klog_pid=""
@@ -545,7 +545,7 @@ do_verify() {
             --check)    args+=(--check "$2"); named=1; shift 2 ;;
             --no-build) args+=(--no-build); shift ;;
             --clip)     export EVO_CHECK_CLIP="$2"; shift 2 ;;
-            *) die "usage: evo-remote.sh verify [--check <name>]... [--no-build] [--clip <usb path>]" ;;
+            *) die "usage: nostream-remote.sh verify [--check <name>]... [--no-build] [--clip <usb path>]" ;;
         esac
     done
     if (( ! named )); then
@@ -558,16 +558,16 @@ do_verify() {
 }
 
 # --- test media + log queries -------------------------------------------------
-SAMPLE_REMOTE="/data/nostream/test/evo_sample.mkv"   # EVO's own data dir: always readable
+SAMPLE_REMOTE="/data/nostream/test/evo_sample.mkv"   # NoStream's own data dir: always readable
 SAMPLE_LOCAL="${OUTPUT_DIR}/sample/evo_sample.mkv"    # tools/make_sample.sh (host, ffmpeg)
 
 do_play() {
     case "${1:-}" in
         --sample) put_cmd "play ${SAMPLE_REMOTE}" ;;
         --share)
-            [[ -n "${2:-}" && -n "${3:-}" ]] || die "usage: evo-remote.sh play --share <share id> <path>"
+            [[ -n "${2:-}" && -n "${3:-}" ]] || die "usage: nostream-remote.sh play --share <share id> <path>"
             put_cmd "playshare $2 $3" ;;
-        "") die "usage: evo-remote.sh play <path> | --sample | --share <share id> <path>" ;;
+        "") die "usage: nostream-remote.sh play <path> | --sample | --share <share id> <path>" ;;
         *) put_cmd "play $1" ;;
     esac
 }
@@ -577,15 +577,15 @@ do_sample_install() {
     [[ -f "${src}" ]] || die "no ${src#"${REPO_ROOT}/"} - make it on the host first: tools/make_sample.sh"
     timeout 120 curl -sS --ftp-create-dirs -T "${src}" \
         "ftp://${PS5_HOST}:${FTP_PORT}${SAMPLE_REMOTE}" || die "upload to ${SAMPLE_REMOTE} failed"
-    ok "installed ${SAMPLE_REMOTE} - play it with: evo-remote.sh play --sample"
+    ok "installed ${SAMPLE_REMOTE} - play it with: nostream-remote.sh play --sample"
 }
 
-# logq <text> [lines]: nostream.log lines containing <text>, newest last. Asks EVO's
+# logq <text> [lines]: nostream.log lines containing <text>, newest last. Asks NoStream's
 # log server (:9780/snapshot - the in-memory ring, and it closes; /raw stays
 # open by design) and falls back to fetching the whole nostream.log over FTP only
-# when EVO is not answering.
+# when NoStream is not answering.
 do_logq() {
-    local q="${1:?usage: evo-remote.sh logq <text> [lines]}" n="${2:-40}" out enc
+    local q="${1:?usage: nostream-remote.sh logq <text> [lines]}" n="${2:-40}" out enc
     enc="$(python3 -c 'import sys, urllib.parse; print(urllib.parse.quote(sys.argv[1]))' "${q}")"
     if out="$(timeout 8 curl -sf --max-time 6 "http://${PS5_HOST}:${PS5_LOG_PORT:-9780}/snapshot?grep=${enc}")"; then
         printf '%s\n' "${out}" | tail -n "${n}"
@@ -613,17 +613,17 @@ verify) do_verify "$@" ;;
 play)   do_play "$@" ;;
 sample-install) do_sample_install "$@" ;;
 logq)   do_logq "$@" ;;
-seek)   [[ -n "${1:-}" ]] || die "usage: evo-remote.sh seek <sec|+sec|-sec>"; put_cmd "seek $1" ;;
+seek)   [[ -n "${1:-}" ]] || die "usage: nostream-remote.sh seek <sec|+sec|-sec>"; put_cmd "seek $1" ;;
 stop)   put_cmd "stop" ;;
-key)    [[ -n "${1:-}" ]] || die "usage: evo-remote.sh key <button>...  (e.g. cross, up, l1, l3)"
+key)    [[ -n "${1:-}" ]] || die "usage: nostream-remote.sh key <button>...  (e.g. cross, up, l1, l3)"
         if [[ "${1}" == --no-wait ]]; then shift; put_cmd "key $1"
         else evo_ui key "$@"; fi ;;
 ui)     evo_ui show "$@" ;;
-set)    [[ -n "${1:-}" ]] || die "usage: evo-remote.sh set <setting> <value> | set --list   (a name with no value prints the current one)"
+set)    [[ -n "${1:-}" ]] || die "usage: nostream-remote.sh set <setting> <value> | set --list   (a name with no value prints the current one)"
         ask_set "set $*" ;;
-focus)  [[ -n "${1:-}" ]] || die "usage: evo-remote.sh focus <row>   (a name from set --list)"
+focus)  [[ -n "${1:-}" ]] || die "usage: nostream-remote.sh focus <row>   (a name from set --list)"
         ask_set "focus $1" ;;
-screen) [[ "${1:-}" =~ ^[0-9]+$ ]] || die "usage: evo-remote.sh screen <id>  (an evo::ScreenId number)"; put_cmd "screen $1" ;;
+screen) [[ "${1:-}" =~ ^[0-9]+$ ]] || die "usage: nostream-remote.sh screen <id>  (an evo::ScreenId number)"; put_cmd "screen $1" ;;
 # go <name>: one door to any screen, by name instead of a ScreenId number.
 go)     case "${1:-}" in
           home)                put_cmd "screen 0" ;;
@@ -646,30 +646,30 @@ go)     case "${1:-}" in
           surround)            put_cmd "screen 28" ;;
           devtools)            put_cmd "screen 15" ;;
           [0-9]*)              put_cmd "screen $1" ;;
-          *) die "usage: evo-remote.sh go <home|browse|internal|network|favorites|recent|settings[-playback|-subtitles|-interface|-system|-audio|-experimental]|about|changelog|themes|surround|devtools|<ScreenId>>" ;;
+          *) die "usage: nostream-remote.sh go <home|browse|internal|network|favorites|recent|settings[-playback|-subtitles|-interface|-system|-audio|-experimental]|about|changelog|themes|surround|devtools|<ScreenId>>" ;;
         esac ;;
-source) [[ "${1:-}" =~ ^[0-9]+$ ]] || die "usage: evo-remote.sh source <n>  (0 USB, 1 Internal, 2 Favorites, 3 Recent)"; put_cmd "source $1" ;;
+source) [[ "${1:-}" =~ ^[0-9]+$ ]] || die "usage: nostream-remote.sh source <n>  (0 USB, 1 Internal, 2 Favorites, 3 Recent)"; put_cmd "source $1" ;;
 iobench) put_cmd "iobench ${1:-}" ;;
-ptprobe) [[ -n "${1:-}" ]] || die "usage: evo-remote.sh ptprobe info | mode <n> [target] | reset | stream <pt|main> <secs> <path> | sweep <path> | sony <path>"; put_cmd "ptprobe $*" ;;
-image)  [[ -n "${1:-}" ]] || die "usage: evo-remote.sh image <path>"; put_cmd "image $1" ;;
-text)   [[ -n "${1:-}" ]] || die "usage: evo-remote.sh text <path>"; put_cmd "text $1" ;;
-# Fill EVO's virtual keyboard in one shot, rather than ~5 D-pad presses per
+ptprobe) [[ -n "${1:-}" ]] || die "usage: nostream-remote.sh ptprobe info | mode <n> [target] | reset | stream <pt|main> <secs> <path> | sweep <path> | sony <path>"; put_cmd "ptprobe $*" ;;
+image)  [[ -n "${1:-}" ]] || die "usage: nostream-remote.sh image <path>"; put_cmd "image $1" ;;
+text)   [[ -n "${1:-}" ]] || die "usage: nostream-remote.sh text <path>"; put_cmd "text $1" ;;
+# Fill NoStream's virtual keyboard in one shot, rather than ~5 D-pad presses per
 # character. --submit also presses DONE. Needs Settings -> Interface & Storage
 # -> KEYBOARD INPUT = VIRTUAL KEYBOARD: the native PS5 IME is a system dialog
-# and nothing EVO can inject will ever reach it.
-type)   [[ -n "${1:-}" ]] || die "usage: evo-remote.sh type [--submit] <text>"
+# and nothing NoStream can inject will ever reach it.
+type)   [[ -n "${1:-}" ]] || die "usage: nostream-remote.sh type [--submit] <text>"
         _submit=0
         if [[ "${1}" == --submit ]]; then _submit=1; shift; fi
-        [[ -n "${1:-}" ]] || die "usage: evo-remote.sh type [--submit] <text>"
+        [[ -n "${1:-}" ]] || die "usage: nostream-remote.sh type [--submit] <text>"
         put_cmd "type $*"
         (( _submit )) && { sleep 1; put_cmd "kbdone"; }
         true ;;
 kbdone) put_cmd "kbdone" ;;
 kbclose) put_cmd "kbclose" ;;
-weburl) [[ -n "${1:-}" ]] || die "usage: evo-remote.sh weburl <url>  (opens in the Web section; data: URLs work)"
+weburl) [[ -n "${1:-}" ]] || die "usage: nostream-remote.sh weburl <url>  (opens in the Web section; data: URLs work)"
         put_cmd "weburl $*" ;;
 pointer) [[ "${1:-}" =~ ^[0-9]+$ && "${2:-}" =~ ^[0-9]+$ ]] \
-            || die "usage: evo-remote.sh pointer <x> <y>  (1920x1080 UI pixels, rail included; then key cross to click)"
+            || die "usage: nostream-remote.sh pointer <x> <y>  (1920x1080 UI pixels, rail included; then key cross to click)"
          put_cmd "pointer $1 $2" ;;
 upcompare)
     # #103: same paused frame with the upscaler Off / Sharp / AI, no OSD ->
@@ -683,7 +683,7 @@ dbcompare)
     ;;
 sweep)
     # #8 — the codec sweep. Plays every clip in a directory for a fixed window,
-    # then harvests the per-file `sweep` lines EVO wrote into nostream.log and renders
+    # then harvests the per-file `sweep` lines NoStream wrote into nostream.log and renders
     # the docs/build/validation.md table. Each `play` implicitly closes the previous
     # file (start_video_playback stops first), which is what flushes its row; the
     # trailing `stop` flushes the last one.
@@ -698,7 +698,7 @@ sweep)
             --max)  SWEEP_MAX="$2"; shift 2 ;;
             # repeatable; a clip whose name contains any of these is not played
             --skip) SWEEP_SKIP="${SWEEP_SKIP:+${SWEEP_SKIP},}$2"; shift 2 ;;
-            *) die "usage: evo-remote.sh sweep [--dir <path>] [--secs <n>] [--max <n>] [--skip <substr>]..." ;;
+            *) die "usage: nostream-remote.sh sweep [--dir <path>] [--secs <n>] [--max <n>] [--skip <substr>]..." ;;
         esac
     done
     mkdir -p "${LOG_OUT}"
@@ -726,12 +726,12 @@ boot|log)
         || echo "(no nostream.log — launched? sandbox open?)"
     ;;
 logs|tail)
-    # Live log from EVO's own server (port 9780, or PS5_LOG_PORT), no FTP. Ctrl-C to stop.
-    #   evo-remote.sh logs              whole ring, then live
-    #   evo-remote.sh logs now          live only
-    #   evo-remote.sh logs <text>       only lines containing <text>
-    #   evo-remote.sh logs now <text>
-    #   evo-remote.sh logs problems     only WARN / ERROR lines (also: now problems)
+    # Live log from NoStream's own server (port 9780, or PS5_LOG_PORT), no FTP. Ctrl-C to stop.
+    #   nostream-remote.sh logs              whole ring, then live
+    #   nostream-remote.sh logs now          live only
+    #   nostream-remote.sh logs <text>       only lines containing <text>
+    #   nostream-remote.sh logs now <text>
+    #   nostream-remote.sh logs problems     only WARN / ERROR lines (also: now problems)
     Q=""
     if [[ "${1:-}" == "now" ]]; then Q="tail=0"; shift; fi
     if [[ "${1:-}" == "problems" ]]; then Q="${Q:+${Q}&}level=warn"; shift; fi
@@ -753,7 +753,7 @@ logs|tail)
             { print; fflush() }')
     fi
     curl -sN --connect-timeout 5 "http://${PS5_HOST}:${PS5_LOG_PORT:-9780}/raw${Q:+?${Q}}" | "${FMT[@]}" \
-        || echo "(no log server on ${PS5_HOST}:${PS5_LOG_PORT:-9780} - EVO running?)"
+        || echo "(no log server on ${PS5_HOST}:${PS5_LOG_PORT:-9780} - NoStream running?)"
     ;;
 watch)
     SECS="${1:-180}"

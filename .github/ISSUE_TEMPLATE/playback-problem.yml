@@ -6,8 +6,8 @@ body:
   - type: markdown
     attributes:
       value: |
-        **Get EVO's report first.** Settings → System & Diagnostics → **Report a Problem**, or **Report the last run**
-        if EVO crashed or froze (start EVO again first). Scan the QR code on your phone, or press Cross to save the file
+        **Get NoStream's report first.** Settings → System & Diagnostics → **Report a Problem**, or **Report the last run**
+        if NoStream crashed or froze (start NoStream again first). Scan the QR code on your phone, or press Cross to save the file
         to your USB drive. Passwords, tokens and debrid keys in it are already masked.
 
         While the file plays, **Media Info** shows its container and codecs. A photo of that screen is enough.
@@ -25,7 +25,7 @@ body:
         - Colours or HDR / Dolby Vision look wrong
         - Subtitles missing, wrong or out of time
         - Seeking or resuming does not work
-        - EVO freezes or crashes
+        - NoStream freezes or crashes
         - Other (say below)
     validations:
       required: true
@@ -77,11 +77,11 @@ body:
     id: elsewhere
     attributes:
       label: Does it play elsewhere?
-      description: Does the same file play in another player (VLC, Kodi, a TV app)? Did it play in an earlier EVO version?
+      description: Does the same file play in another player (VLC, Kodi, a TV app)? Did it play in an earlier NoStream version?
   - type: input
     id: version
     attributes:
-      label: EVO version
+      label: NoStream version
       description: On the About screen, or in the first lines of the report.
       placeholder: "0.13.0"
     validations:
@@ -116,5 +116,5 @@ body:
       options:
         - label: I searched the open issues first.
           required: true
-        - label: I am on the latest EVO release, or I said above why not.
+        - label: I am on the latest NoStream release, or I said above why not.
           required: true

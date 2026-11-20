@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Hooks that enforce CLAUDE.md rules. Exit 2 = block (stderr goes to Claude).
 
-  guard-commands.py pre    PreToolUse  Bash       block make / deploy over a running EVO / unverified commit
+  guard-commands.py pre    PreToolUse  Bash       block make / deploy over a running NoStream / unverified commit
   guard-commands.py post   PostToolUse Bash       record launch/close, record a passing build or test
   guard-commands.py edit   PostToolUse Edit|Write source edit -> clears the "verified" mark
 
@@ -19,8 +19,8 @@ STATE = os.path.join(os.environ.get("TEMP", "/tmp"), "evo-hooks-state.json")
 CHECKS_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "tools", "checks"))
 SEGMENT_SPLIT = re.compile(r"&&|\|\||;|\||\n")
 MAKE = re.compile(r"^(?:docker\s+compose\s+run\s+(?:--?\S+\s+)*ps5-dev\s+)?make(?:\s|$)")
-REMOTE = re.compile(r"evo-remote\.sh\s+(launch|quit|close|cycle)\b")
-VERIFY = re.compile(r"package-app\.sh|build-evoplayer\.sh|run_tests\.sh")
+REMOTE = re.compile(r"nostream-remote\.sh\s+(launch|quit|close|cycle)\b")
+VERIFY = re.compile(r"package-app\.sh|build-nostream\.sh|run_tests\.sh")
 
 
 def load():
@@ -50,12 +50,12 @@ def pre(cmd):
         seg = seg.strip()
         if MAKE.match(seg):
             return block("Blocked: never call `make` directly (the Makefile lacks FFmpeg's transitive "
-                         "deps). Use scripts/package-app.sh, or scripts/build-evoplayer.sh for a compile check.")
+                         "deps). Use scripts/package-app.sh, or scripts/build-nostream.sh for a compile check.")
     if "deploy-app.sh" in cmd and "--force" not in cmd:
         if st.get("evo") == "launch":
-            return block("Blocked: EVO was launched and not closed since (last evo-remote action: launch). "
-                         "Never deploy over a running EVO: `evo-remote.sh quit`, wait for parked=1, then "
-                         "`evo-remote.sh close`. If EVO crashed (already closed), repeat with --force.")
+            return block("Blocked: NoStream was launched and not closed since (last nostream-remote action: launch). "
+                         "Never deploy over a running NoStream: `nostream-remote.sh quit`, wait for parked=1, then "
+                         "`nostream-remote.sh close`. If NoStream crashed (already closed), repeat with --force.")
     if re.search(r"\bgit\s+commit\b", cmd) and "# verified" not in cmd:
         if st.get("dirty"):
             checks = []
@@ -82,7 +82,7 @@ def post(cmd, resp):
     if m:
         st["evo"] = "launch" if m.group(1) in ("launch", "cycle") else m.group(1)
         if m.group(1) == "cycle":
-            st["evo"] = "close"  # cycle closes EVO itself when it finishes
+            st["evo"] = "close"  # cycle closes NoStream itself when it finishes
     if VERIFY.search(cmd):
         text = json.dumps(resp)[:200000].lower() if resp is not None else ""
         failed = bool(re.search(r"error:|\bfail(ed)?\b|\\u2717|exit code [1-9]|interrupted\": true", text))

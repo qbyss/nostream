@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # tools/dx.sh - run a command in a LONG-LIVED dev container (no per-call start-up lag).
 #
-#   ./tools/dx.sh ./tools/evo-remote.sh status
-#   ./tools/dx.sh bash -c './tools/evo-remote.sh key down; ./tools/evo-remote.sh ui --line'
+#   ./tools/dx.sh ./tools/nostream-remote.sh status
+#   ./tools/dx.sh bash -c './tools/nostream-remote.sh key down; ./tools/nostream-remote.sh ui --line'
 #   ./tools/dx.sh --stop        # remove the container (do this before `docker compose build`)
 #
 # Same image, mounts and PS5_HOST as `docker compose run --rm ps5-dev`, but the container

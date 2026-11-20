@@ -22,7 +22,7 @@
      If you couldn't test on a console, leave that box unchecked
      and say what still needs checking. Mark unrelated checks N/A. -->
 
-- [ ] Compiles: `./scripts/build-evoplayer.sh`
+- [ ] Compiles: `./scripts/build-nostream.sh`
 - [ ] Host tests pass: `./tests/run_tests.sh`
 - [ ] App module builds: `./scripts/package-app.sh --ffpfsc`
 - [ ] Tested on a PS5, with steps and results described above

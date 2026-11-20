@@ -18,7 +18,7 @@ the owner has tested and explicitly asks for a commit.
 ## Full console test cycle
 
 How to put a build on the console, run it, and close it again without panicking
-the machine. Every step that touches the console goes through `tools/evo-remote.sh`
+the machine. Every step that touches the console goes through `tools/nostream-remote.sh`
 or `scripts/deploy-app.sh`, which carry the safety rules below. The rules that
 must never be broken are listed in the root [CLAUDE.md](../../CLAUDE.md).
 
@@ -26,13 +26,13 @@ must never be broken are listed in the root [CLAUDE.md](../../CLAUDE.md).
 # build with the dev remote (always, for testing)
 docker compose run --rm ps5-dev ./scripts/package-app.sh --usb-remote
 # one step at a time; stop at the first anomaly; never auto-retry
-timeout 100 ./tools/evo-remote.sh quit      # soft close; waits for parked=1
-timeout 100 ./tools/evo-remote.sh close     # kills the (parked) app; waits for "released"
+timeout 100 ./tools/nostream-remote.sh quit      # soft close; waits for parked=1
+timeout 100 ./tools/nostream-remote.sh close     # kills the (parked) app; waits for "released"
 docker compose run --rm ps5-dev ./scripts/deploy-app.sh     # upload the app folder
-timeout 200 ./tools/evo-remote.sh launch    # waits for ShadowMount to go idle; once only
+timeout 200 ./tools/nostream-remote.sh launch    # waits for ShadowMount to go idle; once only
 ```
 
-The whole loop as one bounded, classified run: `evo-remote.sh cycle --secs 60`
+The whole loop as one bounded, classified run: `nostream-remote.sh cycle --secs 60`
 ([below](#cycle)). Driving the UI once it is up: [remote-control.md](remote-control.md).
 
 ## Why the order matters
@@ -40,47 +40,47 @@ The whole loop as one bounded, classified run: `evo-remote.sh cycle --secs 60`
 **The app slot stays resident.** Launching again does not replace the running
 instance; it adds one, each opening VideoOut, an audio port, the pad and decoder
 threads. Stacked launches kernel-panicked the console on 2026-08-09 (about 50
-minutes lost), and deploying a new image over a running EVO has done it too.
+minutes lost), and deploying a new image over a running NoStream has done it too.
 
-**Close the soft way first.** *QUIT EVO* (Settings → System & Diagnostics, or
-`evo-remote.sh quit`) stops media, drains the GPU (`agc_wait_gpu_idle`, bounded at
-500 ms), and parks the frame loop, after which `evo_status` carries `parked=1`.
+**Close the soft way first.** *QUIT NoStream* (Settings → System & Diagnostics, or
+`nostream-remote.sh quit`) stops media, drains the GPU (`agc_wait_gpu_idle`, bounded at
+500 ms), and parks the frame loop, after which `nostream_status` carries `parked=1`.
 `close` is then a kill, the same as a PS-button close, but of a quiescent GPU. The
-PS button on a live EVO skips the drain: the kernel reclaims the VideoOut
+PS button on a live NoStream skips the drain: the kernel reclaims the VideoOut
 registration and a 64 MB direct-memory mapping under a GPU that may still be
 executing a submitted command buffer, and that panicked the console on 2026-09-18.
 So:
 
-- `close` is refused unless `evo_status` says `parked=1` (`--force` only when there
+- `close` is refused unless `nostream_status` says `parked=1` (`--force` only when there
   is no heartbeat to read, and never while `t=` advances).
 - `launch` is refused while ShadowMount shows the title started and not released,
   or while the heartbeat moves.
 - Close NoStream before uploading its folder. The legacy image uploader also
   checks for a resident app ([../build/packaging.md](../build/packaging.md#deploy-appsh)).
-- A **crashed** EVO is already closed: no switcher close is needed before the next
-  deploy. A frozen `evo.log` proves nothing about exit (the idle heartbeat is about
+- A **crashed** NoStream is already closed: no switcher close is needed before the next
+  deploy. A frozen `nostream.log` proves nothing about exit (the idle heartbeat is about
   six minutes apart); never force past the interlock on that basis.
 
 **Legacy PFS deployment.** ShadowMount+ v1.7 test-mounts an updated image. It logs `unmount complete: source=/data/homebrew/PPSA99273.ffpfsc`, and
-unmounts it. Launch from the Media tab or with `evo-remote.sh launch`. Launching
+unmounts it. Launch from the Media tab or with `nostream-remote.sh launch`. Launching
 right after a deploy, while ShadowMount is still scanning, gives "Can't start game
 or app"; `launch` waits for its log to be quiet for 15 s for that reason.
 
-**ShadowMount's launch hook serves one launch.** After a deploy, and after EVO
+**ShadowMount's launch hook serves one launch.** After a deploy, and after NoStream
 has run and closed, the next launch answers `launchApp: LNC_ISOK::0x80940033` and
-ShadowMount logs no `[SHELLCORE]` line for EVO, though its scanner keeps logging
-(2026-11-05). A ShadowMount restart brings the hook back, so `evo-remote.sh launch`
+ShadowMount logs no `[SHELLCORE]` line for NoStream, though its scanner keeps logging
+(2026-11-05). A ShadowMount restart brings the hook back, so `nostream-remote.sh launch`
 does one before every launch (after its slot checks), then waits for the log to go
 quiet. `deploy-app.sh --ffpfsc` also does one after the image check, so a launch
-from the TV works too. Both use `evo-remote.sh smrestart`: it re-sends ShadowMount+
+from the TV works too. Both use `nostream-remote.sh smrestart`: it re-sends ShadowMount+
 v1.7beta4 (`output/shadowmountplusb4.elf`, sha256-pinned: other ShadowMount builds
 are different versions, so copy the b4 ELF there once) to elfldr `:9021` and waits
-for `[SHELLCORE] hooks installed: ... launch=1`. It is refused while EVO runs or is
+for `[SHELLCORE] hooks installed: ... launch=1`. It is refused while NoStream runs or is
 resident. `launch --no-sm-restart` and `deploy-app.sh --no-sm-restart` skip it. A
 `0x80940033` after the restart means something else: read ShadowMount's log first.
 
 **The truth about lifecycle is ShadowMount's `/data/shadowmount/debug.log`**, not an
-exit code. `tools/evo_lifecycle.py` reads it (and EVO's heartbeat) over FTP:
+exit code. `tools/nostream_lifecycle.py` reads it (and NoStream's heartbeat) over FTP:
 
 | Line | Means |
 |---|---|
@@ -90,7 +90,7 @@ exit code. `tools/evo_lifecycle.py` reads it (and EVO's heartbeat) over FTP:
 | `[GAME] started: PPSA99273` | launched |
 | `[LINK] runtime layers released: PPSA99273` | process gone, slot free |
 
-and, from `evo_status`: `t=` advancing means running; `parked=1` is written once,
+and, from `nostream_status`: `t=` advancing means running; `parked=1` is written once,
 as the soft close parks.
 
 ## The controllers
@@ -106,7 +106,7 @@ SceLncUtil chatter, not a failure; the old `0x80940005` came from hbldr. The
 never reaches `[GAME] started` quotes it in the error; for `0x80940033` (dead
 launch hook, [above](#why-the-order-matters)) it points at `smrestart`.
 
-A `timeout` or `curl` timeout (exit 124 / 28) on an `evo-remote.sh` call is a
+A `timeout` or `curl` timeout (exit 124 / 28) on an `nostream-remote.sh` call is a
 normal, successful outcome: the far end holds the socket open. Bound every
 console-facing call with one, because a resident payload never closes elfldr's
 socket and an unbounded call hangs.
@@ -114,8 +114,8 @@ socket and an unbounded call hangs.
 ## Cycle
 
 ```bash
-docker compose run --rm ps5-dev ./tools/evo-remote.sh cycle --secs 60
-docker compose run --rm ps5-dev ./tools/evo-remote.sh cycle --no-build --play /mnt/usb0/media/gta.mp4
+docker compose run --rm ps5-dev ./tools/nostream-remote.sh cycle --secs 60
+docker compose run --rm ps5-dev ./tools/nostream-remote.sh cycle --no-build --play /mnt/usb0/media/gta.mp4
 ```
 
 One case is one changed variable, one frozen candidate, one bounded console cycle
@@ -130,23 +130,23 @@ stopping at the first anomaly:
    `transport-failure`.
 5. **Observe**: start recording klog, launch the registered title, then run
    `--play` if requested, observe for `--secs`, and pull
-   `evo.log` and `evo_status`.
+   `nostream.log` and `nostream_status`.
 6. **Close**: `quit`, parked, `close`, released.
 7. **Classify** as exactly one of: `pass`; `partial-pass` (started but did not
    park); `failed` (never started, a crash in klog, `fatal=1`, no release);
    `inconclusive` (started, then the heartbeat vanished); `transport-failure`;
    `no-run`.
 
-Evidence goes to `output/cycles/<stamp>/` (`result.json`, `klog.log`, `evo.log`,
-`evo_status.txt`, the ShadowMount slice, `sha256.txt`, step logs) and one line is
+Evidence goes to `output/cycles/<stamp>/` (`result.json`, `klog.log`, `nostream.log`,
+`nostream_status.txt`, the ShadowMount slice, `sha256.txt`, step logs) and one line is
 appended to `output/cycles/ledger.txt`. Paste a proven milestone's ledger line into
 the issue; do not paste raw logs.
 
-`evo-remote.sh verify` is the same cycle ending in a feature check instead of a
+`nostream-remote.sh verify` is the same cycle ending in a feature check instead of a
 timed wait ([../build/validation.md](../build/validation.md#hardware-checks)).
 
 Protocol rules on top: run cycles one at a time (two runners fighting over
-`evo_cmd` once corrupted a whole run, and stopping a backgrounded `docker compose
+`nostream_cmd` once corrupted a whole run, and stopping a backgrounded `docker compose
 run` does not stop its container, so check `docker ps`); after any `failed`,
 `inconclusive` or `transport-failure`, look at the console before the next run;
 after a suspected kernel panic, analyse the evidence offline and do not rerun;
@@ -160,14 +160,14 @@ wrong ([networking.md](networking.md)).
 
 | Task | Needs |
 |---|---|
-| `deploy-app.sh`, `evo-remote.sh` (everything over FTP) | `ps5-payload-ftpsrv` on 2121 |
+| `deploy-app.sh`, `nostream-remote.sh` (everything over FTP) | `ps5-payload-ftpsrv` on 2121 |
 | mounting and launching the image | ShadowMountPlus |
 | `launch`, `close` | `ps5-payload-elfldr` on 9021 |
 | `klog.sh` | `ps5-payload-klogsrv` on 3232 |
 | `shot.sh` | `ps5-payload-websrv` on 8080 (the `/fs` route is read-only: delete over FTP) |
-| the dashboard, log stream, phone input | EVO itself, port 9780 by default (user-settable, dev tools accept `PS5_LOG_PORT`; [diagnostics.md](diagnostics.md)) |
+| the dashboard, log stream, phone input | NoStream itself, port 9780 by default (user-settable, dev tools accept `PS5_LOG_PORT`; [diagnostics.md](diagnostics.md)) |
 
 Do not kill `kstuff`, do not sweep kernel `.text`, and never call `sceVideoOutOpen`
 from a payload; each has panicked the console. Remote Play is an owner-initiated
 tool ([remote-play.md](remote-play.md)); do not start a stream the owner did not ask
-for, and close EVO before sending any payload.
+for, and close NoStream before sending any payload.

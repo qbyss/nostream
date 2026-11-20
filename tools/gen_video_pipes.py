@@ -449,7 +449,7 @@ float pq_oetf(float nits) {
 
 
 /*
- * HDR peak mapping (EVO "HDR peak" setting). BT.2390 EETF in the PQ domain on
+ * HDR peak mapping (NoStream "HDR peak" setting). BT.2390 EETF in the PQ domain on
  * max(R,G,B), applied as one gain to all three channels so hue and saturation
  * survive. `src` is the brightest the picture gets (Dolby Vision L1 max per
  * shot, else the HDR10 MaxCLL / mastering peak), `dst` the panel peak. Below
@@ -512,7 +512,7 @@ layout(set = 1, binding = 2, std140) uniform DoviParams {
 @YUV2020_10@
 """ + """
 /*
- * HDR peak mapping (EVO "HDR peak" setting). BT.2390 EETF in the PQ domain on
+ * HDR peak mapping (NoStream "HDR peak" setting). BT.2390 EETF in the PQ domain on
  * max(R,G,B), applied as one gain to all three channels so hue and saturation
  * survive. `src` is the brightest the picture gets (Dolby Vision L1 max per
  * shot, else the HDR10 MaxCLL / mastering peak), `dst` the panel peak. Below

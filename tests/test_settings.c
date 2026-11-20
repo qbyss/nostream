@@ -127,7 +127,7 @@ extern "C" void test_settings_save_load_roundtrip(void)
     TEST_ASSERT(svc1.getSubtitleBackground() == 0, "Initial SubtitleBackground default must be BOX");
     TEST_ASSERT(svc1.getSecondarySubtitleSize() == 1, "Initial SecondarySubtitleSize default must be MEDIUM");
     TEST_ASSERT(svc1.getSecondarySubtitleBackground() == 0, "Initial SecondarySubtitleBackground default must be BOX");
-    TEST_ASSERT(svc1.getThemeName() == "EVO Dark", "Initial ThemeName default mismatch");
+    TEST_ASSERT(svc1.getThemeName() == "NoStream Dark", "Initial ThemeName default mismatch");
     TEST_ASSERT(evo_log_server_saved_port() == EVO_LOG_SERVER_PORT, "Initial LogServerPort default mismatch");
 
     /* 2. Mutate every enum/int/bool setting and theme to a non-default value */

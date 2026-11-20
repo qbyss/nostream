@@ -6,10 +6,10 @@
  * Keeps code, immutable data, RELRO, and writable data in distinct address
  * ranges. The native converter replaces LLVM's generic dynamic metadata.
  *
- * EVO delta (Phase 1b task 4): PROVIDE the __eh_frame[_hdr]_{start,end} bounds
+ * NoStream delta (Phase 1b task 4): PROVIDE the __eh_frame[_hdr]_{start,end} bounds
  * symbols. libunwind.a references them; the SDK's default link script defines
  * them but a custom `-T` script must too. ProsperoLight never hit this because
- * its unwind usage doesn't pull the frame-registration path EVO's does.
+ * its unwind usage doesn't pull the frame-registration path NoStream's does.
  */
 
 OUTPUT_FORMAT("elf64-x86-64")

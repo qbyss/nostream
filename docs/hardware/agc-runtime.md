@@ -29,7 +29,7 @@ gone.
 
 | Subsystem | Path |
 |---|---|
-| Kit screens (everything EVO draws itself) | `ui_kit/src/hui_agc_batch.cpp`: the kit's draw lists through the SDF pipeline (`ui_sdf.pipe`) |
+| Kit screens (everything NoStream draws itself) | `ui_kit/src/hui_agc_batch.cpp`: the kit's draw lists through the SDF pipeline (`ui_sdf.pipe`) |
 | RmlUi screens (provider documents, fallbacks) | `EvoRenderInterfaceAGC` (`ui_rml/src/evo_rmlui_render_agc.cpp`) |
 | Video decode | `sceVideodec2` resident decoders (a dedicated block) |
 | Video present | YUV to RGB in AGC pixel shaders: NV12, planar, P010 SDR/PQ/HLG, Dolby Vision, and PQ-output twins for an HDR10 scanout |
@@ -78,7 +78,7 @@ Two pieces that were always required and simply missing:
 
 ## Verifying a build
 
-`evo.log` carries everything needed to separate a good run from a bad one:
+`nostream.log` carries everything needed to separate a good run from a bad one:
 
 ```
 agc pipe ui_screen_2d cx=53 sh=12 uc=3 modifier=0x5 gs_pgm=0286e120:00000000 ...

@@ -43,23 +43,23 @@ its real effect (#158). A row can be disabled by another setting, and then says 
 | | Controller lightbar | on, off (DualSense light follows the accent) |
 | | Folders first | on, off |
 | | Keyboard input | Native PS5 IME, Virtual keyboard |
-| | Phone & log port | digits 1024–65535 (default 9780; Triangle resets). EVO test-binds it, falls back to n+1..n+9 if busy, retries saved in background. Real port feeds log server and phone keyboard. |
+| | Phone & log port | digits 1024–65535 (default 9780; Triangle resets). NoStream test-binds it, falls back to n+1..n+9 if busy, retries saved in background. Real port feeds log server and phone keyboard. |
 | | Ask which live stream | on, off ([../providers/architecture.md](../providers/architecture.md#the-stream-picker)) |
-| **System & Diagnostics** | Report a problem | card: QR to the phone report page (`/report`); Cross saves `evo_report.txt` to USB0, or `/data/evoplayer` with no stick |
+| **System & Diagnostics** | Report a problem | card: QR to the phone report page (`/report`); Cross saves `evo_report.txt` to USB0, or `/data/nostream` with no stick |
 | | Report the last run | the run before this one (`evo.prev.log`): its detail says whether it crashed, closed, or ended without closing. QR to `/report?run=last`; Cross saves `evo_report_last_run.txt`. Home shows a toast once after a crash |
 | | Debug overlay | on, off (live performance numbers) |
 | | Developer tools | action: diagnostics and performance screen |
 | | Console | shows the detected model (PS5 Pro, PS5, or not detected) |
 | | Memory | shows Standard or Pro memory mode ([../hardware/memory-budget.md](../hardware/memory-budget.md)) |
 | | Software update | action: check, download, verify, install ([../build/release.md](../build/release.md#in-app-update)) |
-| | Quit EVO | action: releases everything; close from the switcher |
+| | Quit NoStream | action: releases everything; close from the switcher |
 | **Experimental** (unfinished, default off) | Motion smoothing | Off, Low, High ([../hardware/motion-smoothing.md](../hardware/motion-smoothing.md)) |
 | | Match video frame rate | off, on ([../hardware/refresh-rate-modes.md](../hardware/refresh-rate-modes.md)) |
 | | Deep blacks | Off, Low, High (pulls raised shadows to true black on OLED) |
 
 Defaults: the first listed choice, except Default font style (Rounded, the second), Subtitle size (Medium, the second) and Skip intros & credits (Ask, the second); Phone & log port defaults to 9780; toggles that default on are Resume playback, Auto subtitles, Navigation sounds, Controller lightbar, Folders first and Ask which live stream. Everything in Experimental, Upscaling, Audio passthrough and the Debug overlay defaults off. A fresh install uses the MIDNIGHT theme.
 
-The row titles above are what the dev remote addresses: `evo-remote.sh set audio-delay
+The row titles above are what the dev remote addresses: `nostream-remote.sh set audio-delay
 +100` uses the title lower-cased with dashes, `set --list` prints every name with its valid
 values, and `focus <row>` opens the row's section ([../console/remote-control.md](../console/remote-control.md)).
 
@@ -108,5 +108,5 @@ keyboard default was secretly the virtual keyboard are moved to the native IME o
 6. **Extend the round-trip test** in `tests/test_settings.c`: the new value survives
    save and load, and a file lacking the newest line still loads with the default
    ([../build/validation.md](../build/validation.md#unit-tests)).
-7. Add a hardware check in `tools/checks/` that sets the value with `evo-remote.sh set`,
+7. Add a hardware check in `tools/checks/` that sets the value with `nostream-remote.sh set`,
    exercises the feature and reads the evidence back.

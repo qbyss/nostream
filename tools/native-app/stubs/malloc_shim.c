@@ -1,9 +1,9 @@
 /*
- * EVO Player - Phase 1b task 4: malloc interposer for the app module.
+ * NoStream - Phase 1b task 4: malloc interposer for the app module.
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
  * The clean-room libc.prx installs its own bounded heap mspace (via
- * _sceKernelRtldSetApplicationHeapAPI). Once EVO's cumulative allocations
+ * _sceKernelRtldSetApplicationHeapAPI). Once NoStream's cumulative allocations
  * (FFmpeg contexts, RmlUi, fonts, ...) fill it, plain malloc() returns NULL
  * even with hundreds of MB of flexible memory free - verified on hardware
  * 2026-09-02: malloc(8 MB) fails in pp_videoout_init while mmap(8 MB) succeeds.

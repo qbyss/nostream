@@ -175,10 +175,10 @@ details in [psml-research.md](psml-research.md#experiment-log)):
   `sceKernelUsleep` returns `0x80020003`, so every dlsym miss is meaningless.
 - **Direct import is fatal.** Importing `sceKernelIsTrinityMode` (the query
   Sony's PSSR library uses) through a `libkernel.sprx` link stub makes the
-  loader reject EVO at launch, before any log is written. Don't retry it.
+  loader reject NoStream at launch, before any log is written. Don't retry it.
 - **Pro-mode `param.json` flags change nothing observable.** Declaring Pro
   mode (`attribute3 |= 0x400000` plus a `psml` block, as Pro-enhanced games
-  have) still launches, but EVO has no way to observe whether it took effect.
+  have) still launches, but NoStream has no way to observe whether it took effect.
   The build flag was removed with the experiment. (Bit 22 alone is different:
   it gives a Pro +1.19 GiB of direct memory via `package-app.sh --pro-memory`,
   see [memory-budget.md](memory-budget.md).)
@@ -193,26 +193,26 @@ Info renderer line and the stats overlay.
 
 ## PSML (Sony's upscaler)
 
-Researched in [psml-research.md](psml-research.md). EVO does **not** use PSML;
-its AI mode is Anime4K in EVO's own shaders. In short:
+Researched in [psml-research.md](psml-research.md). NoStream does **not** use PSML;
+its AI mode is Anime4K in NoStream's own shaders. In short:
 - **`scePsmlBcSisr*` (single-image SR).** Only in `/system/priv/lib` (not
   importable), built on the system shell's AGC.
 - **`scePsmlMfsr*` (PSSR).** Importable, but temporal: it needs game motion
   vectors.
-- **Both are gated on Trinity mode**, which EVO can neither detect nor, as
+- **Both are gated on Trinity mode**, which NoStream can neither detect nor, as
   far as it can observe, enable (above).
 
 ## Hardware checklist
 
 1. **Build and deploy.** `package-app.sh --usb-remote`, then
    `deploy-app.sh`.
-2. **Boot log.** `evo.log` must show:
+2. **Boot log.** `nostream.log` must show:
    - an `agc pipe upscale_* ...` line for all 58 upscale pipes, none
      `unavailable`
    - the `hw:` lines (see [PS5 Pro detection](#ps5-pro-detection))
-3. **Play and compare.** `evo-remote.sh play Demos/bbb_1080p_h264.mp4` on a
+3. **Play and compare.** `nostream-remote.sh play Demos/bbb_1080p_h264.mp4` on a
    4K panel, then a 720p clip. With the video playing, run
-   `./tools/evo-remote.sh upcompare`. EVO pauses and redraws the **same** frame
+   `./tools/nostream-remote.sh upcompare`. NoStream pauses and redraws the **same** frame
    with the upscaler Off, Sharp, AI Standard, Large and Maximum, with no OSD.
    The five scanouts land in
    `output/upcompare/{off,sharp,ai,ai_large,ai_max}.bmp`. From Git Bash, pass
@@ -233,4 +233,4 @@ its AI mode is Anime4K in EVO's own shaders. In short:
 7. **Bypass check.** Play a 4K source and an HDR source, and confirm
    `bypass ... reason=` in the log.
 8. **On a PS5 Pro.** Repeat with `hw: ps5 pro=1` and `net=anime4k-M` expected.
-9. **Quit.** Use QUIT EVO.
+9. **Quit.** Use QUIT NoStream.

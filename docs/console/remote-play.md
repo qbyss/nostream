@@ -1,8 +1,8 @@
 # PS Remote Play from the PC (chiaki-ng)
 
 **Works** (paired and streamed 2026-10-07 on FW 12.70, offline-activated account,
-no PSN). It reaches what `evo-remote.sh` cannot: the dev remote injects into EVO's
-own pad state and `key l3` captures only EVO's framebuffer, so neither shows nor
+no PSN). It reaches what `nostream-remote.sh` cannot: the dev remote injects into NoStream's
+own pad state and `key l3` captures only NoStream's framebuffer, so neither shows nor
 drives a **system dialog** (the native IME, the web browser dialog). A Remote Play
 session shows the real screen and sends real pad input.
 
@@ -13,8 +13,8 @@ and the account id on the TV. A real PSN id is only needed for Sony's official
 Remote Play app, not for chiaki-ng.
 
 This changes console state and reaches the screen. Do not start a stream, or any
-console action, the owner has not asked for, and close EVO first (`evo-remote.sh
-quit`, then `close`): never send a payload while EVO is submitting GPU work.
+console action, the owner has not asked for, and close NoStream first (`nostream-remote.sh
+quit`, then `close`): never send a payload while NoStream is submitting GPU work.
 
 ## PC side
 
@@ -48,12 +48,12 @@ quit`, then `close`): never send a payload while EVO is submitting GPU work.
   same bytes.
 - The console's address moves after a power cut; `ps5-remoteplay status` finds it.
 - Windows Firewall asks to allow chiaki-ng (UDP) the first time.
-- Open question: whether a ptrace-based payload on ShellUI can upset a running EVO.
-  Not tested; hence "close EVO first".
+- Open question: whether a ptrace-based payload on ShellUI can upset a running NoStream.
+  Not tested; hence "close NoStream first".
 
 ## To drive a system dialog
 
 Set Settings → Interface & Storage → `KEYBOARD INPUT` = `NATIVE PS5 IME`, open the
-dialog from EVO, and use the stream's keyboard. For tests that type text *without*
-Remote Play, choose `VIRTUAL KEYBOARD` instead and use `evo-remote.sh type`
+dialog from NoStream, and use the stream's keyboard. For tests that type text *without*
+Remote Play, choose `VIRTUAL KEYBOARD` instead and use `nostream-remote.sh type`
 ([remote-control.md](remote-control.md)).

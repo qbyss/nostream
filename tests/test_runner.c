@@ -1,5 +1,5 @@
 /*
- * tests/test_runner.c — Comprehensive Unit & Integration Test Suite for EVO Player
+ * tests/test_runner.c — Comprehensive Unit & Integration Test Suite for NoStream
  *
  * Runs natively on Linux / macOS / Docker / CI without requiring a PS5 console.
  */
@@ -734,7 +734,7 @@ int main(void)
     evo_data_path_rebind();
 
     printf("\n======================================================================\n");
-    printf("  EVO Player — Automated Test Suite & Coverage Verification\n");
+    printf("  NoStream — Automated Test Suite & Coverage Verification\n");
     printf("======================================================================\n\n");
     
     test_direct_mem_lifecycle();

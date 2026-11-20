@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Drive evo_rag_mcp.py over stdio the way Claude Code does, and check the replies.
+"""Drive nostream_rag_mcp.py over stdio the way Claude Code does, and check the replies.
 
   python tools/rag/test_mcp.py
 """
@@ -9,7 +9,7 @@ import sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-proc = subprocess.Popen([sys.executable, str(HERE / "evo_rag_mcp.py")],
+proc = subprocess.Popen([sys.executable, str(HERE / "nostream_rag_mcp.py")],
                         stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                         text=True, encoding="utf-8", cwd=HERE.parents[1])
 
@@ -30,17 +30,17 @@ def check(cond, what):
 
 r = rpc(1, "initialize", {"protocolVersion": "2025-06-18", "capabilities": {},
                           "clientInfo": {"name": "test", "version": "0"}})
-check(r["result"]["serverInfo"]["name"] == "evo-rag", "initialize")
+check(r["result"]["serverInfo"]["name"] == "nostream-rag", "initialize")
 proc.stdin.write(json.dumps({"jsonrpc": "2.0", "method": "notifications/initialized"}) + "\n")
 proc.stdin.flush()
 r = rpc(2, "tools/list")
-check({t["name"] for t in r["result"]["tools"]} == {"evo_search", "evo_rag_status"}, "tools/list")
-r = rpc(3, "tools/call", {"name": "evo_search",
+check({t["name"] for t in r["result"]["tools"]} == {"nostream_search", "nostream_rag_status"}, "tools/list")
+r = rpc(3, "tools/call", {"name": "nostream_search",
                           "arguments": {"query": "why must we never call sceVideoOutOpen", "k": 3}})
 text = r["result"]["content"][0]["text"]
-check(not r["result"].get("isError") and "1. " in text, "evo_search returns hits")
+check(not r["result"].get("isError") and "1. " in text, "nostream_search returns hits")
 print(text[:900])
-r = rpc(4, "tools/call", {"name": "evo_search",
+r = rpc(4, "tools/call", {"name": "nostream_search",
                           "arguments": {"query": "slot_renew_decoder", "source": "code", "k": 2}})
 check("evo_vdec_native.c" in r["result"]["content"][0]["text"], "exact name finds the code")
 r = rpc(5, "tools/call", {"name": "nope", "arguments": {}})

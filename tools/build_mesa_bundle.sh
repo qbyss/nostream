@@ -7,12 +7,12 @@
 # the broker client, and every symbol but these is made local:
 #   mesa_eglGetProcAddress  (Mesa's eglGetProcAddress, renamed: the fork's GL
 #                            stubs own the public egl*/gl* names)
-#   ps5_gpu_client_*        (bind the endpoint EVO sent)
+#   ps5_gpu_client_*        (bind the endpoint NoStream sent)
 # So nothing in it can clash with WebKit's own libraries. What stays undefined
 # is libc, libkernel and libc++, which the fork's link supplies.
 #
 #   MSYS_NO_PATHCONV=1 docker run --rm \
-#     -v "D:/Projects/EVO Player:/work" -v "D:/Projects/Prospero Browser:/pb" \
+#     -v "D:/Projects/NoStream:/work" -v "D:/Projects/Prospero Browser:/pb" \
 #     prospero-gpu-dev:llvm18 /work/tools/build_mesa_bundle.sh
 #
 # Licences: Mesa/RADV MIT, broker client LGPL-2.1+, libps5platform GPL-3.0+

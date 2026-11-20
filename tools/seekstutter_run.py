@@ -72,7 +72,7 @@ def main():
 
     st = status()
     if not st:
-        sys.exit("no evo_status — is EVO launched and built --usb-remote?")
+        sys.exit("no nostream_status — is NoStream launched and built --usb-remote?")
     print("build=%s\nclip=%s\n" % (st.get("build", "?"), clip), flush=True)
 
     put_cmd("play " + clip)
@@ -99,7 +99,7 @@ def main():
         time.sleep(gap)
 
     put_cmd("stop")
-    print("\nnow: tools/evo-remote.sh log && python3 tools/seekstutter_report.py")
+    print("\nnow: tools/nostream-remote.sh log && python3 tools/seekstutter_report.py")
 
 
 if __name__ == "__main__":
