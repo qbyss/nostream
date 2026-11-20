@@ -9,9 +9,9 @@ compiler cache volumes. Run `./scripts/package-app.sh` in that workspace and
 export `output/app/PPSA99273/`.
 
 From macOS, run `PS5_HOST=192.168.1.23 FTP_PORT=2121 ./scripts/deploy-app.sh`.
-The script uses `/usr/bin/python3` to upload and verify the files in
-`/data/homebrew/PPSA99273/`. It moves the previous PFS image aside after the
-folder is verified. The verified upload completes the handoff.
+The script uses `/usr/bin/python3` to upload files into
+`/data/homebrew/PPSA99273/` and moves any previous PFS image aside after the
+upload. This completes the handoff.
 The owner handles closing, launching, and testing the app. Commit only after
 the owner has tested and explicitly asks for a commit.
 
@@ -28,7 +28,7 @@ docker compose run --rm ps5-dev ./scripts/package-app.sh --usb-remote
 # one step at a time; stop at the first anomaly; never auto-retry
 timeout 100 ./tools/evo-remote.sh quit      # soft close; waits for parked=1
 timeout 100 ./tools/evo-remote.sh close     # kills the (parked) app; waits for "released"
-docker compose run --rm ps5-dev ./scripts/deploy-app.sh     # SHA-256 verified folder upload
+docker compose run --rm ps5-dev ./scripts/deploy-app.sh     # upload the app folder
 timeout 200 ./tools/evo-remote.sh launch    # waits for ShadowMount to go idle; once only
 ```
 
@@ -126,8 +126,8 @@ stopping at the first anomaly:
    flagged `+dirty`.
 2. **Free the slot**: if resident, `quit` then `close`; no heartbeat is `no-run`.
 3. **Package** with `--usb-remote` and record the SHA-256 of `eboot.bin`.
-4. **Deploy** the folder and verify each file by FTP readback before promotion.
-   A mismatch is a `transport-failure`.
+4. **Deploy** the folder. A failed FTP upload or rename is a
+   `transport-failure`.
 5. **Observe**: start recording klog, launch the registered title, then run
    `--play` if requested, observe for `--secs`, and pull
    `evo.log` and `evo_status`.

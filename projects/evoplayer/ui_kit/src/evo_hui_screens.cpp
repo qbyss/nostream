@@ -220,7 +220,8 @@ Palette Palette::from(const evo_rmlui_theme_t &t)
 
 /* ---------------------------------------------------------------- backdrop */
 
-void draw_backdrop(DrawList &list, const Context &ctx, std::uint32_t picture, float picture_alpha)
+void draw_backdrop(DrawList &list, const Context &ctx, std::uint32_t picture, float picture_alpha,
+                   std::uint32_t previous_picture, float picture_mix)
 {
     const Palette &p = ctx.palette;
     const Rect screen{0, 0, ::hui::gfx::kVirtualWidth, ::hui::gfx::kVirtualHeight};
@@ -228,12 +229,27 @@ void draw_backdrop(DrawList &list, const Context &ctx, std::uint32_t picture, fl
 
     /* The picture, washed in from the right: the left side stays dark for
      * the text that sits on it. */
-    if (picture && picture_alpha > 0.0f)
+    const float incoming = picture ? picture_mix : 0.0f;
+    const float outgoing = previous_picture ? 1.0f - picture_mix : 0.0f;
+    const float art_alpha = 0.55f * picture_alpha;
+    const float incoming_alpha = art_alpha * incoming;
+    if (outgoing > 0.0f && art_alpha > 0.0f)
     {
-        list.image(picture, screen, ::hui::gfx::kFullUv, kWhite.with_alpha(0.55f * picture_alpha));
-        list.gradient_rect_h(screen, 0, p.bg_bottom.with_alpha(0.97f), p.bg_bottom.with_alpha(0.35f));
+        /* Compensate for the incoming layer covering part of the outgoing
+         * picture so the total artwork opacity stays constant. */
+        const float alpha = art_alpha * outgoing / (1.0f - incoming_alpha);
+        list.image(previous_picture, screen, ::hui::gfx::kFullUv, kWhite.with_alpha(alpha));
+    }
+    if (incoming_alpha > 0.0f)
+        list.image(picture, screen, ::hui::gfx::kFullUv, kWhite.with_alpha(incoming_alpha));
+
+    const float coverage = incoming + outgoing;
+    if (coverage > 0.0f && art_alpha > 0.0f)
+    {
+        list.gradient_rect_h(screen, 0, p.bg_bottom.with_alpha(0.97f * coverage),
+                             p.bg_bottom.with_alpha(0.35f * coverage));
         list.gradient_rect({0, 540, screen.w, 540}, 0, p.bg_bottom.with_alpha(0.0f),
-                           p.bg_bottom.with_alpha(0.92f));
+                           p.bg_bottom.with_alpha(0.92f * coverage));
     }
 
     /* Aurora: three large soft lights that drift on slow, unrelated periods. */

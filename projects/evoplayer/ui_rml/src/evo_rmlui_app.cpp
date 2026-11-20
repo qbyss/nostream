@@ -1500,7 +1500,7 @@ void EvoRmlApp::UpdateBrowserState(const EvoBrowserState& state) {
                 icon->SetProperty("display", "none");
             } else {
                 art->SetProperty("display", "none");
-                icon->SetProperty("display", "inline-block");
+                icon->SetProperty("display", r.icon_path.empty() ? "none" : "inline-block");
                 if (!r.icon_path.empty()) icon->SetAttribute("src", r.icon_path);
                 bool isFolder = (r.icon_path.find("folder") != std::string::npos ||
                                  r.icon_path.find("usb") != std::string::npos);

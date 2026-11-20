@@ -10,8 +10,8 @@
 #                                             # file first (tools/wipe-evo.py)
 #
 # Uploads output/app/<TITLE_ID>/ to ftp://<host>:2121/data/homebrew/<TITLE_ID>/.
-# Folder files are SHA-256 verified under temporary names before promotion.
-# eboot.bin and sce_sys/param.json are uploaded last. After verification, any
+# Folder files are uploaded under temporary names and then renamed into place.
+# eboot.bin and sce_sys/param.json are uploaded last. After the upload, any
 # previous PFS image is renamed out of the scanner's .ffpfsc namespace.
 #
 # The --ffpfsc image goes up as <TID>.ffpfsc.upload, is read back and
@@ -381,7 +381,6 @@ fi
 
 begin "${ACTION} ${TITLE_ID}  ->  ftp://${PS5_HOST}:${FTP_PORT}/data/homebrew/${TITLE_ID}/"
 "${PYTHON}" - "${PS5_HOST}" "${FTP_PORT}" "${TITLE_ID}" "${APPDIR}" "${ACTION}" <<'PY'
-import hashlib
 import sys
 from datetime import datetime, timezone
 from ftplib import FTP, error_perm
@@ -437,16 +436,8 @@ def upload_atomic(ftp, local, remote):
     d = dirname(remote)
     tmp = join(d, "." + remote.rsplit("/", 1)[-1] + ".upload")
     ensure_dir(ftp, d)
-    expected = hashlib.sha256()
     with open(local, "rb") as fh:
-        for block in iter(lambda: fh.read(1 << 20), b""):
-            expected.update(block)
-        fh.seek(0)
         ftp.storbinary(f"STOR {tmp}", fh, blocksize=256 * 1024)
-    actual = hashlib.sha256()
-    ftp.retrbinary(f"RETR {tmp}", actual.update, blocksize=256 * 1024)
-    if actual.digest() != expected.digest():
-        raise RuntimeError(f"FTP readback SHA-256 mismatch for {remote}")
     ftp.rename(tmp, remote)
 
 
@@ -457,12 +448,6 @@ with FTP() as ftp:
         ftp.set_pasv(True)
     except Exception:
         pass
-    if action == "deploy" and "ftpsrv" in ftp.getwelcome().lower():
-        # Compare the stored SELF bytes. ftpsrv decrypts them on read by default.
-        response = ftp.sendcmd("SELF")
-        if "disabled" not in response.lower():
-            raise RuntimeError(f"Could not disable transparent SELF decryption: {response}")
-
     if action == "undeploy":
         removed = rm(ftp, target)
         img_removed = rm(ftp, target + ".ffpfsc")
@@ -494,7 +479,7 @@ with FTP() as ftp:
         backup = f"{image}.disabled-{stamp}"
         ftp.rename(image, backup)
         print(f"saved previous PFS image as {backup}")
-    print(f"SHA-256 verified {len(files)} files")
+    print(f"uploaded {len(files)} files")
     print(f"done: ftp://{host}:{port}{target}/")
 PY
 

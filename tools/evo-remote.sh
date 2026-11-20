@@ -478,7 +478,7 @@ PY
     echo "${sha}  ${TITLE_ID}/eboot.bin" > "${dir}/sha256.txt"
     stage="packaged"
 
-    # 4. deploy the verified folder. An existing title may already be registered.
+    # 4. deploy the app folder. An existing title may already be registered.
     base="$(lc smlen)" || { finish transport-failure "ShadowMount log unreadable"; }
     "${SCRIPTS_DIR}/deploy-app.sh" > "${dir}/deploy.log" 2>&1 \
         || finish transport-failure "deploy failed - do NOT retry; see deploy.log"

@@ -43,6 +43,7 @@ constexpr float kRowPitch = kCardH + 76.0f; /* card + its caption */
 constexpr float kChipsY = 162.0f; /* on the path line, right-aligned under the count */
 constexpr float kMenuW = 660.0f;
 constexpr float kActionH = 58.0f;
+constexpr float kBackdropFadeSeconds = 0.24f;
 
 std::string fit(const ui::FontRef &font, const std::string &text, float size, float width)
 {
@@ -103,6 +104,9 @@ void BrowserScreen::set(const evo_rmlui_browser_params_t &p)
 void BrowserScreen::enter()
 {
     age_ = 0.0f;
+    backdrop_initialized_ = false;
+    backdrop_from_ = backdrop_to_ = 0;
+    backdrop_mix_ = 1.0f;
 }
 
 Rect BrowserScreen::card_rect(int i) const
@@ -145,6 +149,7 @@ Rect BrowserScreen::action_rect(int i) const
 void BrowserScreen::update(float dt)
 {
     age_ += dt;
+    backdrop_mix_ = std::min(1.0f, backdrop_mix_ + dt / kBackdropFadeSeconds);
 
     ring_ = {};
     if (!raw_.sidebar_focused && !raw_.filter_focused && !raw_.rail_focused)
@@ -170,7 +175,7 @@ void BrowserScreen::update(float dt)
     transfer_bar_.update(dt, 10.0f);
 }
 
-void BrowserScreen::draw(DrawList &list, const Context &ctx) const
+void BrowserScreen::draw(DrawList &list, const Context &ctx)
 {
     const ui::Fonts &fonts = ctx.fonts;
     const Palette &p = ctx.palette;
@@ -179,14 +184,29 @@ void BrowserScreen::draw(DrawList &list, const Context &ctx) const
     std::uint32_t wash = 0;
     for (const Card &c : cards_)
         if (c.focused && c.art)
+        {
             wash = ctx.textures.pixels(c.art, c.art_w, c.art_h);
-    draw_backdrop(list, ctx, wash, 0.6f);
+            break;
+        }
+    if (!backdrop_initialized_)
+    {
+        backdrop_to_ = wash;
+        backdrop_initialized_ = true;
+    }
+    else if (backdrop_mix_ >= 1.0f && wash != backdrop_to_)
+    {
+        /* Finish the current blend, then use the latest selection. The
+         * texture cache keeps both handles alive for these short fades. */
+        backdrop_from_ = backdrop_to_;
+        backdrop_to_ = wash;
+        backdrop_mix_ = 0.0f;
+    }
+    draw_backdrop(list, ctx, backdrop_to_, 0.6f, backdrop_from_, tween::smoothstep(backdrop_mix_));
 
     /* Chip widths are measured here (fonts arrive with the draw). */
-    auto &widths = const_cast<std::vector<float> &>(chip_w_);
-    widths.clear();
+    chip_w_.clear();
     for (const std::string &c : chips_)
-        widths.push_back(fonts.semibold.measure(c, 18) + 40.0f);
+        chip_w_.push_back(fonts.semibold.measure(c, 18) + 40.0f);
 
     /* ---- header ---- */
     {
@@ -313,7 +333,7 @@ void BrowserScreen::draw(DrawList &list, const Context &ctx) const
             if (c.focused)
                 r = {r.x - 8, r.y - 8, r.w + 16, r.h + 16};
             list.shadow({r.x, r.y + 5, r.w, r.h}, page::kRadiusTile, 11, Color::rgb(0x000000, 0.25f));
-            const std::uint32_t tex = ctx.textures.pixels(c.art, c.art_w, c.art_h);
+            const std::uint32_t tex = c.focused ? wash : ctx.textures.pixels(c.art, c.art_w, c.art_h);
             if (tex)
             {
                 list.image(tex, r, ::hui::gfx::kFullUv, kWhite.with_alpha(c.focused ? 1.0f : 0.85f), page::kRadiusTile);

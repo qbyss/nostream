@@ -139,7 +139,8 @@ class NavRail
 /* Shared backdrop: the theme's gradient, slow aurora glows and an optional
  * picture washed in behind them. */
 void draw_backdrop(hui::gfx::DrawList &list, const Context &ctx, std::uint32_t picture = 0,
-                   float picture_alpha = 0.0f);
+                   float picture_alpha = 0.0f, std::uint32_t previous_picture = 0,
+                   float picture_mix = 1.0f);
 
 /* What every full-screen page shares, so they all read the same: the title,
  * the line under it, the count at the top right, the hint row and the corner

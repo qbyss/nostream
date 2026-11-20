@@ -96,7 +96,7 @@ Each issue body also has a "References & sequencing" block.
 ```bash
 # build + deploy (always --usb-remote for testing: enables evo-remote)
 docker compose run --rm ps5-dev ./scripts/package-app.sh --usb-remote
-docker compose run --rm ps5-dev ./scripts/deploy-app.sh   # SHA-256 verified
+docker compose run --rm ps5-dev ./scripts/deploy-app.sh   # upload the app folder
 
 # fast path: reuse one container (~0.7 s per call instead of several s). Prefix any
 # container command with ./tools/dx.sh; ./tools/dx.sh --stop before `docker compose build`

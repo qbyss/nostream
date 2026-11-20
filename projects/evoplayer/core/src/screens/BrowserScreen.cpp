@@ -1049,8 +1049,6 @@ void BrowserScreen::rebuildItems() {
                 item.iconPath = "../icons/icon_folder.png";
                 item.detail = "Folder";
             } else {
-                item.iconPath = "../icons/icon_resume.png";
-
                 struct stat st;
                 if (!item.fullPath.empty() && stat(item.fullPath.c_str(), &st) == 0) {
                     double sz = static_cast<double>(st.st_size);
@@ -1162,7 +1160,6 @@ void BrowserScreen::rebuildItems() {
                         item.iconPath = "../icons/icon_folder.png";
                         item.detail = "Folder";
                     } else {
-                        item.iconPath = "../icons/icon_resume.png";
                         item.detail = "Network Media";
                     }
                     m_items.push_back(std::move(item));
@@ -1246,8 +1243,6 @@ void BrowserScreen::rebuildItems() {
                 item.progress = static_cast<int>((rec.last_pos / rec.duration) * 100.0);
                 if (item.progress > 100) item.progress = 100;
             }
-
-            item.iconPath = "../icons/icon_resume.png";
 
             struct stat st;
             if (stat(rec.path, &st) == 0) {

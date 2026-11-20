@@ -10,7 +10,7 @@ repo does not have ([../proprietary.md](../proprietary.md)).
 
 ```bash
 docker compose run --rm ps5-dev ./scripts/package-app.sh --usb-remote
-docker compose run --rm ps5-dev ./scripts/deploy-app.sh    # SHA-256 verified folder upload
+docker compose run --rm ps5-dev ./scripts/deploy-app.sh    # upload the app folder
 ./tools/evo-remote.sh launch      # launch the registered app folder
 ```
 
@@ -63,13 +63,13 @@ same folder before suspecting code.
 ## `deploy-app.sh`
 
 ```bash
-PS5_HOST=<ip> ./scripts/deploy-app.sh    # upload and verify the app folder
+PS5_HOST=<ip> ./scripts/deploy-app.sh    # upload the app folder
 ./scripts/deploy-app.sh --undeploy       # remove the staged title and active PFS image
 ```
 
-- The folder uploader verifies each temporary file by SHA-256 before promoting
-  it. It sends `eboot.bin` and `sce_sys/param.json` last and moves an existing
-  PFS image to a timestamped backup after the folder is verified.
+- The folder uploader sends each file to a temporary name and renames it after
+  FTP reports success. It sends `eboot.bin` and `sce_sys/param.json` last and
+  moves an existing PFS image to a timestamped backup after the upload.
 - On macOS, folder upload uses `/usr/bin/python3` directly. The owner closes
   NoStream before updating it and launches it after the upload.
 - The legacy `--ffpfsc` uploader clears the console logs before transfer.

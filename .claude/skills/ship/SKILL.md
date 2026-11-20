@@ -30,7 +30,7 @@ grep -n "error:" output/pkg.log; tail -3 output/pkg.log
 # cycle (one step at a time, stop at the first anomaly, never auto-retry)
 timeout 100 ./tools/evo-remote.sh quit     # expect "ok parked"
 timeout 100 ./tools/evo-remote.sh close    # expect "ok closed"
-docker compose run --rm ps5-dev ./scripts/deploy-app.sh   # SHA-256 verified
+docker compose run --rm ps5-dev ./scripts/deploy-app.sh   # upload the app folder
 timeout 200 ./tools/evo-remote.sh launch   # waits for ShadowMount idle
 ```
 

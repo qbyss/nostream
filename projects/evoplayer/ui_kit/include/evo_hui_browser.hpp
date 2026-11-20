@@ -19,7 +19,7 @@ class BrowserScreen
     void set(const evo_rmlui_browser_params_t &params);
     void enter();
     void update(float dt);
-    void draw(hui::gfx::DrawList &list, const Context &ctx) const;
+    void draw(hui::gfx::DrawList &list, const Context &ctx);
     bool focus(FocusInfo *out) const;
 
   private:
@@ -52,6 +52,10 @@ class BrowserScreen
     double tr_progress_ = 0.0;
 
     float age_ = 0.0f;
+    bool backdrop_initialized_ = false;
+    std::uint32_t backdrop_from_ = 0;
+    std::uint32_t backdrop_to_ = 0;
+    float backdrop_mix_ = 1.0f;
     hui::gfx::Rect ring_{};
     hui::tween::Spring menu_;
     hui::gfx::Rect action_ring_{};
