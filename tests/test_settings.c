@@ -100,7 +100,7 @@ extern "C" void test_settings_save_load_roundtrip(void)
     TEST_ASSERT(svc1.isAutoSubtitlesEnabled() == true, "Initial AutoSubtitlesEnabled default mismatch");
     TEST_ASSERT(svc1.isDebugOverlayEnabled() == false, "Initial DebugOverlayEnabled default mismatch");
     TEST_ASSERT(svc1.isSortFoldersFirst() == true, "Initial SortFoldersFirst default mismatch");
-    TEST_ASSERT(svc1.isSoundFeedbackEnabled() == true, "Initial SoundFeedbackEnabled default mismatch");
+    TEST_ASSERT(svc1.isSoundFeedbackEnabled() == false, "Initial SoundFeedbackEnabled default mismatch");
     TEST_ASSERT(svc1.isLightbarFeedbackEnabled() == true, "Initial LightbarFeedbackEnabled default mismatch");
     TEST_ASSERT(svc1.getSubtitleFontFace() == 0, "Initial SubtitleFontFace default mismatch");
     TEST_ASSERT(svc1.getKeyboardType() == 1, "Initial KeyboardType default mismatch");
@@ -136,7 +136,7 @@ extern "C" void test_settings_save_load_roundtrip(void)
     svc1.setAutoSubtitlesEnabled(false);
     svc1.setDebugOverlayEnabled(true);
     svc1.setSortFoldersFirst(false);
-    svc1.setSoundFeedbackEnabled(false);
+    svc1.setSoundFeedbackEnabled(true);
     svc1.setLightbarFeedbackEnabled(false);
     svc1.setSubtitleFontFace(2);
     svc1.setKeyboardType(0);
@@ -191,7 +191,7 @@ extern "C" void test_settings_save_load_roundtrip(void)
     TEST_ASSERT(svc2.isAutoSubtitlesEnabled() == false, "AutoSubtitlesEnabled round-trip mismatch");
     TEST_ASSERT(svc2.isDebugOverlayEnabled() == true, "DebugOverlayEnabled round-trip mismatch");
     TEST_ASSERT(svc2.isSortFoldersFirst() == false, "SortFoldersFirst round-trip mismatch");
-    TEST_ASSERT(svc2.isSoundFeedbackEnabled() == false, "SoundFeedbackEnabled round-trip mismatch");
+    TEST_ASSERT(svc2.isSoundFeedbackEnabled() == true, "SoundFeedbackEnabled round-trip mismatch");
     TEST_ASSERT(svc2.isLightbarFeedbackEnabled() == false, "LightbarFeedbackEnabled round-trip mismatch");
     TEST_ASSERT(svc2.getSubtitleFontFace() == 2, "SubtitleFontFace round-trip mismatch");
     TEST_ASSERT(svc2.getKeyboardType() == 0, "KeyboardType round-trip mismatch");
