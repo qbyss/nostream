@@ -54,7 +54,12 @@ static const evo_changelog_item EVO_CL_020[] = {
     { EVO_CL_IMPROVED, "TRANSFER PROGRESS AND CIRCLE TO CANCEL" }
 };
 
+static const evo_changelog_item EVO_CL_030[] = {
+    { EVO_CL_IMPROVED, "CONFIRMATION BUTTONS HAVE A THIN OUTLINE AT THE BUTTON EDGE" }
+};
+
 static const evo_changelog_release EVO_CHANGELOG_RELEASES[] = {
+    { "0.3.0", "REFINED CONFIRMATION BUTTONS", "NOVEMBER 2026", EVO_CL_030, sizeof(EVO_CL_030)/sizeof(EVO_CL_030[0]) },
     { "0.2.0", "COPY VIDEOS TO INTERNAL STORAGE", "NOVEMBER 2026", EVO_CL_020, sizeof(EVO_CL_020)/sizeof(EVO_CL_020[0]) },
     { "0.1.0", "THE FIRST NOSTREAM RELEASE", "NOVEMBER 2026", EVO_CL_010, sizeof(EVO_CL_010)/sizeof(EVO_CL_010[0]) },
 };

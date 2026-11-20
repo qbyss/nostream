@@ -3076,14 +3076,8 @@ void EvoRmlApp::UpdateDialogState(const EvoDialogState& state) {
                     el_btn->SetProperty("border-color", to_hex_rgba(m_theme.border));
                     el_btn->SetProperty("color", "#e2e8f0");
                 }
-                // #65: D-pad focus ring — a bright accent border over whatever
-                // the primary/secondary style set.
-                if (focused) {
-                    el_btn->SetProperty("border-color", to_hex_rgb(m_theme.accent));
-                    el_btn->SetProperty("border-width", "3px");
-                } else {
-                    el_btn->SetProperty("border-width", "2px");
-                }
+                if (focused) el_btn->SetProperty("border-color", "#ffffffd9");
+                el_btn->SetProperty("border-width", "2px");
 
                 if (el_icon) el_icon->SetAttribute("src", state.actions[i].icon_path);
                 if (el_lbl) el_lbl->SetInnerRML(state.actions[i].label);

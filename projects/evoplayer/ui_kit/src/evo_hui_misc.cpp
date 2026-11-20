@@ -174,7 +174,10 @@ void DialogOverlay::draw(DrawList &list, const Context &ctx) const
         theme.on_primary = ui::Painter::on(p.accent);
         theme.secondary = kWhite.with_alpha(0.1f);
         theme.on_secondary = kWhite;
-        theme.radius = 100.0f;
+        theme.radius = 12.0f;
+        theme.focus_gap = 0.0f;
+        theme.focus_width = 2.0f;
+        theme.focus = kWhite.with_alpha(0.85f);
         ui::Painter paint(list, fonts, theme);
         float aw = (w - 80 - (actions_.size() - 1) * 20.0f) / actions_.size();
         for (std::size_t i = 0; i < actions_.size(); ++i)

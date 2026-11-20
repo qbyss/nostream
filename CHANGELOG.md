@@ -5,6 +5,10 @@ into the GitHub release notes, so keep the headings in the form `## 0.1.0`.
 
 ---
 
+## 0.3.0
+
+- Confirmation buttons have less rounded corners and a thin focus outline that follows the button edge.
+
 ## 0.2.0
 
 - **Internal Storage** opens NoStream’s videos folder at `/data/homebrew/PPSA99273/videos/`.

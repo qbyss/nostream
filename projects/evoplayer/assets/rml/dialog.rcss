@@ -101,7 +101,7 @@ div, span, p {
 
 .action-btn {
     padding: 12dp 28dp;
-    border-radius: 24dp;
+    border-radius: 12dp;
     display: flex;
     flex-direction: row;
     align-items: center;

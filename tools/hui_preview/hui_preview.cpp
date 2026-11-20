@@ -238,7 +238,7 @@ int main(int argc, char **argv)
 
     evo_rmlui_launch_params_t launch{};
     launch.app_name = "NOSTREAM";
-    launch.version = "VERSION 0.2.0";
+    launch.version = "VERSION 0.3.0";
     launch.clock = "21:47";
     launch.theme_name = "MIDNIGHT";
     launch.hero_eyebrow = "CONTINUE WATCHING";
