@@ -25,7 +25,7 @@
 #include <string.h>
 
 #ifndef EVO_PLAYER_VERSION
-#define EVO_PLAYER_VERSION "v0.13.7"
+#define EVO_PLAYER_VERSION "v0.1.0"
 #endif
 
 #define AVIO_TIMEOUT_S   15
@@ -151,7 +151,7 @@ int evo_avio_stream(const char *url, int (*sink)(const char *, size_t, void *),
     av_dict_set(&opts, "method", "GET", 0);
     av_dict_set(&opts, "reconnect", "0", 0);
     /* evo_net's own User-Agent: panels refuse FFmpeg's default "Lavf" one (HTTP 4xx). */
-    av_dict_set(&opts, "user_agent", "EVOPlayer-PS5/" EVO_PLAYER_VERSION, 0);
+    av_dict_set(&opts, "user_agent", "NoStream-PS5/" EVO_PLAYER_VERSION, 0);
 
     AVIOContext *io = NULL;
     const int rc = avio_open2(&io, url, AVIO_FLAG_READ, NULL, &opts);

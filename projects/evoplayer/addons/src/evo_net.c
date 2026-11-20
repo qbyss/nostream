@@ -9,7 +9,7 @@
  * passes -DEVO_PLAYER_VERSION from projects/evoplayer/VERSION; this is the
  * fallback for builds that do not. */
 #ifndef EVO_PLAYER_VERSION
-#define EVO_PLAYER_VERSION "v0.13.7"
+#define EVO_PLAYER_VERSION "v0.1.0"
 #endif
 
 #include <stdio.h>
@@ -1058,7 +1058,7 @@ static int execute_http(const char *method,
         if (dynbuf_append_fmt(&req_buf,
                               "%s %s HTTP/1.1\r\n"
                               "%s"
-                              "User-Agent: EVOPlayer-PS5/" EVO_PLAYER_VERSION "\r\n"
+                              "User-Agent: NoStream-PS5/" EVO_PLAYER_VERSION "\r\n"
                               "Accept: */*\r\n"
                               "Connection: close\r\n",
                               current_method, path, host_hdr) != 0) {

@@ -1,5 +1,5 @@
 /*
- * hui_preview.cpp - renders EVO's ps5-homebrew-ui screens on the host.
+ * hui_preview.cpp - renders NoStream's ps5-homebrew-ui screens on the host.
  *
  * usage: hui_preview <repo root> <output dir> [width height]
  *
@@ -101,7 +101,7 @@ class HostTextures final : public evo::kit::TextureHost
 };
 
 /* A stand-in for a decoded cover: a two-colour gradient with a soft disc,
- * as 0xAABBGGRR words like EVO's cover cache hands out. */
+ * as 0xAABBGGRR words like NoStream's cover cache hands out. */
 std::vector<std::uint32_t> fake_art(int w, int h, std::uint32_t a, std::uint32_t b, float seed)
 {
     std::vector<std::uint32_t> px(static_cast<std::size_t>(w * h));
@@ -237,8 +237,8 @@ int main(int argc, char **argv)
     const int recent_progress[] = {620, 140, 900, -1, 330, 760};
 
     evo_rmlui_launch_params_t launch{};
-    launch.app_name = "EVO PLAYER";
-    launch.version = "VERSION 0.13.7";
+    launch.app_name = "NOSTREAM";
+    launch.version = "VERSION 0.1.0";
     launch.clock = "21:47";
     launch.theme_name = "MIDNIGHT";
     launch.hero_eyebrow = "CONTINUE WATCHING";

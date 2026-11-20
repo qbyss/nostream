@@ -22,7 +22,7 @@
 #include <cstring>
 
 #ifndef EVO_PLAYER_VERSION
-#define EVO_PLAYER_VERSION "v0.13.7"
+#define EVO_PLAYER_VERSION "v0.1.0"
 #endif
 
 namespace evo {
@@ -1372,7 +1372,7 @@ bool runAction(const SettingDef& def) {
         char path[160];
         if (evo_report_save_run(path, sizeof path, 1)) {
             toast("LAST RUN SAVED", std::strncmp(path, "/mnt/usb0/", 10) == 0
-                                        ? "evo_report_last_run.txt on the USB stick" : path);
+                                        ? "nostream_report_last_run.txt on the USB stick" : path);
             evo_feedback(EVO_FB_CONFIRM);
         } else {
             toast("REPORT", "Could not save. Use the phone link instead");
