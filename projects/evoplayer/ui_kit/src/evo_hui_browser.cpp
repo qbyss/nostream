@@ -171,8 +171,6 @@ void BrowserScreen::update(float dt)
     }
     transfer_.target = raw_.transfer_modal_open ? 1.0f : 0.0f;
     transfer_.update(dt, 16.0f);
-    transfer_bar_.target = static_cast<float>(std::clamp(tr_progress_, 0.0, 1.0));
-    transfer_bar_.update(dt, 10.0f);
 }
 
 void BrowserScreen::draw(DrawList &list, const Context &ctx)
@@ -497,12 +495,19 @@ void BrowserScreen::draw(DrawList &list, const Context &ctx)
                  kWhite);
         const Rect bar{card.x + 40, card.y + 150, card.w - 80, 12};
         list.rounded_rect(bar, 6, kWhite.with_alpha(0.12f));
-        list.rounded_rect({bar.x, bar.y, std::max(12.0f, bar.w * transfer_bar_.value), bar.h}, 6, p.accent);
+        const float fillWidth = bar.w * static_cast<float>(std::clamp(tr_progress_, 0.0, 100.0) / 100.0);
+        if (fillWidth > 0.0f)
+            list.rounded_rect({bar.x, bar.y, fillWidth, bar.h}, std::min(6.0f, fillWidth * 0.5f), p.accent);
         ui::text(list, fonts.display, tr_pct_, card.x + 40, card.y + 222, 40, kWhite);
         ui::text(list, fonts.regular, tr_speed_, card.x + card.w - 40, card.y + 204, 20, p.text_muted, Align::right);
         ui::text(list, fonts.regular, tr_bytes_ + "   " + tr_eta_, card.x + card.w - 40, card.y + 232, 18,
                  p.text_faint, Align::right);
-        ui::text(list, fonts.regular, "Circle to cancel", card.x + 40, card.y + 300, 18, p.text_faint);
+        const ui::Hint cancel{ui::Button::circle, "Cancel"};
+        ui::HintLayout layout;
+        layout.size = 30;
+        layout.text_size = 20;
+        layout.cy = card.y + 294;
+        ui::draw_hints(list, fonts, ui::GlyphStyle::dark(), &cancel, 1, card.x + card.w - 40, true, layout);
         list.pop_opacity();
     }
 }

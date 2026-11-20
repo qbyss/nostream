@@ -22,7 +22,7 @@
 #include <unistd.h>
 
 #ifndef EVO_PLAYER_VERSION
-#define EVO_PLAYER_VERSION "v0.1.0"
+#define EVO_PLAYER_VERSION "v0.2.0"
 #endif
 
 #define UPD_RELEASE_API  "https://api.github.com/repos/qbyss/nostream/releases/latest"

@@ -515,7 +515,7 @@
             <div id="transfer-footer">
                 <div class="footer-hint">
                     <div class="glyph-badge"><img src="../icons/btn_circle.png" class="glyph-badge-img"/></div>
-                    <span class="footer-text">CANCEL OPERATION</span>
+                    <span class="footer-text">Cancel</span>
                 </div>
             </div>
         </div>

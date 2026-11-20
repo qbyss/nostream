@@ -1,4 +1,5 @@
 #include "evo/services/HiddenStorage.hpp"
+#include "evo/services/InternalStorage.hpp"
 #include "evo_readdir.h"
 #include "evo/screens/BrowserScreen.hpp"
 #include "evo_jailbreak.h"
@@ -496,6 +497,10 @@ void BrowserScreen::handleActionRename(const std::string& newName) {
         return;
     }
     if (trimmed.empty() || trimmed == m_actionTargetName) return;
+    if (trimmed == "." || trimmed == ".." || trimmed.find('/') != std::string::npos) {
+        toast("ERROR", "Enter a folder name without slashes");
+        return;
+    }
 
     auto transferService = Application::getInstance().getFileTransferService();
     if (transferService && !m_actionTargetPath.empty()) {
@@ -525,6 +530,10 @@ void BrowserScreen::handleActionNewFolder(const std::string& folderName) {
         return;
     }
     if (trimmed.empty()) return;
+    if (trimmed == "." || trimmed == ".." || trimmed.find('/') != std::string::npos) {
+        toast("ERROR", "Enter a folder name without slashes");
+        return;
+    }
 
     auto browser = Application::getInstance().getFileSystemBrowser();
     std::string currentPath = browser ? browser->getCurrentPath() : "";
@@ -616,6 +625,7 @@ void BrowserScreen::openActionMenu() {
     m_actionTargetPath.clear();
     bool canFavorite = false;
     bool isDriveRoot = false;
+    bool canCopyToInternal = false;
 
     if (m_focusPane == BrowserFocusPane::Grid && m_selectedIndex >= 0 && m_selectedIndex < static_cast<int>(m_items.size())) {
         const auto& item = m_items[m_selectedIndex];
@@ -626,9 +636,11 @@ void BrowserScreen::openActionMenu() {
         m_actionTargetSub = isFolder ? "Directory" : item.detail;
         m_actionFileOps = m_actionFileOps && !evo_ntfs_is_url(item.fullPath.c_str());
         char root[EVO_USB_VOLUME_ROOT_CAP];
-        const bool onUsbDrive = isFolder && evo_usb_volume_root(item.fullPath.c_str(), root);
-        isDriveRoot = item.fullPath == "/data" || item.fullPath == "/data/" ||
+        const bool onUsbDrive = evo_usb_volume_root(item.fullPath.c_str(), root);
+        isDriveRoot = item.fullPath == kInternalStorageRoot ||
             (onUsbDrive && (item.fullPath == root || item.fullPath == std::string(root) + "/"));
+        canCopyToInternal = m_activeSource == 0 && onUsbDrive && !isDriveRoot &&
+            (isFolder || item.category == FileCategory::Video);
         canFavorite = isFolder && (item.favoriteIndex >= 0 || onUsbDrive);
         if (canFavorite) {
             m_actionFavoriteIndex = item.favoriteIndex >= 0
@@ -653,13 +665,14 @@ void BrowserScreen::openActionMenu() {
         }
     }
 
-    if (!m_actionFileOps && !canFavorite) {
+    if (!m_actionFileOps && !canFavorite && !canCopyToInternal) {
         toast("NTFS DRIVE", "Read-only: play and browse only");
         evo_feedback(EVO_FB_BOUNDARY);
         return;
     }
 
     m_actions.clear();
+    if (canCopyToInternal) m_actions.push_back(FileAction::CopyToInternal);
     if (canFavorite) m_actions.push_back(FileAction::Favorite);
     if (m_actionFileOps) {
         if (m_actionTargetCategory == FileCategory::Folder && !isDriveRoot && !m_actionTargetPath.empty()) {
@@ -693,6 +706,17 @@ void BrowserScreen::performAction(FileAction action) {
     std::string currentPath = browser ? browser->getCurrentPath() : "";
 
     switch (action) {
+        case FileAction::CopyToInternal: {
+            m_actionMenuOpen = false;
+            if (transferService && transferService->startImport(m_actionTargetPath, kInternalStorageRoot)) {
+                m_showTransferDialog = true;
+                evo_feedback(EVO_FB_CONFIRM);
+            } else {
+                toast("ERROR", "Could not start copy to Internal Storage");
+                evo_feedback(EVO_FB_ERROR);
+            }
+            break;
+        }
         case FileAction::Copy: {
             if (!transferService || m_actionTargetPath.empty()) {
                 toast("ERROR", "No folder selected");
@@ -1506,8 +1530,10 @@ void BrowserScreen::onEnter() {
         const int previousSource = m_activeSource;
         refreshStorageSources();
         if (previousSource == 0) {
-            if (browser->getCurrentPath() == "/data" || browser->getCurrentPath().rfind("/data/", 0) == 0) {
+            if (isInternalStoragePath(browser->getCurrentPath())) {
                 m_activeSource = 1;
+                if (!browser->refresh() && evo_jailbreak_is_open())
+                    toast("ERROR", "Could not open Internal Storage");
             } else if (std::find(m_storageMounts.begin(), m_storageMounts.end(), m_activeMount) != m_storageMounts.end()) {
                 m_activeSource = 0;
             } else {
@@ -1681,16 +1707,19 @@ bool BrowserScreen::activateSidebar(bool focusGrid) {
             }
             break;
         case 1: // Internal Storage
-            if (m_activeSource != 1 || (browser && browser->getCurrentPath().rfind("/data", 0) != 0)) {
+            if (m_activeSource != 1 || (browser && !isInternalStoragePath(browser->getCurrentPath()))) {
                 m_activeSource = 1;
                 m_isSearching = false;
                 m_searchQuery.clear();
                 if (browser) {
-                    browser->clearSearch();
-                    browser->setCurrentPath("/data");
+                    if (!browser->navigateToSource(1) && evo_jailbreak_is_open())
+                        toast("ERROR", "Could not open Internal Storage");
                 }
                 resetSelection();
-                if (focusGrid) toast("STORAGE", "Internal Storage");
+            } else if (focusGrid && browser && m_items.empty() && !m_isSearching) {
+                if (!browser->refresh() && evo_jailbreak_is_open())
+                    toast("ERROR", "Could not open Internal Storage");
+                resetSelection();
             }
             break;
         case 2: // Network Storage (FTP / SMB)
@@ -1841,7 +1870,8 @@ void BrowserScreen::activateSelection() {
         }
         if (browser) {
             evo_feedback(EVO_FB_OPEN);
-            browser->navigateInto(item.name);
+            if (!browser->navigateInto(item.name) && m_activeSource == 1)
+                toast("ERROR", "Could not open Internal Storage");
             resetSelection();
         }
     } else if (item.category == FileCategory::Video || item.category == FileCategory::Audio) {
@@ -2392,8 +2422,8 @@ bool BrowserScreen::handleInput(uint32_t pressed, uint32_t held, uint32_t releas
         if (m_activeSource == 0 || m_activeSource == 1) {
             auto browser = Application::getInstance().getFileSystemBrowser();
             if (browser && !browser->getCurrentPath().empty() &&
-                browser->getCurrentPath() != m_activeMount &&
-                browser->getCurrentPath() != "/data") {
+                (m_activeSource == 1 ? browser->getCurrentPath() != kInternalStorageRoot
+                                     : browser->getCurrentPath() != m_activeMount)) {
                 evo_feedback(EVO_FB_CANCEL);
                 browser->navigateUp();
                 resetSelection();
@@ -2542,7 +2572,7 @@ void BrowserScreen::update(double deltaMs) {
 
     // Poll active file transfer operations
     auto transferService = Application::getInstance().getFileTransferService();
-    if (transferService && m_showTransferDialog) {
+    if (transferService && m_showTransferDialog && !transferService->isBusy()) {
         TransferProgress prog = transferService->getProgress();
         if (prog.status == TransferStatus::Completed) {
             m_showTransferDialog = false;
@@ -2553,13 +2583,19 @@ void BrowserScreen::update(double deltaMs) {
                          gone == 1 ? "y" : "ies");
                 m_pendingForgetPath.clear();
             }
-            toast("COMPLETED", "File operation completed!");
+            toast("COMPLETED", prog.opType == FileOpType::Import
+                  ? "Copied to Internal Storage" : "File operation completed!");
             evo_feedback(EVO_FB_CONFIRM);
             transferService->resetStatus();
             auto browser = Application::getInstance().getFileSystemBrowser();
             if (browser) {
                 browser->refresh();
-                resetSelection();
+                if (prog.opType == FileOpType::Import) {
+                    rebuildItems();
+                    m_selectedIndex = std::clamp(m_selectedIndex, 0, std::max(0, static_cast<int>(m_items.size()) - 1));
+                } else {
+                    resetSelection();
+                }
             }
         } else if (prog.status == TransferStatus::Failed) {
             m_showTransferDialog = false;
@@ -2657,10 +2693,10 @@ void BrowserScreen::render(uint32_t* framebuffer, int width, int height) {
         }
     } else if (m_activeSource == 1) {
         if (browser && !browser->getCurrentPath().empty()) {
-            if (browser->getCurrentPath() == "/data") {
+            if (browser->getCurrentPath() == kInternalStorageRoot) {
                 std::snprintf(m_formattedPath, sizeof(m_formattedPath), "Internal Storage");
-            } else if (browser->getCurrentPath().rfind("/data", 0) == 0) {
-                std::string bc = formatPathBreadcrumbs("Internal Storage", browser->getCurrentPath(), 5);
+            } else if (isInternalStoragePath(browser->getCurrentPath())) {
+                std::string bc = formatPathBreadcrumbs("Internal Storage", browser->getCurrentPath(), sizeof(kInternalStorageRoot) - 1);
                 std::snprintf(m_formattedPath, sizeof(m_formattedPath), "%s", bc.c_str());
             } else {
                 std::snprintf(m_formattedPath, sizeof(m_formattedPath), "%s", browser->getCurrentPath().c_str());
@@ -2693,7 +2729,7 @@ void BrowserScreen::render(uint32_t* framebuffer, int width, int height) {
     if (m_activeSource == 0) {
         params.at_root = (!browser || browser->getCurrentPath().empty() || browser->getCurrentPath() == m_activeMount) ? 1 : 0;
     } else if (m_activeSource == 1) {
-        params.at_root = (!browser || browser->getCurrentPath().empty() || browser->getCurrentPath() == "/data") ? 1 : 0;
+        params.at_root = (!browser || browser->getCurrentPath().empty() || browser->getCurrentPath() == kInternalStorageRoot) ? 1 : 0;
     } else if (m_activeSource == 2) {
         params.at_root = m_networkShareId.empty() ? 1 : 0;
     } else {
@@ -3081,7 +3117,8 @@ void BrowserScreen::render(uint32_t* framebuffer, int width, int height) {
         item.disabled = m_hideId.empty();
     } else {
         params.action_menu_count = static_cast<int>(m_actions.size());
-        params.action_menu_eyebrow = m_actionFileOps ? "FILE OPERATIONS" : "FAVORITES";
+        const bool hasCopyToInternal = std::find(m_actions.begin(), m_actions.end(), FileAction::CopyToInternal) != m_actions.end();
+        params.action_menu_eyebrow = (m_actionFileOps || hasCopyToInternal) ? "FILE OPERATIONS" : "FAVORITES";
         params.action_menu_open = m_actionMenuOpen ? 1 : 0;
         params.action_menu_focused = m_actionMenuFocused;
         params.action_menu_target = m_actionTargetName.c_str();
@@ -3108,6 +3145,10 @@ void BrowserScreen::render(uint32_t* framebuffer, int width, int height) {
                 item.label = saved ? "Remove from Favorites" : "Add to Favorites";
                 item.desc = saved ? "Remove this shortcut" : "Save a shortcut to this folder";
                 item.icon_path = "../icons/icon_favorites.png";
+            } else if (action == FileAction::CopyToInternal) {
+                item.label = "Copy to internal";
+                item.desc = "Save a copy in Internal Storage";
+                item.icon_path = "../icons/icon_recent_files.png";
             } else {
                 const auto index = static_cast<int>(action);
                 item.label = labels[index];
@@ -3130,12 +3171,15 @@ void BrowserScreen::render(uint32_t* framebuffer, int width, int height) {
         }
     }
 
-    // Populate Transfer Progress Modal parameters
+    // Keep the item name alive until the bridge copies the modal parameters.
+    TransferProgress prog;
     if (m_showTransferDialog && transferService) {
-        TransferProgress prog = transferService->getProgress();
+        prog = transferService->getProgress();
         params.transfer_modal_open = 1;
 
-        if (prog.opType == FileOpType::Copy) {
+        if (prog.opType == FileOpType::Import) {
+            std::snprintf(m_transferTitleBuf, sizeof(m_transferTitleBuf), "COPYING TO INTERNAL STORAGE");
+        } else if (prog.opType == FileOpType::Copy) {
             std::snprintf(m_transferTitleBuf, sizeof(m_transferTitleBuf), "COPYING TO STORAGE");
         } else if (prog.opType == FileOpType::Move) {
             std::snprintf(m_transferTitleBuf, sizeof(m_transferTitleBuf), "MOVING FILE");
@@ -3199,7 +3243,9 @@ void BrowserScreen::render(uint32_t* framebuffer, int width, int height) {
 
         // Paths
         std::snprintf(m_transferSrcBuf, sizeof(m_transferSrcBuf), "%s", prog.currentSourcePath.empty() ? "-" : prog.currentSourcePath.c_str());
-        std::snprintf(m_transferDstBuf, sizeof(m_transferDstBuf), "%s", prog.currentDestPath.empty() ? "-" : prog.currentDestPath.c_str());
+        const char* destination = prog.currentDestPath.empty() ? "-" : prog.currentDestPath.c_str();
+        if (prog.opType == FileOpType::Import) destination = "Internal Storage";
+        std::snprintf(m_transferDstBuf, sizeof(m_transferDstBuf), "%s", destination);
         params.transfer_src_path = m_transferSrcBuf;
         params.transfer_dst_path = m_transferDstBuf;
     } else {

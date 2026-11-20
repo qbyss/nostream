@@ -48,7 +48,14 @@ static const evo_changelog_item EVO_CL_010[] = {
     { EVO_CL_IMPROVED, "NAVIGATION SOUNDS OFF BY DEFAULT, SOFTER SHADOWS" }
 };
 
+static const evo_changelog_item EVO_CL_020[] = {
+    { EVO_CL_NEW,      "INTERNAL STORAGE OPENS NOSTREAM'S VIDEOS FOLDER" },
+    { EVO_CL_NEW,      "COPY USB VIDEOS AND FOLDERS TO INTERNAL STORAGE" },
+    { EVO_CL_IMPROVED, "TRANSFER PROGRESS AND CIRCLE TO CANCEL" }
+};
+
 static const evo_changelog_release EVO_CHANGELOG_RELEASES[] = {
+    { "0.2.0", "COPY VIDEOS TO INTERNAL STORAGE", "NOVEMBER 2026", EVO_CL_020, sizeof(EVO_CL_020)/sizeof(EVO_CL_020[0]) },
     { "0.1.0", "THE FIRST NOSTREAM RELEASE", "NOVEMBER 2026", EVO_CL_010, sizeof(EVO_CL_010)/sizeof(EVO_CL_010[0]) },
 };
 

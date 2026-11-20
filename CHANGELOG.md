@@ -5,6 +5,12 @@ into the GitHub release notes, so keep the headings in the form `## 0.1.0`.
 
 ---
 
+## 0.2.0
+
+- **Internal Storage** opens NoStream’s videos folder at `/data/homebrew/PPSA99273/videos/`.
+- **Copy to internal** copies USB videos and folders, including subtitles and artwork inside folders. USB originals stay in place, and a same-name item in Internal Storage stops the copy.
+- The transfer dialog shows progress and a Circle button icon for **Cancel**. Copied videos can be deleted from Internal Storage.
+
 ## 0.1.0
 
 **The first NoStream release.** NoStream is a local media player for jailbroken PS5: your USB drives and folders, played with hardware decode, driven from the pad or the PS5 Media Remote. It started as a fork of [EVO Player](https://github.com/sainsaji/EVO-PLAYER-PS5) 0.13.7 and keeps its video player, and leaves the online services out.

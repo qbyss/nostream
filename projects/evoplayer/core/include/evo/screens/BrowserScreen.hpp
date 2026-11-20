@@ -103,7 +103,7 @@ private:
     std::string filterScopeKey() const;
     void openSearch();
     void openActionMenu();
-    enum class FileAction { Copy, Cut, Paste, Rename, Delete, NewFolder, Close, Favorite };
+    enum class FileAction { Copy, Cut, Paste, Rename, Delete, NewFolder, Close, Favorite, CopyToInternal };
     void performAction(FileAction action);
     void openEditShareKeyboard(const std::string& shareId);
     void openServerMenu(const std::string& shareId, const std::string& shareName);

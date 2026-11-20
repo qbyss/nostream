@@ -40,7 +40,7 @@ public:
     using StoreProgressFn = bool (*)(void* user, uint64_t totalSent, uint32_t chunkBytes);
     bool storeFile(const std::string& remotePath, const std::string& localPath,
                    StoreProgressFn onProgress = nullptr, void* user = nullptr,
-                   int dataTimeoutSec = 30);
+                   int dataTimeoutSec = 30, bool noFollow = false);
 
     bool retrieveFile(const std::string& remotePath, size_t maxBytes, std::vector<uint8_t>& out,
                       int dataTimeoutSec = 8);
@@ -56,7 +56,7 @@ private:
                      const std::string& pass, int timeoutSec);
     bool listImpl(const std::string& path, std::vector<FtpFileEntry>& entries);
     bool storeImpl(const std::string& remotePath, const std::string& localPath,
-                   StoreProgressFn onProgress, void* user, int dataTimeoutSec);
+                   StoreProgressFn onProgress, void* user, int dataTimeoutSec, bool noFollow);
     bool retrieveImpl(const std::string& remotePath, size_t maxBytes, std::vector<uint8_t>& out,
                       int dataTimeoutSec);
     bool removeImpl(const std::string& remotePath);

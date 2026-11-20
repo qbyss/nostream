@@ -1,5 +1,7 @@
 #include "evo/services/FileTransferService.hpp"
 #include "evo/services/FtpClient.hpp"
+#include "evo/services/InternalStorage.hpp"
+#include "TransferSource.hpp"
 #include "evo_readdir.h"
 #include "evo_jailbreak.h"
 #include "evo_boot_trace.h"
@@ -114,12 +116,21 @@ void FileTransferService::resetStatus() {
 }
 
 bool FileTransferService::startCopy(const std::string& srcPath, const std::string& dstDir) {
+    return startCopyOperation(FileOpType::Copy, srcPath, dstDir);
+}
+
+bool FileTransferService::startImport(const std::string& srcPath, const std::string& dstDir) {
+    return startCopyOperation(FileOpType::Import, srcPath, dstDir);
+}
+
+bool FileTransferService::startCopyOperation(FileOpType op, const std::string& srcPath,
+                                            const std::string& dstDir) {
     if (m_isBusy.load() || srcPath.empty() || dstDir.empty()) return false;
 
-    struct stat st;
-    if (stat(srcPath.c_str(), &st) != 0) return false;
+    struct stat st{};
+    if (op == FileOpType::Copy && stat(srcPath.c_str(), &st) != 0) return false;
 
-    m_activeOp = FileOpType::Copy;
+    m_activeOp = op;
     m_activeSrc = srcPath;
     m_activeDst = dstDir;
     m_activeIsDir = S_ISDIR(st.st_mode);
@@ -130,7 +141,7 @@ bool FileTransferService::startCopy(const std::string& srcPath, const std::strin
     {
         std::lock_guard<std::mutex> lock(m_progressMutex);
         m_progress = TransferProgress();
-        m_progress.opType = FileOpType::Copy;
+        m_progress.opType = op;
         m_progress.status = TransferStatus::Scanning;
         m_progress.currentSourcePath = srcPath;
         m_progress.currentDestPath = dstDir;
@@ -293,15 +304,18 @@ void FileTransferService::runTransfer() {
 
     if (m_activeOp == FileOpType::Copy) {
         success = executeCopy(m_activeSrc, m_activeDst);
+    } else if (m_activeOp == FileOpType::Import) {
+        success = executeImport(m_activeSrc, m_activeDst);
     } else if (m_activeOp == FileOpType::Move) {
         success = executeMove(m_activeSrc, m_activeDst);
     } else if (m_activeOp == FileOpType::Delete) {
         success = executeDelete(m_activeSrc);
     }
 
+    TransferStatus status;
     {
         std::lock_guard<std::mutex> lock(m_progressMutex);
-        if (m_cancelRequested.load()) {
+        if (m_cancelRequested.load() && !(success && m_activeOp == FileOpType::Import)) {
             m_progress.status = TransferStatus::Cancelled;
         } else if (success) {
             m_progress.status = TransferStatus::Completed;
@@ -312,10 +326,11 @@ void FileTransferService::runTransfer() {
                 m_progress.errorMessage = "Operation failed (error " + std::to_string(errno) + ")";
             }
         }
+        status = m_progress.status;
     }
 
     m_isBusy.store(false);
-    EVO_LOGI("transfer", "Operation complete (status=%d)", static_cast<int>(m_progress.status));
+    EVO_LOGI("transfer", "Operation complete (status=%d)", static_cast<int>(status));
 }
 
 bool FileTransferService::ensureDirectory(const std::string& dirPath) {
@@ -384,24 +399,45 @@ std::string FileTransferService::resolveDestinationCollision(const std::string& 
     return dstPath;
 }
 
+bool FileTransferService::readCopyEntry(const std::string& path, FileEntry& entry) const {
+    const bool importing = m_activeOp == FileOpType::Import;
+    if (importing && evo_ntfs_is_url(path.c_str())) {
+        int isDir = 0;
+        if (evo_ntfs_stat(path.c_str(), &isDir, &entry.size) != 0) {
+            errno = EIO;
+            return false;
+        }
+        entry.isDir = isDir != 0;
+        entry.mode = entry.isDir ? 0755 : 0644;
+        return true;
+    }
+
+    struct stat st;
+    if ((importing ? statWithoutFollowingLinks(path.c_str(), st) : stat(path.c_str(), &st)) != 0) return false;
+    if (importing && !S_ISDIR(st.st_mode) && !S_ISREG(st.st_mode)) {
+        errno = EINVAL;
+        return false;
+    }
+
+    entry.size = static_cast<uint64_t>(st.st_size);
+    entry.isDir = S_ISDIR(st.st_mode);
+    entry.mode = st.st_mode;
+    entry.mtime = st.st_mtime;
+    entry.atime = st.st_atime;
+    return true;
+}
+
 bool FileTransferService::scanTree(const std::string& rootPath, std::vector<FileEntry>& outEntries, uint64_t& outTotalBytes) {
     outEntries.clear();
     outTotalBytes = 0;
+    const bool importing = m_activeOp == FileOpType::Import;
 
-    struct stat rootSt;
-    if (stat(rootPath.c_str(), &rootSt) != 0) return false;
-
-    if (!S_ISDIR(rootSt.st_mode)) {
-        FileEntry fe;
-        size_t slash = rootPath.find_last_of('/');
-        fe.relPath = (slash != std::string::npos) ? rootPath.substr(slash + 1) : rootPath;
-        fe.size = static_cast<uint64_t>(rootSt.st_size);
-        fe.isDir = false;
-        fe.mode = rootSt.st_mode;
-        fe.mtime = rootSt.st_mtime;
-        fe.atime = rootSt.st_atime;
-        outEntries.push_back(std::move(fe));
-        outTotalBytes = fe.size;
+    FileEntry root;
+    if (!readCopyEntry(rootPath, root)) return false;
+    if (!root.isDir) {
+        root.relPath = rootPath.substr(rootPath.find_last_of('/') + 1);
+        outTotalBytes = root.size;
+        outEntries.push_back(std::move(root));
         return true;
     }
 
@@ -417,10 +453,23 @@ bool FileTransferService::scanTree(const std::string& rootPath, std::vector<File
         std::string fullDirPath = sub.empty() ? rootPath : (rootPath + "/" + sub);
 
         evo_dir_t* dir = evo_opendir(fullDirPath.c_str());
-        if (!dir) continue;
+        if (!dir) {
+            if (importing) return false;
+            continue;
+        }
 
-        struct dirent* de;
-        while ((de = evo_readdir(dir)) != nullptr) {
+        for (;;) {
+            errno = 0;
+            struct dirent* de = evo_readdir(dir);
+            if (!de || (importing && m_cancelRequested.load())) {
+                const int error = errno;
+                evo_closedir(dir);
+                if (importing && (error || m_cancelRequested.load())) {
+                    errno = error;
+                    return false;
+                }
+                break;
+            }
             /* Only "." and "..": a dotfile is still the user's file and has to
              * be copied, or a move would delete an original we never wrote. */
             if (std::strcmp(de->d_name, ".") == 0 || std::strcmp(de->d_name, "..") == 0) continue;
@@ -430,16 +479,15 @@ bool FileTransferService::scanTree(const std::string& rootPath, std::vector<File
             std::string itemRel = sub.empty() ? de->d_name : (sub + "/" + de->d_name);
             std::string itemFull = rootPath + "/" + itemRel;
 
-            struct stat st;
-            if (stat(itemFull.c_str(), &st) != 0) continue;
-
             FileEntry fe;
             fe.relPath = itemRel;
-            fe.size = static_cast<uint64_t>(st.st_size);
-            fe.isDir = S_ISDIR(st.st_mode);
-            fe.mode = st.st_mode;
-            fe.mtime = st.st_mtime;
-            fe.atime = st.st_atime;
+            if (!readCopyEntry(itemFull, fe)) {
+                if (!importing) continue;
+                const int error = errno;
+                evo_closedir(dir);
+                errno = error;
+                return false;
+            }
 
             if (fe.isDir) {
                 dirQueue.push_back(itemRel);
@@ -448,7 +496,6 @@ bool FileTransferService::scanTree(const std::string& rootPath, std::vector<File
             }
             outEntries.push_back(std::move(fe));
         }
-        evo_closedir(dir);
     }
 
     return true;
@@ -542,7 +589,7 @@ bool FileTransferService::copyViaLoopbackFtp(const std::string& src, const std::
     }
 
     uint64_t t0 = GetCurrentTimeMs();
-    bool ok = ftp.storeFile(finalDst, src, FtpStoreProgress, this);
+    bool ok = ftp.storeFile(finalDst, src, FtpStoreProgress, this, 30, m_activeOp == FileOpType::Import);
     uint64_t dt = GetCurrentTimeMs() - t0;
     if (!ok) {
         EVO_LOGE("transfer", "copyViaLoopbackFtp: STOR '%s' failed after %llu ms (%s)",
@@ -556,8 +603,8 @@ bool FileTransferService::copyViaLoopbackFtp(const std::string& src, const std::
 
 bool FileTransferService::copyInProcess(const std::string& src, const std::string& finalDst,
                                         uint64_t fileSize, uint32_t mode) {
-    int srcFd = open(src.c_str(), O_RDONLY);
-    if (srcFd < 0) {
+    TransferSource source(src, m_activeOp == FileOpType::Import);
+    if (!source.isOpen()) {
         EVO_LOGE("transfer", "copyInProcess: open src '%s' failed (errno=%d)", src.c_str(), errno);
         return false;
     }
@@ -565,7 +612,6 @@ bool FileTransferService::copyInProcess(const std::string& src, const std::strin
     int dstFd = open(finalDst.c_str(), O_WRONLY | O_CREAT | O_TRUNC, mode & 0777);
     if (dstFd < 0) {
         EVO_LOGE("transfer", "copyInProcess: open dst '%s' failed (errno=%d)", finalDst.c_str(), errno);
-        close(srcFd);
         return false;
     }
 
@@ -584,10 +630,10 @@ bool FileTransferService::copyInProcess(const std::string& src, const std::strin
         }
 
         size_t toRead = static_cast<size_t>(std::min<uint64_t>(TRANSFER_BUFFER_SIZE, fileSize - fileBytesCopied));
-        ssize_t bytesRead = read(srcFd, buffer, toRead);
+        ssize_t bytesRead = source.readChunk(buffer, toRead);
         if (bytesRead <= 0) {
             if (bytesRead < 0 && errno == EINTR) continue;
-            if (bytesRead == 0 && fileBytesCopied == fileSize) break;
+            if (bytesRead == 0) errno = EIO;
             success = false;
             break;
         }
@@ -614,8 +660,9 @@ bool FileTransferService::copyInProcess(const std::string& src, const std::strin
         if (!success) break;
     }
 
-    close(srcFd);
-    close(dstFd);
+    const int error = success ? 0 : errno;
+    if (close(dstFd) != 0 && success) return false;
+    if (!success) errno = error;
     return success;
 }
 
@@ -624,7 +671,8 @@ bool FileTransferService::copySingleFile(const std::string& src, const std::stri
     if (m_cancelRequested.load()) return false;
 
     // Check collision
-    std::string finalDst = resolveDestinationCollision(dst, false);
+    const bool importing = m_activeOp == FileOpType::Import;
+    std::string finalDst = importing ? dst : resolveDestinationCollision(dst, false);
     if (finalDst.empty()) {
         // Skipped - still count it so the bar and the ETA keep moving.
         accountBytes(fileSize);
@@ -649,7 +697,8 @@ bool FileTransferService::copySingleFile(const std::string& src, const std::stri
     bool success = false;
     bool viaFtp = false;
 
-    if (shouldDelegateToFtp(fileSize) && loopbackFtpUsable()) {
+    if (finalDst.find_first_of("\r\n") == std::string::npos &&
+        shouldDelegateToFtp(fileSize) && loopbackFtpUsable()) {
         viaFtp = true;
         success = copyViaLoopbackFtp(src, finalDst);
         if (!success && !m_cancelRequested.load()) {
@@ -669,10 +718,22 @@ bool FileTransferService::copySingleFile(const std::string& src, const std::stri
         success = copyInProcess(src, finalDst, fileSize, mode);
     }
 
+    if (success && importing) {
+        struct stat st;
+        if (statWithoutFollowingLinks(finalDst.c_str(), st) != 0) {
+            success = false;
+        } else if (!S_ISREG(st.st_mode) || static_cast<uint64_t>(st.st_size) != fileSize) {
+            errno = EIO;
+            success = false;
+        }
+    }
+
     if (!success || m_cancelRequested.load()) {
+        const int error = errno;
         // Clean up partial incomplete file (Ultracopier safety rule)
         unlink(finalDst.c_str());
         m_currentDestinationPartialFile.clear();
+        errno = error;
         return false;
     }
 
@@ -684,7 +745,7 @@ bool FileTransferService::copySingleFile(const std::string& src, const std::stri
     tv[0].tv_usec = 0;
     tv[1].tv_sec = mtime;
     tv[1].tv_usec = 0;
-    utimes(finalDst.c_str(), tv);
+    if (!evo_ntfs_is_url(src.c_str())) utimes(finalDst.c_str(), tv);
     chmod(finalDst.c_str(), mode & 0777);
 
     return true;
@@ -742,7 +803,7 @@ bool FileTransferService::executeCopy(const std::string& src, const std::string&
         }
 
         if (entry.isDir) {
-            ensureDirectory(targetDstPath);
+            if (!ensureDirectory(targetDstPath) && m_activeOp == FileOpType::Import) return false;
         } else {
             if (!copySingleFile(sourceFilePath, targetDstPath, entry.size, entry.mode, entry.mtime, entry.atime)) {
                 return false;
@@ -759,6 +820,106 @@ bool FileTransferService::executeCopy(const std::string& src, const std::string&
     }
 
     return true;
+}
+
+bool FileTransferService::failImport(const char* message) {
+    EVO_LOGW("transfer", "Import failed: %s", message);
+    std::lock_guard<std::mutex> lock(m_progressMutex);
+    m_progress.errorMessage = message;
+    return false;
+}
+
+bool FileTransferService::executeImport(const std::string& src, const std::string& dst) {
+    constexpr const char* kAlreadyExists = "An item with that name is already in Internal Storage";
+    const std::string name = src.substr(src.find_last_of('/') + 1);
+    if (name.empty() || name == "." || name == "..")
+        return failImport("Select a video or folder on the USB drive");
+
+    // Reject symlinked ancestors on native USB volumes as well as symlinked entries.
+    char volume[EVO_USB_VOLUME_ROOT_CAP];
+    if (!evo_ntfs_is_url(src.c_str()) && evo_usb_volume_root(src.c_str(), volume)) {
+        for (size_t end = src.find('/', std::strlen(volume) + 1);
+             end != std::string::npos; end = src.find('/', end + 1)) {
+            const std::string folder = src.substr(0, end);
+            struct stat st;
+            if (statWithoutFollowingLinks(folder.c_str(), st) != 0) {
+                EVO_LOGE("transfer", "Cannot inspect USB folder '%s' (errno=%d)", folder.c_str(), errno);
+                return failImport("Could not open the USB folder");
+            }
+            if (!S_ISDIR(st.st_mode)) return failImport("Could not open the USB folder");
+        }
+    }
+
+    FileEntry source;
+    if (!readCopyEntry(src, source)) {
+        EVO_LOGE("transfer", "Cannot inspect USB item '%s' (errno=%d)", src.c_str(), errno);
+        return failImport("Could not read the selected USB item");
+    }
+    m_activeIsDir = source.isDir;
+
+    if (!ensureInternalStorage(dst.c_str())) {
+        EVO_LOGE("transfer", "Cannot open or create '%s' (errno=%d)", dst.c_str(), errno);
+        return failImport("Could not open or create Internal Storage");
+    }
+
+    const std::string finalPath = dst + "/" + name;
+    struct stat st;
+    if (statWithoutFollowingLinks(finalPath.c_str(), st) == 0 || errno == ELOOP)
+        return failImport(kAlreadyExists);
+    if (errno != ENOENT) return failImport("Could not check the destination in Internal Storage");
+
+    const std::string prefix = dst + "/.nostream-copy-" + std::to_string(getpid()) +
+        "-" + std::to_string(GetCurrentTimeMs());
+    std::string stage;
+    bool created = false;
+    for (unsigned attempt = 0; attempt < 32; ++attempt) {
+        stage = prefix + "-" + std::to_string(attempt);
+        if (mkdir(stage.c_str(), 0700) == 0) {
+            created = true;
+            break;
+        }
+        if (errno != EEXIST) break;
+    }
+    if (!created) {
+        return failImport(errno == ENOSPC ? "Internal Storage is full"
+                                          : "Could not prepare the copy in Internal Storage");
+    }
+
+    const std::string stagedItem = stage + "/" + name;
+    bool copied = (!source.isDir || mkdir(stagedItem.c_str(), 0755) == 0) &&
+        executeCopy(src, stage);
+    if (copied && !m_cancelRequested.load()) {
+        // Reserve the final name exclusively, then replace only our own placeholder.
+        bool reserved;
+        if (source.isDir) {
+            reserved = mkdir(finalPath.c_str(), 0755) == 0;
+        } else {
+            const int fd = open(finalPath.c_str(), O_WRONLY | O_CREAT | O_EXCL, 0600);
+            reserved = fd >= 0;
+            if (reserved) close(fd);
+        }
+        if (reserved && rename(stagedItem.c_str(), finalPath.c_str()) == 0) {
+            if (rmdir(stage.c_str()) != 0)
+                EVO_LOGW("transfer", "Could not remove staging directory '%s'", stage.c_str());
+            return true;
+        }
+        const int error = errno;
+        if (reserved) {
+            if (source.isDir) rmdir(finalPath.c_str());
+            else unlink(finalPath.c_str());
+        }
+        if (error == EEXIST) failImport(kAlreadyExists);
+        else if (error == ENOSPC) failImport("Internal Storage is full");
+        else failImport("Could not save the completed copy");
+    } else if (!copied) {
+        const int error = errno;
+        EVO_LOGE("transfer", "Copy of '%s' failed (errno=%d)", src.c_str(), error);
+        failImport(error == ENOSPC ? "Internal Storage is full" : "Could not copy the USB item");
+    }
+
+    if (!recursiveDelete(stage))
+        EVO_LOGW("transfer", "Could not clean up staging directory '%s'", stage.c_str());
+    return false;
 }
 
 bool FileTransferService::executeMove(const std::string& src, const std::string& dst) {
@@ -791,7 +952,12 @@ bool FileTransferService::executeMove(const std::string& src, const std::string&
 
 bool FileTransferService::recursiveDelete(const std::string& path) {
     struct stat st;
-    if (lstat(path.c_str(), &st) != 0) return errno == ENOENT;
+    const bool importing = m_activeOp == FileOpType::Import;
+    const int result = importing ? statWithoutFollowingLinks(path.c_str(), st) : lstat(path.c_str(), &st);
+    if (result != 0) {
+        if (importing && errno == ELOOP) return unlink(path.c_str()) == 0;
+        return errno == ENOENT;
+    }
 
     if (!S_ISDIR(st.st_mode)) {
         return unlink(path.c_str()) == 0;
@@ -822,12 +988,22 @@ bool FileTransferService::executeDelete(const std::string& path) {
         m_progress.progressPercent = 50.0;
     }
     struct stat st;
-    if (lstat(path.c_str(), &st) != 0) return false;
+    if (statWithoutFollowingLinks(path.c_str(), st) != 0) {
+        const int error = errno;
+        EVO_LOGE("transfer", "Cannot inspect file for deletion '%s' (errno=%d)", path.c_str(), error);
+        errno = error;
+        return false;
+    }
     if (!S_ISREG(st.st_mode)) {
         errno = EINVAL;
         return false;
     }
-    return unlink(path.c_str()) == 0;
+    if (unlink(path.c_str()) == 0) return true;
+
+    const int error = errno;
+    EVO_LOGE("transfer", "Cannot delete file '%s' (errno=%d)", path.c_str(), error);
+    errno = error;
+    return false;
 }
 
 } // namespace evo

@@ -1,4 +1,5 @@
 #include "evo/services/FtpClient.hpp"
+#include "TransferSource.hpp"
 
 #include <cstdio>
 #include <cstdlib>
@@ -252,14 +253,14 @@ bool FtpClient::removeImpl(const std::string& remotePath) {
 }
 
 bool FtpClient::storeImpl(const std::string& remotePath, const std::string& localPath,
-                          StoreProgressFn onProgress, void* user, int dataTimeoutSec) {
+                          StoreProgressFn onProgress, void* user, int dataTimeoutSec, bool noFollow) {
     if (m_controlSock < 0) {
         m_lastError = "Not connected";
         return false;
     }
 
-    int srcFd = open(localPath.c_str(), O_RDONLY);
-    if (srcFd < 0) {
+    TransferSource source(localPath, noFollow);
+    if (!source.isOpen()) {
         m_lastError = "Cannot open source " + localPath + " (errno " + std::to_string(errno) + ")";
         return false;
     }
@@ -268,14 +269,12 @@ bool FtpClient::storeImpl(const std::string& remotePath, const std::string& loca
     char* buf = static_cast<char*>(std::malloc(kChunk));
     if (!buf) {
         m_lastError = "Out of memory for the transfer buffer";
-        close(srcFd);
         return false;
     }
 
     int dataSock = openDataConnection(dataTimeoutSec);
     if (dataSock < 0) {
         std::free(buf);
-        close(srcFd);
         return false;
     }
 
@@ -283,7 +282,6 @@ bool FtpClient::storeImpl(const std::string& remotePath, const std::string& loca
         m_lastError = "Failed to send STOR";
         close(dataSock);
         std::free(buf);
-        close(srcFd);
         return false;
     }
 
@@ -292,7 +290,6 @@ bool FtpClient::storeImpl(const std::string& remotePath, const std::string& loca
         m_lastError = "STOR rejected (code " + std::to_string(code) + ")";
         close(dataSock);
         std::free(buf);
-        close(srcFd);
         return false;
     }
 
@@ -301,7 +298,7 @@ bool FtpClient::storeImpl(const std::string& remotePath, const std::string& loca
     bool     cancelled = false;
 
     while (true) {
-        ssize_t got = read(srcFd, buf, kChunk);
+        ssize_t got = source.readChunk(buf, kChunk);
         if (got == 0) break;                      /* end of file */
         if (got < 0) {
             if (errno == EINTR) continue;
@@ -343,7 +340,6 @@ bool FtpClient::storeImpl(const std::string& remotePath, const std::string& loca
      * on cancel we close it early and then clear the aborted reply. */
     close(dataSock);
     std::free(buf);
-    close(srcFd);
 
     code = readResponse();
     if (cancelled) {
@@ -682,9 +678,9 @@ bool FtpClient::list(const std::string& path, std::vector<FtpFileEntry>& entries
 }
 
 bool FtpClient::storeFile(const std::string& remotePath, const std::string& localPath,
-                          StoreProgressFn onProgress, void* user, int dataTimeoutSec) {
+                          StoreProgressFn onProgress, void* user, int dataTimeoutSec, bool noFollow) {
     const long long t0 = evo_log_mono_ms();
-    const bool ok = storeImpl(remotePath, localPath, onProgress, user, dataTimeoutSec);
+    const bool ok = storeImpl(remotePath, localPath, onProgress, user, dataTimeoutSec, noFollow);
     if (!ok && m_lastError != "Cancelled") logFailure("STOR", remotePath, evo_log_mono_ms() - t0);
     return ok;
 }

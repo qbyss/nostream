@@ -25,6 +25,7 @@ public:
 
     // Asynchronous transfer triggers
     bool startCopy(const std::string& srcPath, const std::string& dstDir) override;
+    bool startImport(const std::string& srcPath, const std::string& dstDir) override;
     bool startMove(const std::string& srcPath, const std::string& dstDir) override;
     bool startDelete(const std::string& path) override;
     bool startPaste(const std::string& targetDir) override;
@@ -60,6 +61,10 @@ private:
     void runTransfer();
 
     // Internal operations
+    bool startCopyOperation(FileOpType op, const std::string& srcPath, const std::string& dstDir);
+    bool executeImport(const std::string& src, const std::string& dst);
+    bool failImport(const char* message);
+    bool readCopyEntry(const std::string& path, FileEntry& entry) const;
     bool executeCopy(const std::string& src, const std::string& dst);
     bool executeMove(const std::string& src, const std::string& dst);
     bool executeDelete(const std::string& path);

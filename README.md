@@ -16,6 +16,7 @@ NoStream is a fork of [EVO Player](https://github.com/sainsaji/EVO-PLAYER-PS5), 
 
 - **PS5 Media Remote support:** the official remote drives the menus and playback. Play/Pause, Rewind and Forward work in the player. See [Controls](#controls-reference).
 - **Local media only:** the media providers (Jellyfin, Emby, Plex, Xtream, IPTV, Nuvio) and their menus are removed. NoStream plays files from USB, internal storage, SMB and FTP. YouTube casting and links still work.
+- **Internal Storage:** NoStream stores videos in `/data/homebrew/PPSA99273/videos/`. Select a USB video or folder and choose **Options → Copy to internal** to copy it.
 - **USB drives by name:** each mounted USB drive shows in the storage sidebar under its volume label.
 - **Favorite folders in the sidebar:** Options on a USB folder → **Add to Favorites** adds a shortcut to the sidebar. USB favorites follow the drive by its volume serial, even when its mount number changes, and come back at startup.
 - **Thumbnails survive restarts:** local thumbnails are cached in `/data/nostream/thumbnails` (up to 256 MB).

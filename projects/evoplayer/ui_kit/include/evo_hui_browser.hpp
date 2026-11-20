@@ -60,7 +60,6 @@ class BrowserScreen
     hui::tween::Spring menu_;
     hui::gfx::Rect action_ring_{};
     hui::tween::Spring transfer_;
-    hui::tween::Spring transfer_bar_;
     std::vector<float> chip_w_;
 };
 

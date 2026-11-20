@@ -60,7 +60,7 @@ public:
      */
 
 private:
-    void scanDirectory(const std::string& dirPath);
+    bool scanDirectory(const std::string& dirPath);
     void scanRecursive(const std::string& basePath, const std::string& relPath,
                        const std::string& query, int depth, const std::string& sourcePrefix = "");
     bool isSafePath(const std::string& path) const;

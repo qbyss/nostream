@@ -238,7 +238,7 @@ int main(int argc, char **argv)
 
     evo_rmlui_launch_params_t launch{};
     launch.app_name = "NOSTREAM";
-    launch.version = "VERSION 0.1.0";
+    launch.version = "VERSION 0.2.0";
     launch.clock = "21:47";
     launch.theme_name = "MIDNIGHT";
     launch.hero_eyebrow = "CONTINUE WATCHING";
@@ -331,7 +331,7 @@ int main(int argc, char **argv)
     bp.transfer_bytes_str = "12.4 / 31.0 GB";
     bp.transfer_eta_str = "3 min left";
     bp.transfer_percent_str = "40%";
-    bp.transfer_progress_pct = 0.4;
+    bp.transfer_progress_pct = 40.0;
 
     /* ---- fixtures ---- */
     /* ---- list (Recent / Favorites / providers) ---- */

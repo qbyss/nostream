@@ -1,5 +1,6 @@
 #include "evo/services/HiddenStorage.hpp"
 #include "evo/services/FileSystemBrowser.hpp"
+#include "evo/services/InternalStorage.hpp"
 #include "evo_readdir.h"
 #include "evo_jailbreak.h"
 #include "evo_data_path.h"
@@ -145,7 +146,7 @@ std::string FileSystemBrowser::usbMountLabel(const std::string& mount) const {
 FileSystemBrowser::FileSystemBrowser() {
     m_sources = {
         { "USB DRIVE",        "USB",      kUsbRoot },
-        { "INTERNAL STORAGE", "INTERNAL", "/data"     }
+        { "INTERNAL STORAGE", "INTERNAL", kInternalStorageRoot }
     };
     m_currentPath = ""; // Root picker
 }
@@ -155,16 +156,24 @@ void FileSystemBrowser::setCurrentPath(const std::string& path) {
     refresh();
 }
 
-bool FileSystemBrowser::isSafePath(const std::string& path) const {
-    if (path.empty()) return false;
-    if (isUsbPath(path)) return true;
-    for (const auto& src : m_sources) {
-        if (path.rfind(src.rootPath, 0) == 0 &&
-            (path.size() == src.rootPath.size() || path[src.rootPath.size()] == '/')) {
-            return true;
-        }
+static bool isInternalDirectory(const std::string& path) {
+    if (!isInternalStoragePath(path)) return false;
+    size_t end = sizeof(kInternalStorageRoot) - 1;
+    for (;;) {
+        struct stat st;
+        if (statWithoutFollowingLinks(path.substr(0, end).c_str(), st) != 0 || !S_ISDIR(st.st_mode)) return false;
+        if (end == path.size()) return true;
+        const size_t start = end + 1;
+        end = path.find('/', start);
+        if (end == std::string::npos) end = path.size();
+        const bool dotComponent = path.compare(start, end - start, ".") == 0 ||
+                          path.compare(start, end - start, "..") == 0;
+        if (dotComponent || end == start) return false;
     }
-    return false;
+}
+
+bool FileSystemBrowser::isSafePath(const std::string& path) const {
+    return isUsbPath(path) || isInternalDirectory(path);
 }
 
 bool FileSystemBrowser::navigateToSource(size_t sourceIndex) {
@@ -261,11 +270,16 @@ bool FileSystemBrowser::refresh() {
 
     evo_jailbreak_ensure();
 
+    if (isInternalStoragePath(m_currentPath)) {
+        if (!ensureInternalStorage()) return false;
+        if (!isInternalDirectory(m_currentPath)) m_currentPath = kInternalStorageRoot;
+    }
+
     // Sentinel: at root picker above any source
     if (m_currentPath.empty()) {
         if (!m_searchQuery.empty()) {
             for (const auto& src : m_sources) {
-                if (src.rootPath != kUsbRoot) scanRecursive(src.rootPath, "", m_searchQuery, 0, src.label);
+                if (src.rootPath != kUsbRoot && ensureInternalStorage()) scanRecursive(src.rootPath, "", m_searchQuery, 0, src.label);
             }
             for (const auto& mount : usbMounts()) {
                 scanRecursive(mount, "", m_searchQuery, 0, usbMountLabel(mount));
@@ -302,7 +316,7 @@ bool FileSystemBrowser::refresh() {
         if (!m_searchQuery.empty()) {
             scanRecursive(m_currentPath, "", m_searchQuery, 0);
         } else {
-            scanDirectory(m_currentPath);
+            if (!scanDirectory(m_currentPath) && isInternalStoragePath(m_currentPath)) return false;
         }
     }
 
@@ -323,10 +337,10 @@ bool FileSystemBrowser::refresh() {
     return true;
 }
 
-void FileSystemBrowser::scanDirectory(const std::string& dirPath) {
+bool FileSystemBrowser::scanDirectory(const std::string& dirPath) {
     EVO_LOGI("files", "scanDirectory '%s'", dirPath.c_str());
     evo_dir_t* dir = evo_opendir(dirPath.c_str());
-    if (!dir && dirPath.rfind("/data", 0) == 0) {
+    if (!dir && isInternalStoragePath(dirPath)) {
         EVO_LOGW("files", "evo_opendir('%s') null, ensuring unjail retry", dirPath.c_str());
         evo_jailbreak_ensure();
         dir = evo_opendir(dirPath.c_str());
@@ -334,7 +348,7 @@ void FileSystemBrowser::scanDirectory(const std::string& dirPath) {
     if (!dir) {
         // A deleted subfolder returns to the root of the same drive.
         std::string root = usbMountOf(dirPath);
-        if (root.empty() && dirPath.rfind("/data/", 0) == 0) root = "/data";
+        if (isInternalStoragePath(dirPath)) root = kInternalStorageRoot;
         if (!root.empty() && root != dirPath) {
             dir = evo_opendir(root.c_str());
             if (dir) m_currentPath = std::move(root);
@@ -343,7 +357,7 @@ void FileSystemBrowser::scanDirectory(const std::string& dirPath) {
 
     if (!dir) {
         EVO_LOGE("files", "scanDirectory '%s' failed (errno=%d)", dirPath.c_str(), errno);
-        return;
+        return false;
     }
 
     struct dirent* entry;
@@ -354,7 +368,11 @@ void FileSystemBrowser::scanDirectory(const std::string& dirPath) {
 
         std::string fullPath = m_currentPath + "/" + entry->d_name;
         uint8_t dType = entry->d_type;
-        if (dType == 0 || dType == 10 /* DT_LNK */) {
+        if (isInternalStoragePath(fullPath)) {
+            struct stat st;
+            if (statWithoutFollowingLinks(fullPath.c_str(), st) != 0 || (!S_ISDIR(st.st_mode) && !S_ISREG(st.st_mode))) continue;
+            dType = S_ISDIR(st.st_mode) ? DT_DIR : DT_REG;
+        } else if (dType == 0 || dType == 10 /* DT_LNK */) {
             struct stat st;
             if (stat(fullPath.c_str(), &st) == 0) {
                 if (S_ISDIR(st.st_mode)) {
@@ -382,6 +400,7 @@ void FileSystemBrowser::scanDirectory(const std::string& dirPath) {
 
     EVO_LOGI("files", "scanDirectory '%s' complete, found %zu entries", dirPath.c_str(), m_entries.size());
     evo_closedir(dir);
+    return true;
 }
 
 void FileSystemBrowser::scanRecursive(const std::string& basePath, const std::string& relPath,
@@ -404,7 +423,11 @@ void FileSystemBrowser::scanRecursive(const std::string& basePath, const std::st
         std::string childFullPath = basePath + "/" + itemRel;
 
         uint8_t dType = entry->d_type;
-        if (dType == 0 || dType == 10 /* DT_LNK */) {
+        if (isInternalStoragePath(childFullPath)) {
+            struct stat st;
+            if (statWithoutFollowingLinks(childFullPath.c_str(), st) != 0 || (!S_ISDIR(st.st_mode) && !S_ISREG(st.st_mode))) continue;
+            dType = S_ISDIR(st.st_mode) ? DT_DIR : DT_REG;
+        } else if (dType == 0 || dType == 10 /* DT_LNK */) {
             struct stat st;
             if (stat(childFullPath.c_str(), &st) == 0) {
                 if (S_ISDIR(st.st_mode)) {
@@ -598,6 +621,12 @@ void FileSystemBrowser::loadLastFolder() {
         }
     }
     std::fclose(file);
+
+    const std::string savedPath = savedFolder;
+    if (isInternalStoragePath(savedPath) || savedPath == "/data" || savedPath.rfind("/data/", 0) == 0) {
+        setCurrentPath(isInternalDirectory(savedPath) ? savedPath : kInternalStorageRoot);
+        return;
+    }
 
     if (savedFolder[0] != '\0' && isSafePath(savedFolder) && !hidden_storage::hidesPath(savedFolder)) {
         evo_dir_t* dir = evo_opendir(savedFolder);
