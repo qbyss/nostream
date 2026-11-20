@@ -7,7 +7,7 @@ Copyright (C) 2026 EVO Player contributors  (vendoring + EVO integration)
 # `tools/native-app/` — PS5 game-category app-module build tail
 
 This directory is the **link + package tail** for building EVO Player as a
-fake-signed, game-category **app module** (`PPSA99039`) instead of an
+fake-signed, game-category **app module** (`PPSA99273`) instead of an
 hbldr/elfldr payload. It is what the app module build needs; see
 [docs/architecture/app-module.md](../../docs/architecture/app-module.md).
 

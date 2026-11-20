@@ -1,6 +1,6 @@
 # The title's memory budget — measured
 
-**Measured on hardware** (the original figures 2026-09-25, app module `PPSA99039`,
+**Measured on hardware** (the original figures 2026-09-25, app module `PPSA99273`,
 firmware 12.70). Every figure here comes from a kernel query, not from an
 inference. If you are about to say "EVO is memory-limited", say which pool, and
 check it against this page first.

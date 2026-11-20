@@ -96,27 +96,15 @@ void LaunchScreen::onExit() {
     StatefulScreen::onExit();
 }
 
-std::string LaunchScreen::heroPathForSelection() const {
-    const auto visible = hidden_storage::visibleRecent();
-    /*
-     * The hero is the most recently played file and nothing else. It used to
-     * follow the recent-shelf cursor and to be overwritten by whichever library
-     * tile was hovered, so moving around Home kept rewriting the one panel that
-     * is supposed to sit still and say "here is what you were watching".
-     */
-    if (visible.empty()) {
-        return std::string();
-    }
-    return std::string(visible[0].path);
-}
-
 void LaunchScreen::update(double deltaMs) {
     StatefulScreen::update(deltaMs);
     m_launchFsm.update(deltaMs);
-    const bool focusAfterUsbScan = m_waitingForStartupUsbFocus && evo_usb_identity_ready();
-    const int count = static_cast<int>(hidden_storage::visibleRecent().size());
-    if (focusAfterUsbScan) {
-        m_waitingForStartupUsbFocus = false;
+    const bool usbScanComplete = m_waitingForStartupResumeFocus && evo_usb_identity_ready();
+    const auto visible = hidden_storage::visibleRecent();
+    const int count = static_cast<int>(visible.size());
+    // A resolved recent file can play while the scan checks other volumes.
+    if (m_waitingForStartupResumeFocus && (count > 0 || usbScanComplete)) {
+        cancelStartupResumeFocus();
         if (count > 0 && m_selectedRow != 0) {
             m_selectedRow = 0;
             m_selectedCol = 0;
@@ -130,8 +118,8 @@ void LaunchScreen::update(double deltaMs) {
         m_selectedCol = std::clamp(m_selectedCol, 0, count - 1);
     }
 
-    /* Restart the debounce whenever the cursor lands on a different file. */
-    std::string heroPath = heroPathForSelection();
+    /* Restart the debounce whenever the most recent file changes. */
+    const std::string heroPath = visible.empty() ? "" : visible.front().path;
     if (heroPath != m_heroSettlePath) {
         m_heroSettlePath = heroPath;
         m_heroSettleMs = 0.0;
@@ -326,7 +314,7 @@ void LaunchScreen::render(uint32_t* framebuffer, int width, int height) {
     }
     params.hero_focused = (!railFocused && m_selectedRow == 0);
 
-    if (evo_usb_identity_scan_pending()) {
+    if (visible.empty() && evo_usb_identity_scan_pending()) {
         for (int i = 0; i < recent_file_count; ++i) {
             const auto& entry = recent_files[i];
             char root[EVO_USB_VOLUME_ROOT_CAP];

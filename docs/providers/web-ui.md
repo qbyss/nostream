@@ -1,6 +1,6 @@
 # Web-UI providers: the system browser in the app module (#101)
 
-Started as a go/no-go spike on whether `PPSA99039` can drive the PS5's own
+Started as a go/no-go spike on whether `PPSA99273` can drive the PS5's own
 WebKit (`libSceWebBrowserDialog`). The answer was yes, so it became a feature:
 Emby, Jellyfin and Nuvio could be used through their own web client, opened beside
 EVO's nav rail, with Play rerouted to EVO's player. Stage 1 (offline research) is in

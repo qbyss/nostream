@@ -70,7 +70,7 @@ S2 runs in two steps:
 1. **S2a, stock broker.** EVO sends the broker's existing `ipc-selftest` op
    (`src_pid`, `src_fd` = `sv[1]`), receives the broker's SHM_ANON object by
    `SCM_RIGHTS`, maps it and checks the `PRWB-BROKER-SHM` pattern. This proves
-   the transport inside PPSA99039 with no fork change.
+   the transport inside PPSA99273 with no fork change.
 2. **S2b, frame test.** No fork change either: the stock broker spawns any
    ELF by path, so `helpers/frame_test.c` (built by
    `tools/build_frame_test.sh` into `output/evo_frame_test.elf`) is spawned

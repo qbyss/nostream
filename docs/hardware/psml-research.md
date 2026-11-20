@@ -75,7 +75,7 @@ Recovered MFSR names: `3WVD91e12ZQ scePsmlMfsrInit`,
 | The Last of Us Part I | yes | `{"mfsrVersion": "09.60"}` | `0x004400D4` |
 | Assassin's Creed Shadows | yes | `{"mfsrVersion": "11.00"}` | `0x08440054` |
 | Alan Wake Remastered | no | — | `0` |
-| **EVO Player (PPSA99039)** | no | — | `0x00080040` |
+| **EVO Player (PPSA99273)** | no | — | `0x00080040` |
 
 The only `attribute3` bit all three Pro titles share and EVO lacks is
 **`0x00400000`**, the strongest candidate for "PS5 Pro enhanced", which would

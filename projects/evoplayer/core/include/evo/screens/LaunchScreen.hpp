@@ -45,20 +45,17 @@ public:
     bool handleInput(uint32_t pressed, uint32_t held, uint32_t released) override;
     void update(double deltaMs) override;
     void render(uint32_t* framebuffer, int width, int height) override;
-    void cancelStartupResumeFocus() { m_waitingForStartupUsbFocus = false; }
+    void cancelStartupResumeFocus() { m_waitingForStartupResumeFocus = false; }
 
 private:
     void initLaunchStateMachine();
     void navigate(int dx, int dy);
     void activateSelection();
 
-    /* Path the hero backdrop should show for the current cursor position. */
-    std::string heroPathForSelection() const;
-
     StateMachine<LaunchScreenState, LaunchScreenEvent> m_launchFsm;
     int m_selectedRow = 0;
     int m_selectedCol = 0;
-    bool m_waitingForStartupUsbFocus = true;
+    bool m_waitingForStartupResumeFocus = true;
     std::string m_recentMenuPath;
     int m_recentMenuFocused = 0;
 
