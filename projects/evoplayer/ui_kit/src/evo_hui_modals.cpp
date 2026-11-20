@@ -155,7 +155,7 @@ void SubtitlePicker::draw(DrawList &list, const Context &ctx) const
     };
     pill("SIZE", size_, ui::Button::triangle);
     if (has_secondary_)
-        pill("2ND", size2_, ui::Button::r2);
+        pill("2ND", size2_);
     pill("SYNC", sync_);
     if (!sync2_.empty())
         pill("2ND SYNC", sync2_);
@@ -199,9 +199,7 @@ void SubtitlePicker::draw(DrawList &list, const Context &ctx) const
     std::vector<ui::Hint> hints;
     hints.push_back({ui::Button::cross, "Select"});
     hints.push_back({ui::Button::square, "2nd track"});
-    hints.push_back({ui::Button::triangle, "Size"});
-    if (has_secondary_)
-        hints.push_back({ui::Button::r2, "2nd size"});
+    hints.push_back({ui::Button::triangle, "Track size"});
     hints.push_back({ui::Button::dpad, "Sync"});
     hints.push_back({ui::Button::circle, "Back"});
 

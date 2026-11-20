@@ -20,7 +20,7 @@ curl -N http://<ps5>:9780/raw             # live, no FTP (default port 9780)
 curl "http://<ps5>:9780/raw?grep=hui&level=warn"
 ```
 
-- Every `deploy-app.sh --ffpfsc` deletes `evo.log`, `evo_status` and
+- Legacy PFS deployment with `deploy-app.sh --ffpfsc` deletes `evo.log`, `evo_status` and
   `evo_report.txt`, so each launch starts clean.
 - **A static log proves nothing about whether EVO exited.** The idle heartbeat is
   about six minutes apart.

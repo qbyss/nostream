@@ -643,7 +643,6 @@ void HtmlDocument::create_help_page(float viewport_width, float viewport_height)
     blocks_.push_back({BlockType::ListItem, "Circle (O): Go back to previous page in history, or close drawers", "", {}, {}});
     blocks_.push_back({BlockType::ListItem, "Triangle (Triangle): Focus address bar (omnibox) for typing", "", {}, {}});
     blocks_.push_back({BlockType::ListItem, "Right Stick: Smooth kinetic scrolling up and down the web page", "", {}, {}});
-    blocks_.push_back({BlockType::ListItem, "L2 / R2 Triggers: Analog progressive page scrolling", "", {}, {}});
     blocks_.push_back({BlockType::ListItem, "L1 / R1 Bumpers: Switch between active browser tabs", "", {}, {}});
     blocks_.push_back({BlockType::ListItem, "Square (Square): Toggle Bookmarks & History drawer", "", {}, {}});
     blocks_.push_back({BlockType::ListItem, "Options (Options): Open Browser Settings modal", "", {}, {}});

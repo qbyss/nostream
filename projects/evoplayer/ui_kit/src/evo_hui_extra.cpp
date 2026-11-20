@@ -292,8 +292,8 @@ void KeyboardOverlay::sync_keys(const evo_keyboard_params_t &p)
          * calls the kit's own input handling: evo_keyboard.c takes the buttons. */
         keys_.style.bindings.backspace = ::hui::Action::west;    /* Square */
         keys_.style.bindings.space = ::hui::Action::north;       /* Triangle */
-        keys_.style.bindings.shift = ::hui::Action::jump_prev;   /* L2 */
-        keys_.style.bindings.done = ::hui::Action::jump_next;    /* R2 */
+        keys_.style.bindings.shift = ::hui::Action::count;
+        keys_.style.bindings.done = ::hui::Action::menu;         /* Options */
         layouts_built_ = true;
         built_columns_ = p.key_columns;
     }

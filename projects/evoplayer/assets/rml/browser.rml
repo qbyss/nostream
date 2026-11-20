@@ -354,10 +354,6 @@
                     <span class="footer-text">PAGE</span>
                 </div>
                 <div class="footer-hint">
-                    <div class="glyph-badge-pill"><span class="glyph-pill-text">L2 / R2</span></div>
-                    <span class="footer-text">A-Z</span>
-                </div>
-                <div class="footer-hint">
                     <div class="glyph-badge-pill"><span class="glyph-pill-text">OPTIONS</span></div>
                     <span id="footer-options-label" class="footer-text">OPERATIONS</span>
                 </div>

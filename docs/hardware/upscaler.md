@@ -204,8 +204,8 @@ its AI mode is Anime4K in EVO's own shaders. In short:
 
 ## Hardware checklist
 
-1. **Build and deploy.** `package-app.sh --ffpfsc --usb-remote`, then
-   `deploy-app.sh --ffpfsc`.
+1. **Build and deploy.** `package-app.sh --usb-remote`, then
+   `deploy-app.sh`.
 2. **Boot log.** `evo.log` must show:
    - an `agc pipe upscale_* ...` line for all 58 upscale pipes, none
      `unavailable`

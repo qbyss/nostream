@@ -1,8 +1,7 @@
 # Packaging and deploying
 
-One path ships EVO: build the app module with `scripts/package-app.sh`, PFS-pack
-it into `PPSA99273.ffpfsc`, and put that image in `/data/homebrew/` with
-`scripts/deploy-app.sh`. The older routes (homebrew bundles, a fake-SELF ELF
+Build the NoStream app folder with `scripts/package-app.sh` and upload it to
+`/data/homebrew/PPSA99273/` with `scripts/deploy-app.sh`. The older routes (homebrew bundles, a fake-SELF ELF
 installed with `sceAppInstUtil`, hbldr launches) were dropped: they reach none of
 the features that need an app module ([../architecture/app-module.md](../architecture/app-module.md)).
 `scripts/package-pkg.sh` is a leftover from that era; it is not part of any
@@ -10,9 +9,9 @@ workflow, and a signed fPKG needs Sony's licensed `prospero-pub-cmd`, which this
 repo does not have ([../proprietary.md](../proprietary.md)).
 
 ```bash
-docker compose run --rm ps5-dev ./scripts/package-app.sh --ffpfsc --usb-remote
-docker compose run --rm ps5-dev ./scripts/deploy-app.sh --ffpfsc    # sha256-verified
-./tools/evo-remote.sh launch      # ShadowMount+ v1.7 does not launch an updated image
+docker compose run --rm ps5-dev ./scripts/package-app.sh --usb-remote
+docker compose run --rm ps5-dev ./scripts/deploy-app.sh    # SHA-256 verified folder upload
+./tools/evo-remote.sh launch      # launch the registered app folder
 ```
 
 Never build or deploy by hand over a running EVO. The close sequence and the
@@ -64,26 +63,22 @@ same folder before suspecting code.
 ## `deploy-app.sh`
 
 ```bash
-./scripts/deploy-app.sh --ffpfsc          # upload the image
-./scripts/deploy-app.sh                   # upload the folder instead
-./scripts/deploy-app.sh --ffpfsc --fresh  # fresh install: wipe every EVO file first (tools/wipe-evo.py)
-./scripts/deploy-app.sh --undeploy        # remove the staged title and image
+PS5_HOST=<ip> ./scripts/deploy-app.sh    # upload and verify the app folder
+./scripts/deploy-app.sh --undeploy       # remove the staged title and active PFS image
 ```
 
-- The image uploads as `<TID>.ffpfsc.upload`, is read back and sha256-compared with
-  the local file, and is renamed into place only on a match. A mismatch deletes the
-  upload, so ShadowMount+ never sees bad bytes. For a folder deploy, `eboot.bin` and
-  `param.json` go up last, so a half-finished folder is never mountable.
-- It deletes `/mnt/usb0/{evo.log, evo_status, evo_report.txt}` so each
-  launch starts with a fresh log.
-- **It refuses to run while EVO is resident.** It asks ShadowMount's
+- The folder uploader verifies each temporary file by SHA-256 before promoting
+  it. It sends `eboot.bin` and `sce_sys/param.json` last and moves an existing
+  PFS image to a timestamped backup after the folder is verified.
+- On macOS, folder upload uses `/usr/bin/python3` directly. The owner closes
+  NoStream before updating it and launches it after the upload.
+- The legacy `--ffpfsc` uploader clears the console logs before transfer.
+- **Legacy image deployment checks whether EVO is resident.** It asks ShadowMount's
   `/data/shadowmount/debug.log` (via `tools/evo_lifecycle.py`): started and not
   released means resident, a parked EVO included. A heartbeat that is still moving
   is refused outright and `--force` does not override it. `--force` only applies
   when there is no heartbeat to read.
-- It never launches anything. **ShadowMount+ v1.7 test-mounts an updated image and
-  unmounts it again; it does not launch it.** Launch from the Media tab or with
-  `evo-remote.sh launch`.
+- Launch the registered folder title from the Media tab after the upload.
 - `--fresh` goes through `tools/wipe-evo.py`: the app, `/data/nostream` (settings,
   logins, playlists, calibration) and `/mnt/usb0/nostream*`. A dry run
   (`python3 tools/wipe-evo.py <host>`) lists what would go; `--do` deletes. It never

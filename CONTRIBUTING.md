@@ -96,7 +96,7 @@ dependencies. Use the scripts.
 ```sh
 docker compose run --rm ps5-dev ./scripts/build-evoplayer.sh       # compile check
 docker compose run --rm ps5-dev ./tests/run_tests.sh               # host tests
-docker compose run --rm ps5-dev ./scripts/package-app.sh --ffpfsc  # the .ffpfsc you test on the console
+docker compose run --rm ps5-dev ./scripts/package-app.sh  # the app folder you test on the console
 ./tools/hui_preview.sh                                             # every screen rendered on your PC
 ```
 

@@ -1,7 +1,7 @@
 # EVO Player
 
 A native media player for jailbroken PS5 (FW 13.60), built against the PS5
-Payload SDK and shipped as an app module (`.ffpfsc`, title `PPSA99273`). The UI
+Payload SDK and shipped as an app module (folder title `PPSA99273`). The UI
 is RmlUi on bare-metal `sceAgc`; decode is `sceVideodec2` with an FFmpeg
 fallback.
 
@@ -39,8 +39,8 @@ Each issue body also has a "References & sequencing" block.
   `docker compose` when started from Windows. From Git Bash, call
   `docker compose run --rm -e PS5_HOST=... ps5-dev ./tools/...` directly, and
   set `MSYS_NO_PATHCONV=1` when you pass a container path.
-- **One hardware path: the `.ffpfsc` app module.** Build with `package-app.sh
-  --ffpfsc`, deploy with `deploy-app.sh --ffpfsc`, then start it with
+- **Deploy the `PPSA99273/` app folder.** Build with `package-app.sh`,
+  deploy with `deploy-app.sh`, then start it with
   `evo-remote.sh launch`. ShadowMount+ v1.7 does NOT auto-launch an updated
   image. Never push an EVO ELF. For layout questions use the host renderer
   (`hui_preview.sh` for the kit screens, `uiview.sh` for RmlUi), not the console.
@@ -95,8 +95,8 @@ Each issue body also has a "References & sequencing" block.
 
 ```bash
 # build + deploy (always --usb-remote for testing: enables evo-remote)
-docker compose run --rm ps5-dev ./scripts/package-app.sh --ffpfsc --usb-remote
-docker compose run --rm ps5-dev ./scripts/deploy-app.sh --ffpfsc   # sha256-verified
+docker compose run --rm ps5-dev ./scripts/package-app.sh --usb-remote
+docker compose run --rm ps5-dev ./scripts/deploy-app.sh   # SHA-256 verified
 
 # fast path: reuse one container (~0.7 s per call instead of several s). Prefix any
 # container command with ./tools/dx.sh; ./tools/dx.sh --stop before `docker compose build`

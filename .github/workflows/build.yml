@@ -158,12 +158,9 @@ jobs:
           retention-days: 7
 
   # ===========================================================================
-  # #36: catch a broken app-module package (link tail, PRX stubs, MkPFS pack)
-  # on every PR, instead of finding out on a release tag. Runs --ffpfsc so a
-  # regression in the PFS packing itself (not just the compile) is also
-  # caught here rather than only in release.yml.
+  # #36: verify the signed app folder on every PR.
   package-app:
-    name: Package app module (.ffpfsc)
+    name: Package app folder
     needs: build-image
     runs-on: ubuntu-latest
     steps:
@@ -174,17 +171,11 @@ jobs:
         with: { name: docker-image, path: /tmp }
       - run: docker load < /tmp/evo-image.tar.gz
 
-      - name: Cache MkPFS toolchain
-        uses: actions/cache@v4
-        with:
-          path: .deps/MkPFS
-          key: mkpfs-${{ hashFiles('scripts/setup-pfs-tool.sh') }}
-
-      - name: package-app.sh --ffpfsc
+      - name: Build the app folder
         run: |
           docker run --rm -v "$PWD:/workspace" -w /workspace \
             evo-player/ps5-dev:ci bash -lc \
-            './scripts/build-ffmpeg.sh --profile minimal --install && ./scripts/package-app.sh --ffpfsc'
+            './scripts/build-ffmpeg.sh --profile minimal --install && ./scripts/package-app.sh'
 
       # Same independent checks as release.yml's "Verify the release image" -
       # kept in sync by hand since GHA has no clean way to share a step body
@@ -195,9 +186,6 @@ jobs:
             evo-player/ps5-dev:ci bash -lc '
               set -e
               APPDIR="output/app/PPSA99273"
-              IMG="output/app/PPSA99273.ffpfsc"
-
-              [ -f "$IMG" ] || { echo "missing $IMG - MkPFS pack failed"; exit 1; }
 
               # eboot.bin is FSELF-wrapped (fake-signed) - file/readelf see
               # its custom container header and report "data", not an ELF
@@ -218,7 +206,7 @@ jobs:
               ASSET_BYTES="$(du -sb "$APPDIR/assets" | cut -f1)"
               [ "$ASSET_BYTES" -gt 1000000 ] || { echo "assets/ is suspiciously small ($ASSET_BYTES bytes)"; exit 1; }
 
-              echo "ok: $IMG  $(stat -c %s "$IMG") bytes, assets ${ASSET_BYTES} bytes"
+              echo "ok: $APPDIR, assets ${ASSET_BYTES} bytes"
             '
 
       - name: Archive app module
@@ -226,7 +214,6 @@ jobs:
         with:
           name: evoplayer-app-module
           path: |
-            output/app/PPSA99273.ffpfsc
             output/app/PPSA99273/
           if-no-files-found: error
           retention-days: 14

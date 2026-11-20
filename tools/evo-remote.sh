@@ -10,7 +10,7 @@
 #
 #   PS5_HOST=192.168.0.6 ./tools/evo-remote.sh <subcommand>
 #
-#   build [--breadcrumbs ...]               package --usb-remote + deploy .ffpfsc
+#   build [--breadcrumbs ...]               package --usb-remote + deploy the app folder
 #   launch [--no-sm-restart]                restart ShadowMount (smrestart: its
 #                                           launch hook serves one launch), then
 #                                           launch PPSA99273 with no controller
@@ -423,13 +423,13 @@ do_cycle() {
             *) die "usage: evo-remote.sh cycle [--secs n] [--play <path>] [--no-build] [--check <name>]... [-- package-app args]" ;;
         esac
     done
-    local stamp dir commit dirty img sha="" base stage="none" klog_pid=""
+    local stamp dir commit dirty eboot sha="" base stage="none" klog_pid=""
     stamp="$(date -u +%Y%m%dT%H%M%SZ)"
     dir="${OUTPUT_DIR}/cycles/${stamp}"
     mkdir -p "${dir}"
     commit="$(git -C "${REPO_ROOT}" rev-parse --short HEAD 2>/dev/null || echo unknown)"
     dirty="$(git -C "${REPO_ROOT}" status --porcelain --untracked-files=no 2>/dev/null | wc -l)"
-    img="${OUTPUT_DIR}/app/${TITLE_ID}.ffpfsc"
+    eboot="${OUTPUT_DIR}/app/${TITLE_ID}/eboot.bin"
 
     finish() {   # finish <outcome> <next-action>
         [[ -n "${klog_pid}" ]] && { kill "${klog_pid}" 2>/dev/null || true; }
@@ -439,7 +439,7 @@ do_cycle() {
 import json, sys
 p, outcome, stage, commit, dirty, sha, nxt = sys.argv[1:]
 json.dump({"outcome": outcome, "highestStage": stage, "commit": commit,
-           "dirtyFiles": int(dirty), "ffpfscSha256": sha, "next": nxt},
+           "dirtyFiles": int(dirty), "ebootSha256": sha, "next": nxt},
           open(p, "w"), indent=2)
 PY
         echo "${line}" >> "${OUTPUT_DIR}/cycles/ledger.txt"
@@ -470,31 +470,26 @@ PY
 
     # 3. build the candidate
     if (( build )); then
-        "${SCRIPTS_DIR}/package-app.sh" --ffpfsc --usb-remote "${pkg[@]+"${pkg[@]}"}" > "${dir}/package.log" 2>&1 \
+        "${SCRIPTS_DIR}/package-app.sh" --usb-remote "${pkg[@]+"${pkg[@]}"}" > "${dir}/package.log" 2>&1 \
             || finish no-run "package failed - see package.log"
     fi
-    [[ -f "${img}" ]] || finish no-run "no ${img}"
-    sha="$(sha256sum "${img}" | cut -d' ' -f1)"
-    echo "${sha}  ${TITLE_ID}.ffpfsc" > "${dir}/sha256.txt"
+    [[ -f "${eboot}" ]] || finish no-run "no ${eboot}"
+    sha="$(sha256sum "${eboot}" | cut -d' ' -f1)"
+    echo "${sha}  ${TITLE_ID}/eboot.bin" > "${dir}/sha256.txt"
     stage="packaged"
 
-    # 4. deploy, then ShadowMount must register it before anything launches
+    # 4. deploy the verified folder. An existing title may already be registered.
     base="$(lc smlen)" || { finish transport-failure "ShadowMount log unreadable"; }
-    "${SCRIPTS_DIR}/deploy-app.sh" --ffpfsc > "${dir}/deploy.log" 2>&1 \
+    "${SCRIPTS_DIR}/deploy-app.sh" > "${dir}/deploy.log" 2>&1 \
         || finish transport-failure "deploy failed - do NOT retry; see deploy.log"
     stage="deployed"
-    [[ "$(lc wait-registered "${base}" 90)" == REGISTERED ]] \
-        || { lc smslice "${base}" > "${dir}/shadowmount.log" 2>/dev/null || true; finish no-run "ShadowMount never registered the new image - not launching"; }
-    stage="registered"
-
-    # 5. observe: klog from before the launch, ShadowMount auto-launches on the
-    #    image change - only send `launch` if it did not.
+    # 5. Start capturing klog before launching from the registered folder.
     : > "${dir}/klog.log"
     if (( klog )); then
         timeout --signal=TERM "$((secs + 90))s" nc "${PS5_HOST}" 3232 > "${dir}/klog.log" 2>/dev/null &
         klog_pid=$!
     fi
-    if [[ "$(lc wait-started "${base}" 40)" != STARTED ]]; then
+    if [[ "$(lc wait-started "${base}" 1)" != STARTED ]]; then
         ( do_launch ) > "${dir}/launch.log" 2>&1 \
             || { lc smslice "${base}" > "${dir}/shadowmount.log" 2>/dev/null || true; finish failed "never started - see launch.log + klog.log"; }
     fi
@@ -602,9 +597,9 @@ do_logq() {
 
 case "${SUB}" in
 build)
-    "${SCRIPTS_DIR}/package-app.sh" --ffpfsc --usb-remote "$@"
+    "${SCRIPTS_DIR}/package-app.sh" --usb-remote "$@"
     del_files "${USB_STATUS}" "${USB_LOG}" || true
-    "${SCRIPTS_DIR}/deploy-app.sh" --ffpfsc
+    "${SCRIPTS_DIR}/deploy-app.sh"
     echo ""
     echo "  >>> launch PPSA99273 from the Media tab (ShadowMount+ remounted) <<<"
     ;;

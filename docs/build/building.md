@@ -1,13 +1,13 @@
 # Building EVO Player
 
 Developer setup: a Windows host, Docker, the PS5 Payload SDK toolchain, FFmpeg,
-and the commands that produce the `.ffpfsc`. Everything toolchain-related runs in
+and the commands that produce the app folder. Everything toolchain-related runs in
 one pinned Docker image, so `docker compose build` gives the same toolchain
 tomorrow as today.
 
 ```
 Windows ─► Git Bash / VS Code ─► Docker container ─► clang 18 + PS5 Payload SDK v0.42
-                                                  ─► app module (PPSA99273.ffpfsc) ─► PS5 13.60
+                                                  ─► app module (PPSA99273/) ─► PS5 13.60
 ```
 
 Contents: [prerequisites](#prerequisites) · [first build](#first-build) ·
@@ -51,7 +51,7 @@ docker compose run --rm ps5-dev bash               # a shell inside it
 Then build and package:
 
 ```bash
-docker compose run --rm ps5-dev ./scripts/package-app.sh --ffpfsc --usb-remote
+docker compose run --rm ps5-dev ./scripts/package-app.sh --usb-remote
 ```
 
 Flags and outputs are in [packaging.md](packaging.md); deploying and driving the
@@ -120,7 +120,7 @@ Details and the traps: [../hardware/shader-compilation.md](../hardware/shader-co
 
 ```bash
 # the real build (all flags: packaging.md)
-docker compose run --rm ps5-dev ./scripts/package-app.sh --ffpfsc --usb-remote
+docker compose run --rm ps5-dev ./scripts/package-app.sh --usb-remote
 # compile check only: never deploys, never touches the console
 docker compose run --rm ps5-dev ./scripts/build-evoplayer.sh
 # host unit tests (build/validation.md)

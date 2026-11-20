@@ -23,7 +23,6 @@
                         <span id="subtitles-size-label">SIZE: MEDIUM</span>
                     </div>
                     <div id="subtitles-size2-pill">
-                        <span class="btn-tag">R2</span>
                         <span id="subtitles-size2-label">2ND: MEDIUM</span>
                     </div>
                 </div>
@@ -140,11 +139,7 @@
                 </div>
                 <div class="footer-hint">
                     <div class="glyph-badge"><img src="../icons/btn_triangle.png" class="glyph-badge-img"/></div>
-                    <span class="footer-text">SIZE</span>
-                </div>
-                <div class="footer-hint">
-                    <span class="btn-tag">R2</span>
-                    <span class="footer-text">2ND SIZE</span>
+                    <span class="footer-text">TRACK SIZE</span>
                 </div>
                 <div class="footer-hint">
                     <span class="btn-tag">&lt; &gt;</span>

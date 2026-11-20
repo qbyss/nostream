@@ -9,7 +9,7 @@
 # code path stays green (issues #31 §4, #36, docs/architecture/architecture.md parity).
 # It does NOT and MUST NOT deploy or launch anything on a console. The ONLY
 # hardware path is the app module:
-#     scripts/package-app.sh --ffpfsc  &&  scripts/deploy-app.sh --ffpfsc
+#     scripts/package-app.sh  &&  scripts/deploy-app.sh
 # The ELF-push scripts (install-homebrew / launch / deploy) were deleted
 # 2026-09-03 - see docs/build/tooling.md and the `never-elf` rule.
 #
@@ -28,7 +28,7 @@ while (( $# )); do
         --stage)   shift; STAGE="${1:?--stage needs a value}" ;;
         -h|--help) sed -n '2,20p' "$0"; exit 0 ;;
         --run)     die "--run is gone. EVO deploys via the app module only:
-       scripts/package-app.sh --ffpfsc && scripts/deploy-app.sh --ffpfsc" ;;
+       scripts/package-app.sh && scripts/deploy-app.sh" ;;
         *) die "unknown option: $1 (try --help)" ;;
     esac
     shift

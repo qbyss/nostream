@@ -227,45 +227,18 @@ jobs:
           cat >> dist/NOTES.md <<'EOF'
           ## Install — start here
 
-          Choose either the **`.ffpfsc`** image or the **`.zip`** archive:
+          Download **`NoStream-*-PPSA99273.zip`** for a folder install.
 
-          ### Option A: PFS Image (`.ffpfsc`)
+          1. Close NoStream on the console before updating it.
+          2. Extract the archive into `/data/homebrew/` so the executable is at
+             `/data/homebrew/PPSA99273/eboot.bin`. Move any previous PFS image
+             out of the homebrew scan directory.
+          3. Register the folder with **ShadowMountPlus** and launch NoStream
+             from the **Media** tab.
 
-          **Download `NoStream-*-PPSA99273.ffpfsc`.** That is the whole app
-          module, PFS-packed and ready to mount — no loose files, no second
-          download.
-
-          1. Jailbreak the console (any firmware below 13.60) and run a jailbreak
-             daemon (PS5-Lapy-JB-Daemon or etaHEN) — re-run it after every
-             reboot.
-          2. Copy the `.ffpfsc` to `/data/homebrew/PPSA99273.ffpfsc` on the
-             console (FTP, or `PS5_HOST=<ip> ./scripts/deploy-app.sh --ffpfsc`
-             from a checkout).
-          3. **ShadowMountPlus** auto-mounts + registers it on the `.ffpfsc`
-             change and can auto-launch it; otherwise mount it and launch
-             **NoStream from the Media tab**.
-
-          ### Standard or Pro memory build
-
-          * **`NoStream-*-PPSA99273.ffpfsc`** is the standard build. Use it on a
-            base PS5. It is the only build tested there.
-          * **`NoStream-*-PPSA99273-pro.ffpfsc`** is for a **PS5 Pro**. It asks
-            for the Pro memory mode: about 1.2 GiB more GPU memory (12.6 GiB
-            instead of 11.4 GiB). Tested on a PS5 Pro only. On a base PS5 it is
-            untested, so use the standard build there.
-
-          Install only one of the two. Settings > System & Diagnostics > Memory
-          shows which mode you got.
-
-          ### Option B: Folder Title Archive (`.zip`)
-
-          **Download `NoStream-*-PPSA99273.zip`.** Standard homebrew folder title
-          layout (identical layout to Kodi PS5).
-
-          1. Extract the zip into `/data/homebrew/` on the console over FTP
-             (creates `/data/homebrew/PPSA99273/`).
-          2. Register the title with **ShadowMountPlus** (or your preferred
-             homebrew launcher) and launch **NoStream from the Media tab**.
+          The release also publishes legacy `.ffpfsc` assets for existing
+          image installs and their in-app updater. The `-pro.ffpfsc` variant
+          requests the additional memory available on PS5 Pro.
 
           Never stack launches — PS button to close a running EVO before
           relaunching (deploying/launching over a live instance risks a

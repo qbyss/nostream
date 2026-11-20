@@ -20,7 +20,7 @@ commands (`launch`, `quit`, `close`, `cycle`, `verify`, `kill`) are described in
 
 | Command | Does |
 |---|---|
-| `build [flags]` | package with `--usb-remote` and deploy the `.ffpfsc` |
+| `build [flags]` | package with `--usb-remote` and deploy the app folder |
 | `launch`, `quit`, `close [--force]`, `kill`, `cycle`, `verify` | lifecycle, guarded ([hardware-cycle.md](hardware-cycle.md)) |
 | `play <path>` | open a file from the start |
 | `seek <s>` / `seek +<s>` / `seek -<s>` | absolute or relative seek |

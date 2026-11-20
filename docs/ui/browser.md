@@ -224,7 +224,7 @@ Web lit), laid out for 1792x1080.
   in the `.ffpfsc`).
 
 Prospero's own controls apply (pointer on the left stick, page scroll on the
-right stick and triggers, D-pad to the page as arrow keys, Triangle for the
+right stick, D-pad to the page as arrow keys, Triangle for the
 address, Options for the menu, L1/R1 tabs, Circle back). Leaving the section
 sends `VISIBLE 0`, so the engine stops painting while EVO shows anything else.
 

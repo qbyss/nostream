@@ -501,7 +501,7 @@ bool PlayerScreen::handleInput(uint32_t pressed, uint32_t held, uint32_t release
         }
     }
 
-    if (pressed & (PadButtons::Cross | EVO_MEDIA_PLAY_PAUSE)) {
+    if (pressed & (PadButtons::Cross | PadButtons::TouchPad | EVO_MEDIA_PLAY_PAUSE)) {
         uint64_t now = NowMs();
         if (now - m_lastPlayPauseToggleMs >= 150) {
             m_lastPlayPauseToggleMs = now;

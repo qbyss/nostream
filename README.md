@@ -26,22 +26,22 @@ NoStream is a fork of [EVO Player](https://github.com/sainsaji/EVO-PLAYER-PS5), 
 
 ## Installation
 
-NoStream is a **Media app** (`PPSA99273`). It installs as a single `.ffpfsc` image and launches from the **Media** tab, like any other title. Its settings are stored in `/data/nostream`.
+NoStream is a **Media app** (`PPSA99273`). It installs as a homebrew folder and launches from the **Media** tab, like any other title. Its settings are stored in `/data/nostream`.
 
 ### Prerequisites
 
 - A jailbroken PS5 on firmware **13.60 or below**.
-- **ShadowMountPlus** on the console to mount and manage the app image.
+- **ShadowMountPlus** on the console to register and manage the app folder.
 - An FTP server on the console (the usual jailbreak payloads provide one on port `2121`).
 - *(For USB playback)* a USB drive formatted **exFAT** or **FAT32**, or **NTFS** (read-only).
 
 ### Install over FTP
 
-1. Build the package below or download the matching `NoStream-*-PPSA99273.ffpfsc` asset from [NoStream releases](https://github.com/qbyss/nostream/releases).
-2. Copy it to `/data/homebrew/PPSA99273.ffpfsc` on the console.
+1. Build the app folder below or download the matching `NoStream-*-PPSA99273.zip` asset from [NoStream releases](https://github.com/qbyss/nostream/releases).
+2. Close NoStream if it is running, then upload the folder or extract the ZIP so the executable is at `/data/homebrew/PPSA99273/eboot.bin`. Move any previous `PPSA99273.ffpfsc` out of the homebrew scan directory or rename it with a backup suffix.
 3. After ShadowMountPlus registers the title, launch **NoStream** from the **Media** tab.
 
-Close NoStream from the PS5 switcher before replacing an installed image.
+To update a folder install, close NoStream and upload a newer build to the same path.
 
 ---
 
@@ -60,8 +60,10 @@ Close NoStream from the PS5 switcher before replacing an installed image.
 | **LEFT** | Open navigation rail | — | — |
 | **UP** | Instant folder filter chips | — | — |
 | **L1 / R1** | Page up / Page down | Previous / next chapter (±30 s without chapters) | Move the text cursor left / right |
-| **L2 / R2** | Jump alphabetically (A–Z) | — | **L2:** Shift (press again: Caps Lock)<br>**R2:** Done |
+| **Touchpad click** | — | Play / Pause | — |
 | **L3 / R3** | Take screenshot (to `/mnt/usb0`, or `/data/nostream` with no stick) | **L3:** screenshot<br>**R3:** chapter list (a file with chapters) | — |
+
+Use the on-screen Shift key for capitalization. Select it twice for Caps Lock.
 
 ### PS5 Media Remote
 
@@ -100,13 +102,13 @@ Build FFmpeg and package the app module:
 ```bash
 docker compose run --rm ps5-dev bash -lc '
   ./scripts/build-ffmpeg.sh --profile minimal --install &&
-  ./scripts/package-app.sh --ffpfsc'
+  ./scripts/package-app.sh'
 ```
 
 With NoStream closed on the console, upload the packaged title over FTP:
 
 ```bash
-PS5_HOST=192.168.1.50 ./scripts/deploy-app.sh --ffpfsc
+PS5_HOST=192.168.1.50 ./scripts/deploy-app.sh
 ```
 
 Render UI screens on PC without hardware:

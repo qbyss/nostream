@@ -11,13 +11,12 @@ A release carries four files, all built by CI from the pinned toolchain:
 |---|---|
 | `NoStream-<tag>-PPSA99273.ffpfsc` | the standard image, for any console. The only build tested on a base PS5 |
 | `NoStream-<tag>-PPSA99273-pro.ffpfsc` | the same source with `attribute3` bit 22 set ([Pro memory mode](../hardware/memory-budget.md#pro-memory-mode-and-the-caps-143-decided-2026-10-22)); tested on a PS5 Pro only |
-| `NoStream-<tag>-PPSA99273.zip` | the folder-title archive, for loaders that want loose files |
+| `NoStream-<tag>-PPSA99273.zip` | the folder-title archive for standard installs |
 | `SHA256SUMS.txt` | checksums for the above |
 
-Install options for users are in the root [README.md](../../README.md): copy the
-image to `/data/homebrew/` for ShadowMountPlus, or install and update from
-ProsperoStore (which offers an update only when `contentVersion` in
-`param.json` went up).
+For a standard install, use the ZIP to create `/data/homebrew/PPSA99273/`.
+See the root [README.md](../../README.md) for the folder layout. Legacy
+PFS assets support existing image installs and their in-app updater.
 
 ## Cutting a release
 
@@ -52,7 +51,7 @@ Everything that carries the version string, as changed by the v0.12.5 commit
 
 | Workflow | Trigger | Does |
 |---|---|---|
-| `build.yml` | push to `main`, `develop`, `experiment/**`; PRs; manual | builds the dev image, runs `setup-sdk.sh`, `build-evoplayer.sh` and the compile-database build, validates the ELFs, and runs a `package-app` job (`package-app.sh --ffpfsc` on every PR, archived as an artifact). Skips doc-only changes |
+| `build.yml` | push to `main`, `develop`, `experiment/**`; PRs; manual | builds the dev image, runs `setup-sdk.sh`, `build-evoplayer.sh` and the compile-database build, validates the ELFs, and runs a `package-app` job (the verified folder is archived on each PR). Skips doc-only changes |
 | `release.yml` | tag `v*`; manual (a dry run) | checks VERSION and `contentVersion`; builds FFmpeg 7.1.1 inside the container (the image ships 7.0.1); packages the standard and Pro images and the zip; verifies them; extracts the changelog section; publishes the GitHub release on a tag only |
 | `add-to-project.yml`, `issue-triage.yml`, `pr-labeler.yml`, `greetings.yml`, `stale.yml` | issue and PR events | project board, auto-labels, housekeeping |
 
@@ -67,6 +66,10 @@ say so. The hardware check is yours, before the tag
 ([validation.md](validation.md#hardware-checks)).
 
 ## In-app update
+
+For a folder install, close NoStream and upload the new folder or extract the
+new release ZIP into the existing title path. The in-app updater below is for
+legacy PFS installs.
 
 Settings → System & Diagnostics → Software Update (`addons/src/evo_updater.c`,
 #120):

@@ -1,13 +1,13 @@
 ---
 name: ship
-description: Build, deploy, launch, drive or screenshot EVO Player on the PS5, or render its UI on the host. Use whenever asked to run / launch / deploy / install / screenshot / hardware-test the app, verify a change on real hardware, or do a console session. ONE hardware path - the PPSA99039 app module (.ffpfsc) - plus the host UI renderer. Has the exact command loop, so do not re-derive it.
+description: Build, deploy, launch, drive or screenshot EVO Player on the PS5, or render its UI on the host. Use whenever asked to run / launch / deploy / install / screenshot / hardware-test the app, verify a change on real hardware, or do a console session. Deploy the PPSA99273 app folder - plus the host UI renderer. Has the exact command loop, so do not re-derive it.
 ---
 
 # Shipping EVO Player
 
 Everything re-execs through the Docker container (`ps5-dev`). **Never call `make`.**
 Never stack launches, never deploy over a running EVO. Reference: `docs/build/tooling.md`.
-Run the console loop yourself (CLAUDE.md); do not hand testing to the user.
+Follow AGENTS.md for local deployments. The owner handles closing, launching, and testing.
 
 ## 1. Pick the route
 
@@ -24,13 +24,13 @@ The host has no compiler. Anything that compiles C/C++ (even a one-off test) run
 
 ```bash
 # build (5-10 min): run in the BACKGROUND, you are notified on exit
-docker compose run --rm ps5-dev ./scripts/package-app.sh --ffpfsc --usb-remote > output/pkg.log 2>&1
+docker compose run --rm ps5-dev ./scripts/package-app.sh --usb-remote > output/pkg.log 2>&1
 grep -n "error:" output/pkg.log; tail -3 output/pkg.log
 
 # cycle (one step at a time, stop at the first anomaly, never auto-retry)
 timeout 100 ./tools/evo-remote.sh quit     # expect "ok parked"
 timeout 100 ./tools/evo-remote.sh close    # expect "ok closed"
-docker compose run --rm ps5-dev ./scripts/deploy-app.sh --ffpfsc   # sha256-verified
+docker compose run --rm ps5-dev ./scripts/deploy-app.sh   # SHA-256 verified
 timeout 200 ./tools/evo-remote.sh launch   # waits for ShadowMount idle
 ```
 
@@ -44,7 +44,7 @@ timeout 200 ./tools/evo-remote.sh launch   # waits for ShadowMount idle
 
 1. State "agy: yes/no, because ..." in the first reply on the issue (CLAUDE.md).
 2. Mechanical parts go to agy (`tools/agy-run.sh`); review its report and `git diff`, re-run its checks.
-3. Build: compile check, then `package-app.sh --ffpfsc --usb-remote` when the change needs the console.
+3. Build: compile check, then `package-app.sh --usb-remote` when the change needs the console.
 4. Host tests: `docker compose run --rm ps5-dev ./tests/run_tests.sh`. A new setting also extends the settings round-trip test.
 5. Console check: `evo-remote.sh verify --check <name>` (add a script in `tools/checks/` if the feature has none), or the manual loop in section 2.
 6. One commit, only after 3-5 pass. Bump `contentVersion` on a release.
@@ -59,7 +59,7 @@ docker compose run --rm ps5-dev bash -c 'for k in down down right cross; do ./to
 - `ui --line` = focused element + screen as text; use it to navigate. Keys: up down left right cross circle square triangle l1 r1 l3 ...
 - **Jump to any screen by name:** `evo-remote.sh go <home|browse|internal|favorites|recent|providers|settings[-audio|-playback|...]|about|changelog|themes|devtools|<provider id>|<ScreenId>>`; works from any screen, no key walk. A provider (about 10 s to load its shelves) can also be opened with `evo-remote.sh provider <id>`. Fill the search keyboard with `key square` then `type --submit <text>` instead of walking the grid.
 - **Change a setting without the D-pad walk (#201, `--usb-remote` builds):** `evo-remote.sh set <name> <value>` writes it, applies it live and prints it back (`set audio-delay +100`); `set --list` shows every name and its values; `focus <row>` opens the section and puts the cursor on the row.
-- **Whole check in one command:** `evo-remote.sh verify [--check <name>]` = soft close, close, deploy, launch, run `tools/checks/<name>.sh`, quit, close, then PASS/FAIL with the evidence line. No `--check` runs every script in `tools/checks/`. Use `--no-build` to reuse the last `.ffpfsc`.
+- **Whole check in one command:** `evo-remote.sh verify [--check <name>]` = soft close, close, deploy, launch, run `tools/checks/<name>.sh`, quit, close, then PASS/FAIL with the evidence line. No `--check` runs every script in `tools/checks/`. Use `--no-build` to reuse the last packaged app folder.
 - Home -> PROVIDERS by keys (only if you need the chooser itself): `down down right right right cross`. `r1`/`l1` flip pages.
 - **Screenshot** (`key l3` writes `/mnt/usb0/evo_shot_NNN.bmp`, 3840x2160, numbers wrap at 32). `shot.sh grab` often fails (needs the web server); use FTP:
   `tools/grab_shot.sh <name>` (presses l3, finds the shot EVO just wrote - `/mnt/usb0`, or `/data/evoplayer` with no stick - from its log line or the FTP listing, writes `output/screenshots/<name>.png` at 1920x1080; host or container), then Read the PNG. Only for pixel questions; use `ui` for focus/text.

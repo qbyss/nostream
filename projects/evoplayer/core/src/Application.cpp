@@ -1173,7 +1173,9 @@ int Application::run() {
             const bool chapterGestures = playerTransport && m_playbackController &&
                 m_playbackController->isActive() && !m_playbackController->isLiveSource() &&
                 m_mediaMetadataService && m_mediaMetadataService->getChapterCount() > 0;
-            const uint32_t standard = padData.buttons | evo_usb_remote_take_buttons() |
+            // Resting the DualSense on its triggers should not send input.
+            const uint32_t dualSenseButtons = padData.buttons & ~(PadButtons::L2 | PadButtons::R2);
+            const uint32_t standard = dualSenseButtons | evo_usb_remote_take_buttons() |
                                       evo_phone_remote_take_buttons();
             padData.buttons = evo_media_remote_poll(&m_mediaRemote, static_cast<uint64_t>(now_ms()),
                                                       standard, lastButtons, chapterGestures, &pressed, &released);

@@ -5,13 +5,13 @@
 For this workspace, use the workflow in [AGENTS.md](../../AGENTS.md) when
 sending a change for the owner to test. Sync changed sources into the existing
 `evoplayer_fork_workspace` Docker volume and reuse the fork SDK, FFmpeg, and
-compiler cache volumes. Run `./scripts/package-app.sh --ffpfsc` in that
-workspace. The resulting image is `output/app/PPSA99273.ffpfsc`.
+compiler cache volumes. Run `./scripts/package-app.sh` in that workspace and
+export `output/app/PPSA99273/`.
 
-From macOS, use `/usr/bin/python3` with the FTP transfer sequence in
-`scripts/deploy-app.sh`. Upload directly to `192.168.1.23:2121` under a temporary
-name, read the upload back to verify its SHA-256, and rename it to
-`/data/homebrew/PPSA99273.ffpfsc`. The verified rename completes the handoff.
+From macOS, run `PS5_HOST=192.168.1.23 FTP_PORT=2121 ./scripts/deploy-app.sh`.
+The script uses `/usr/bin/python3` to upload and verify the files in
+`/data/homebrew/PPSA99273/`. It moves the previous PFS image aside after the
+folder is verified. The verified upload completes the handoff.
 The owner handles closing, launching, and testing the app. Commit only after
 the owner has tested and explicitly asks for a commit.
 
@@ -24,11 +24,11 @@ must never be broken are listed in the root [CLAUDE.md](../../CLAUDE.md).
 
 ```bash
 # build with the dev remote (always, for testing)
-docker compose run --rm ps5-dev ./scripts/package-app.sh --ffpfsc --usb-remote
+docker compose run --rm ps5-dev ./scripts/package-app.sh --usb-remote
 # one step at a time; stop at the first anomaly; never auto-retry
 timeout 100 ./tools/evo-remote.sh quit      # soft close; waits for parked=1
 timeout 100 ./tools/evo-remote.sh close     # kills the (parked) app; waits for "released"
-docker compose run --rm ps5-dev ./scripts/deploy-app.sh --ffpfsc    # sha256-verified, then restarts ShadowMount
+docker compose run --rm ps5-dev ./scripts/deploy-app.sh     # SHA-256 verified folder upload
 timeout 200 ./tools/evo-remote.sh launch    # waits for ShadowMount to go idle; once only
 ```
 
@@ -55,13 +55,13 @@ So:
   is no heartbeat to read, and never while `t=` advances).
 - `launch` is refused while ShadowMount shows the title started and not released,
   or while the heartbeat moves.
-- `deploy-app.sh` refuses while EVO is resident ([../build/packaging.md](../build/packaging.md#deploy-appsh)).
+- Close NoStream before uploading its folder. The legacy image uploader also
+  checks for a resident app ([../build/packaging.md](../build/packaging.md#deploy-appsh)).
 - A **crashed** EVO is already closed: no switcher close is needed before the next
   deploy. A frozen `evo.log` proves nothing about exit (the idle heartbeat is about
   six minutes apart); never force past the interlock on that basis.
 
-**ShadowMount+ v1.7 does not auto-launch an updated image.** It test-mounts the new
-image, logs `unmount complete: source=/data/homebrew/PPSA99273.ffpfsc`, and
+**Legacy PFS deployment.** ShadowMount+ v1.7 test-mounts an updated image. It logs `unmount complete: source=/data/homebrew/PPSA99273.ffpfsc`, and
 unmounts it. Launch from the Media tab or with `evo-remote.sh launch`. Launching
 right after a deploy, while ShadowMount is still scanning, gives "Can't start game
 or app"; `launch` waits for its log to be quiet for 15 s for that reason.
@@ -125,11 +125,11 @@ stopping at the first anomaly:
 1. **Preflight**: `:2121`, `:3232` and `:9021` must answer; a dirty tree is
    flagged `+dirty`.
 2. **Free the slot**: if resident, `quit` then `close`; no heartbeat is `no-run`.
-3. **Package** `--ffpfsc --usb-remote` and record the sha256.
-4. **Deploy**: read back and compared before the rename; a mismatch is
-   `transport-failure`. ShadowMount must log the registration within 90 s.
-5. **Observe**: klog starts recording first; `launch` is sent if `[GAME] started`
-   does not appear within 40 s; then `--play`, the `--secs` window, and pull
+3. **Package** with `--usb-remote` and record the SHA-256 of `eboot.bin`.
+4. **Deploy** the folder and verify each file by FTP readback before promotion.
+   A mismatch is a `transport-failure`.
+5. **Observe**: start recording klog, launch the registered title, then run
+   `--play` if requested, observe for `--secs`, and pull
    `evo.log` and `evo_status`.
 6. **Close**: `quit`, parked, `close`, released.
 7. **Classify** as exactly one of: `pass`; `partial-pass` (started but did not

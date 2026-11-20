@@ -10,9 +10,9 @@
 #                                             # file first (tools/wipe-evo.py)
 #
 # Uploads output/app/<TITLE_ID>/ to ftp://<host>:2121/data/homebrew/<TITLE_ID>/.
-# Files go up under a temporary name and are renamed into place; eboot.bin and
-# sce_sys/param.json are uploaded LAST so a half-finished folder is never
-# mountable. After this, mount + launch from the Media tab with ShadowMountPlus.
+# Folder files are SHA-256 verified under temporary names before promotion.
+# eboot.bin and sce_sys/param.json are uploaded last. After verification, any
+# previous PFS image is renamed out of the scanner's .ffpfsc namespace.
 #
 # The --ffpfsc image goes up as <TID>.ffpfsc.upload, is read back and
 # sha256-compared with the local file, and is renamed into place only on a
@@ -57,7 +57,10 @@ fi
 
 FTP_PORT="${FTP_PORT:-2121}"
 
-if ! in_container; then
+PYTHON=python3
+if ! in_container && [[ "$(uname -s)" == Darwin ]] && (( ! FFPFSC )) && [[ "${ACTION}" == deploy ]]; then
+    PYTHON=/usr/bin/python3
+elif ! in_container; then
     FWD=()
     [[ "${ACTION}" == undeploy ]] && FWD+=(--undeploy)
     (( FFPFSC )) && FWD+=(--ffpfsc)
@@ -68,12 +71,12 @@ if ! in_container; then
     reexec_in_container "deploy-app.sh" "${FWD[@]+"${FWD[@]}"}"
 fi
 
-need_cmd python3
+need_cmd "${PYTHON}"
 require_ps5_host
 
 PARAM="${REPO_ROOT}/projects/evoplayer/sce_sys/param.json"
 need_file "${PARAM}"
-TITLE_ID="$(python3 -c 'import json,sys,re
+TITLE_ID="$("${PYTHON}" -c 'import json,sys,re
 t=json.load(open(sys.argv[1]))["titleId"]
 sys.exit("bad titleId") if not re.fullmatch(r"PPSA\d{5}",t) else print(t)' "${PARAM}")"
 
@@ -372,13 +375,15 @@ PY
 fi
 
 if [[ "${ACTION}" == "deploy" ]]; then
-    need_file "${APPDIR}/eboot.bin" "run ./scripts/package-app.sh --probe first"
+    need_file "${APPDIR}/eboot.bin" "run ./scripts/package-app.sh first"
     need_file "${APPDIR}/sce_sys/param.json"
 fi
 
 begin "${ACTION} ${TITLE_ID}  ->  ftp://${PS5_HOST}:${FTP_PORT}/data/homebrew/${TITLE_ID}/"
-python3 - "${PS5_HOST}" "${FTP_PORT}" "${TITLE_ID}" "${APPDIR}" "${ACTION}" <<'PY'
-import sys, time
+"${PYTHON}" - "${PS5_HOST}" "${FTP_PORT}" "${TITLE_ID}" "${APPDIR}" "${ACTION}" <<'PY'
+import hashlib
+import sys
+from datetime import datetime, timezone
 from ftplib import FTP, error_perm
 from pathlib import Path
 from posixpath import join, dirname
@@ -432,10 +437,16 @@ def upload_atomic(ftp, local, remote):
     d = dirname(remote)
     tmp = join(d, "." + remote.rsplit("/", 1)[-1] + ".upload")
     ensure_dir(ftp, d)
-    rm(ftp, tmp)
+    expected = hashlib.sha256()
     with open(local, "rb") as fh:
+        for block in iter(lambda: fh.read(1 << 20), b""):
+            expected.update(block)
+        fh.seek(0)
         ftp.storbinary(f"STOR {tmp}", fh, blocksize=256 * 1024)
-    rm(ftp, remote)
+    actual = hashlib.sha256()
+    ftp.retrbinary(f"RETR {tmp}", actual.update, blocksize=256 * 1024)
+    if actual.digest() != expected.digest():
+        raise RuntimeError(f"FTP readback SHA-256 mismatch for {remote}")
     ftp.rename(tmp, remote)
 
 
@@ -446,6 +457,11 @@ with FTP() as ftp:
         ftp.set_pasv(True)
     except Exception:
         pass
+    if action == "deploy" and "ftpsrv" in ftp.getwelcome().lower():
+        # Compare the stored SELF bytes. ftpsrv decrypts them on read by default.
+        response = ftp.sendcmd("SELF")
+        if "disabled" not in response.lower():
+            raise RuntimeError(f"Could not disable transparent SELF decryption: {response}")
 
     if action == "undeploy":
         removed = rm(ftp, target)
@@ -464,14 +480,21 @@ with FTP() as ftp:
     print(f"publishing {len(files)} files (eboot.bin + param.json last)")
     for i, local in enumerate(files, 1):
         rel = local.relative_to(app).as_posix()
-        print(f"  [{i}/{len(files)}] {rel}")
+        print(f"  [{i}/{len(files)}] {rel}", flush=True)
         upload_atomic(ftp, local, join(target, rel))
 
-    prev = ftp.pwd(); ftp.cwd(target)
-    listed = {n for n, _ in ftp.mlsd()}
-    ftp.cwd(prev)
-    if "eboot.bin" not in listed:
-        raise SystemExit("upload finished but eboot.bin is not listed")
+    image = target + ".ffpfsc"
+    try:
+        ftp.size(image)  # The latest binary transfer left FTP in TYPE I.
+    except error_perm as exc:
+        if code(exc) != "550":
+            raise
+    else:
+        stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
+        backup = f"{image}.disabled-{stamp}"
+        ftp.rename(image, backup)
+        print(f"saved previous PFS image as {backup}")
+    print(f"SHA-256 verified {len(files)} files")
     print(f"done: ftp://{host}:{port}{target}/")
 PY
 
