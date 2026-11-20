@@ -90,6 +90,7 @@ void LaunchScreen::onEnter() {
 }
 
 void LaunchScreen::onExit() {
+    cancelStartupResumeFocus();
     m_recentMenuPath.clear();
     evo::animation::AnimationManager::getInstance().setContinuousAnimation(false);
     StatefulScreen::onExit();
@@ -112,7 +113,16 @@ std::string LaunchScreen::heroPathForSelection() const {
 void LaunchScreen::update(double deltaMs) {
     StatefulScreen::update(deltaMs);
     m_launchFsm.update(deltaMs);
+    const bool focusAfterUsbScan = m_waitingForStartupUsbFocus && evo_usb_identity_ready();
     const int count = static_cast<int>(hidden_storage::visibleRecent().size());
+    if (focusAfterUsbScan) {
+        m_waitingForStartupUsbFocus = false;
+        if (count > 0 && m_selectedRow != 0) {
+            m_selectedRow = 0;
+            m_selectedCol = 0;
+            m_launchFsm.postEvent(LaunchScreenEvent::FocusHero);
+        }
+    }
     if (m_selectedRow != 2 && count == 0) {
         m_selectedRow = 2;
         m_selectedCol = 0;

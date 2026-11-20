@@ -1438,6 +1438,9 @@ int Application::run() {
         evo::animation::AnimationManager::getInstance().update(frameDeltaMs);
         /* #102: a finished subtitle auto-sync is applied on this thread. */
         prospero_subtitle_autosync_pump();
+        if (userActivity && m_screenManager->getCurrentScreenId() == ScreenId::MainMenu) {
+            static_cast<LaunchScreen*>(m_screenManager->getCurrentScreen())->cancelStartupResumeFocus();
+        }
         m_screenManager->update(frameDeltaMs);
         if (m_castService) {
             m_castService->update(frameDeltaMs);

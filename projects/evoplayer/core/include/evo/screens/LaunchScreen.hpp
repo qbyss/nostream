@@ -45,6 +45,7 @@ public:
     bool handleInput(uint32_t pressed, uint32_t held, uint32_t released) override;
     void update(double deltaMs) override;
     void render(uint32_t* framebuffer, int width, int height) override;
+    void cancelStartupResumeFocus() { m_waitingForStartupUsbFocus = false; }
 
 private:
     void initLaunchStateMachine();
@@ -57,6 +58,7 @@ private:
     StateMachine<LaunchScreenState, LaunchScreenEvent> m_launchFsm;
     int m_selectedRow = 0;
     int m_selectedCol = 0;
+    bool m_waitingForStartupUsbFocus = true;
     std::string m_recentMenuPath;
     int m_recentMenuFocused = 0;
 
