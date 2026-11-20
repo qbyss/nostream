@@ -498,6 +498,10 @@ std::string FileSystemBrowser::getFullPath(size_t index) const {
 }
 
 FileCategory FileSystemBrowser::classifyFile(const std::string& fileName, int entryType) const {
+    return classifyName(fileName, entryType);
+}
+
+FileCategory FileSystemBrowser::classifyName(const std::string& fileName, int entryType) {
     if (entryType == 4) {
         return FileCategory::Folder;
     }
@@ -508,7 +512,7 @@ FileCategory FileSystemBrowser::classifyFile(const std::string& fileName, int en
     }
 
     std::string ext = fileName.substr(dot + 1);
-    std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+    std::transform(ext.begin(), ext.end(), ext.begin(), [](unsigned char c) { return std::tolower(c); });
 
     // Video
     if (ext == "mkv"  || ext == "mp4"  || ext == "mov"  || ext == "m4v"  ||

@@ -409,6 +409,7 @@ struct EvoBrowserRow {
 };
 
 struct EvoBrowserState {
+    std::string upload_status;
     std::string path;
     std::string title;
     bool at_root = true;
@@ -490,7 +491,7 @@ struct EvoBrowserState {
     std::string transfer_dst_path;
 
     bool operator==(const EvoBrowserState& o) const {
-        return path == o.path && title == o.title && at_root == o.at_root && rail_focused == o.rail_focused &&
+        return upload_status == o.upload_status && path == o.path && title == o.title && at_root == o.at_root && rail_focused == o.rail_focused &&
                sidebar_focused == o.sidebar_focused && sidebar_index == o.sidebar_index && active_source == o.active_source &&
                source_divider_before == o.source_divider_before && sources == o.sources && source_space == o.source_space &&
                filter_labels == o.filter_labels && filter_selected == o.filter_selected &&

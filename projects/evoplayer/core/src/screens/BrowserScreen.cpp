@@ -1,3 +1,4 @@
+#include "evo/services/WebUploadService.hpp"
 #include "evo/services/HiddenStorage.hpp"
 #include "evo/services/InternalStorage.hpp"
 #include "evo_readdir.h"
@@ -2571,6 +2572,25 @@ void BrowserScreen::update(double deltaMs) {
     refreshFolderShortcuts();
     refreshStorageSources();
     refreshStorageSpace(deltaMs);
+    const auto uploadRevision = webUploadRevision();
+    if (uploadRevision != m_webUploadRevision) {
+        m_webUploadRevision = uploadRevision;
+        m_storageSpaceRefreshMs = 0;
+        if (m_activeSource == 1) {
+            if (auto* browser = Application::getInstance().getFileSystemBrowser()) {
+                const std::string selected = m_selectedIndex >= 0 && m_selectedIndex < static_cast<int>(m_items.size())
+                    ? m_items[m_selectedIndex].fullPath : "";
+                browser->refresh();
+                rebuildItems();
+                const auto match = std::find_if(m_items.begin(), m_items.end(),
+                    [&](const BrowserItem& item) { return item.fullPath == selected; });
+                m_selectedIndex = match == m_items.end()
+                    ? std::clamp(m_selectedIndex, 0, std::max(0, static_cast<int>(m_items.size()) - 1))
+                    : static_cast<int>(match - m_items.begin());
+                m_settleMs = 0;
+            }
+        }
+    }
 
     if (m_pendingFolderFavorite >= 0) {
         const int index = m_pendingFolderFavorite;
@@ -2760,6 +2780,28 @@ void BrowserScreen::render(uint32_t* framebuffer, int width, int height) {
     std::memset(&params, 0, sizeof(params));
 
     params.title = "Storage";
+    std::string uploadStatus;
+    if (auto* settings = Application::getInstance().getSettingsService(); settings && settings->isWebUploadEnabled()) {
+        const auto upload = getWebUploadInfo();
+        switch (upload.status) {
+        case WebUploadStatus::Starting:
+            uploadStatus = "Web Upload is starting";
+            break;
+        case WebUploadStatus::WaitingForStorage:
+            uploadStatus = "Web Upload is waiting for access to Internal Storage";
+            break;
+        case WebUploadStatus::WaitingForAddress:
+            uploadStatus = "Web Upload is waiting for a LAN IPv4 address";
+            break;
+        case WebUploadStatus::ListenerError:
+            uploadStatus = "Web Upload could not start";
+            break;
+        case WebUploadStatus::Ready:
+            uploadStatus = "Web Upload  " + upload.address;
+            break;
+        }
+        params.upload_status = uploadStatus.c_str();
+    }
 
     // Format top location breadcrumbs
     auto formatPathBreadcrumbs = [](const std::string& prefix, const std::string& fullPath, size_t prefixLen) -> std::string {

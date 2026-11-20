@@ -46,6 +46,10 @@ To update a folder install, close NoStream and upload a newer build to the same 
 
 ---
 
+## Upload Videos from a Browser
+
+Web Upload is on by default. Manage it under **Settings → Interface & Storage → Web Upload**. Open the address shown in **Browse** from a device on the same network. The PS5 assigns a port when the server starts, and a toast shows the address when it is ready. The page lists videos in Internal Storage and shows free space. Drop videos onto the page, or use **Choose videos** or **Choose folder**. The library lets you download or delete a video.
+
 ## Controls Reference
 
 ### DualSense

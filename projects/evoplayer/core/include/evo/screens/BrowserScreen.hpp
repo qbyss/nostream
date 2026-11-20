@@ -187,6 +187,7 @@ private:
     int m_actionFavoriteIndex = -1;
     std::vector<FileAction> m_actions;
     bool m_showDeleteConfirm = false;
+    uint64_t m_webUploadRevision = 0;
     int m_deleteConfirmButton = 0;
     bool m_showTransferDialog = false;
 

@@ -78,6 +78,15 @@ div, span, p {
     align-items: center;
 }
 
+#browser-upload-status {
+    display: none;
+    position: absolute;
+    left: 0;
+    top: 87dp;
+    color: #c2d2e8;
+    font-size: 13dp;
+}
+
 #browser-header-left {
     display: flex;
     flex-direction: row;

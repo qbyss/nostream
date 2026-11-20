@@ -249,6 +249,8 @@ int main(void)
 {
     int ls = socket(AF_INET, SOCK_STREAM, 0);
     if (ls < 0) return 1;
+    int reuse = 1;
+    setsockopt(ls, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse));
     struct sockaddr_in a;
     memset(&a, 0, sizeof a);
     a.sin_family = AF_INET;

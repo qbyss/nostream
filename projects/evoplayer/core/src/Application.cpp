@@ -1,3 +1,4 @@
+#include "evo/services/WebUploadService.hpp"
 #include "evo/services/HiddenStorage.hpp"
 #include "evo/Application.hpp"
 #include "evo/screens/LaunchScreen.hpp"
@@ -133,7 +134,7 @@ long long now_ms(void);
 }
 
 #ifndef EVO_PLAYER_VERSION
-#define EVO_PLAYER_VERSION "v0.4.0"
+#define EVO_PLAYER_VERSION "v0.5.0"
 #endif
 
 #ifndef EVO_DIRECT_MEM_POOL_BYTES
@@ -458,6 +459,7 @@ bool Application::initServices() {
 
     m_soundEffectEngine->initialize();
     m_settingsService->loadSettings();
+    applyWebUploadSetting(m_settingsService->isWebUploadEnabled());
     m_castService->initialize();
     if (m_settingsService->isWebBrowserEnabled()) {
         evo_browser_engine_boot();
@@ -556,6 +558,7 @@ void Application::shutdown() {
     evo_boot_log_flush();
 
     /* #101: the web UI's proxy threads and the browser subsystem. */
+    stopWebUpload();
     evo_webui_shutdown();
 
     evo_boot_log_flush();
@@ -936,6 +939,7 @@ int Application::run() {
     long long oledNoticeUntilMs = 0;
     bool oledBlank = false;
     bool oledWakeInputHeld = false;
+    bool webUploadAnnounced = false;
 
     m_appFsm.postEvent(ApplicationEvent::StartLoop);
     evo_bt("Application: entering frame loop");
@@ -960,6 +964,7 @@ int Application::run() {
                 if (m_surroundTestService) m_surroundTestService->stop();
                 if (m_soundEffectEngine)   m_soundEffectEngine->shutdown();
                 if (m_fileTransferService) m_fileTransferService->cancelTransfer();
+                requestWebUploadStop();
                 pp_playback_shutdown(&g_pp_pb);
                 /* The browser engine's broker kills its children and exits
                  * when EVO drops its connection; checked before parking. */
@@ -1095,6 +1100,15 @@ int Application::run() {
          * fflush+fsync to the USB stick the movie streams from, once a
          * second, and it stalled 4K playback 33-83 ms at a time. */
         if ((frame & 63) == 0) {
+            for (const auto& path : takeWebDeletedVideos())
+                recent_forget(path.c_str());
+            if (!webUploadAnnounced && !m_softClose && !oledBlank && !toast_is_sticky()) {
+                const auto upload = getWebUploadInfo();
+                if (upload.status == WebUploadStatus::Ready) {
+                    toast("Web Upload is listening", upload.address.c_str());
+                    webUploadAnnounced = true;
+                }
+            }
             evo_boot_log_kick();
         }
 
@@ -1111,6 +1125,7 @@ int Application::run() {
             favorites_load();
             if (m_settingsService) {
                 m_settingsService->loadSettings();
+                applyWebUploadSetting(m_settingsService->isWebUploadEnabled());
                 if (m_settingsService->isWebBrowserEnabled()) {
                     evo_browser_engine_boot();
                 }

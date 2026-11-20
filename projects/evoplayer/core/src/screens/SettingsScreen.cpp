@@ -1,3 +1,4 @@
+#include "evo/services/WebUploadService.hpp"
 #include "evo/services/HiddenStorage.hpp"
 #include "evo/screens/SettingsScreen.hpp"
 #include "evo/Application.hpp"
@@ -22,7 +23,7 @@
 #include <cstring>
 
 #ifndef EVO_PLAYER_VERSION
-#define EVO_PLAYER_VERSION "v0.4.0"
+#define EVO_PLAYER_VERSION "v0.5.0"
 #endif
 
 namespace evo {
@@ -81,6 +82,7 @@ enum class SettingKey : int {
     Theme,
     Lightbar,
     FoldersFirst,
+    WebUpload,
     KeyboardInput,
     PhonePort,
     PhoneCast,
@@ -192,6 +194,7 @@ const PreviewSpec kPreviews[] = {
      "What sits behind the text so it stays readable on bright scenes. Subtitles burned into a server transcode are part of the picture and cannot change."},
     {SettingKey::Theme, EVO_RMLUI_PREVIEW_THEME, "Changes the colours of the whole app."},
     {SettingKey::Lightbar, EVO_RMLUI_PREVIEW_LIGHTBAR, "The DualSense light follows the theme accent."},
+    {SettingKey::WebUpload, 0, "Upload videos to Internal Storage from a browser on your network. The address appears in Browse."},
     {SettingKey::FoldersFirst, EVO_RMLUI_PREVIEW_FOLDERS_FIRST, "Lists folders above files in the USB browser."},
     {SettingKey::KeyboardInput, EVO_RMLUI_PREVIEW_KEYBOARD,
      "The virtual keyboard is drawn by NoStream. The native one is the PS5 system keyboard."},
@@ -240,7 +243,7 @@ const SettingKey kSubtitleKeys[] = {
     SettingKey::SecondaryBackground,
 };
 const SettingKey kInterfaceKeys[] = {
-    SettingKey::Theme, SettingKey::Lightbar, SettingKey::FoldersFirst,
+    SettingKey::Theme, SettingKey::Lightbar, SettingKey::FoldersFirst, SettingKey::WebUpload,
     SettingKey::KeyboardInput, SettingKey::PhonePort, SettingKey::PhoneCast, SettingKey::CastNativePlayer, SettingKey::YouTubeLink,
 };
 const SettingKey kSystemKeys[] = {
@@ -681,6 +684,11 @@ SettingDef makeDef(SettingKey key, ISettingsService* settings) {
                       "../icons/icon_lightbulb.png", settings->isLightbarFeedbackEnabled());
         break;
 
+    case SettingKey::WebUpload:
+        d = toggleDef(key, "WEB UPLOAD", "UPLOAD TO INTERNAL STORAGE OVER YOUR LOCAL NETWORK",
+                      "../icons/icon_network_storage.png", settings->isWebUploadEnabled());
+        break;
+
     case SettingKey::FoldersFirst:
         d = toggleDef(key, "FOLDERS FIRST", "USB FILE BROWSER SORTING",
                       "../icons/icon_folder_tree.png", settings->isSortFoldersFirst());
@@ -1036,6 +1044,11 @@ void toggleSetting(SettingKey key) {
             }
             sm->syncNavRail();
         }
+        break;
+    case SettingKey::WebUpload:
+        st->setWebUploadEnabled(!st->isWebUploadEnabled());
+        applyWebUploadSetting(st->isWebUploadEnabled());
+        st->saveSettings();
         break;
     case SettingKey::PhoneCast:
         st->setCastReceiverEnabled(!st->isCastReceiverEnabled());

@@ -1355,6 +1355,10 @@ void EvoRmlApp::UpdateBrowserState(const EvoBrowserState& state) {
         e->SetInnerRML(state.path);
         e->SetProperty("color", text_2);
     }
+    if (Rml::Element* e = el("browser-upload-status")) {
+        e->SetProperty("display", state.upload_status.empty() ? "none" : "block");
+        e->SetInnerRML(state.upload_status);
+    }
     if (Rml::Element* e = el("browser-counter")) {
         std::string counter =
             (state.total_count > 0 && state.cursor_index >= 0)

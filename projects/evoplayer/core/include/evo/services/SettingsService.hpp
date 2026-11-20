@@ -24,6 +24,8 @@ public:
     bool isAutoSubtitlesEnabled() const override { return m_autoSubtitlesEnabled; }
     void setAutoSubtitlesEnabled(bool enabled) override { m_autoSubtitlesEnabled = enabled; }
 
+    bool isWebUploadEnabled() const override { return m_webUploadEnabled; }
+    void setWebUploadEnabled(bool enabled) override { m_webUploadEnabled = enabled; }
     bool isSortFoldersFirst() const override { return m_sortFoldersFirst; }
     void setSortFoldersFirst(bool enabled) override { m_sortFoldersFirst = enabled; }
 
@@ -156,6 +158,7 @@ private:
     bool m_resumePlaybackEnabled = true;
     ViewMode m_defaultViewMode = ViewMode::Fit;
     bool m_autoSubtitlesEnabled = true;
+    bool m_webUploadEnabled = true;
     bool m_sortFoldersFirst = true;
     std::string m_themeName = "NoStream Dark";
     bool m_soundFeedbackEnabled = false;

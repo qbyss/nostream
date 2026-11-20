@@ -460,6 +460,7 @@ extern "C" void test_settings_legacy_compat(void)
     TEST_ASSERT(svc45.isCastNativePlayerEnabled() == false, "45-line legacy castNativePlayer mismatch");
     TEST_ASSERT(svc45.getSecondarySubtitleSize() == 1, "Missing 46th line must keep default MEDIUM (1)");
     TEST_ASSERT(svc45.getSecondarySubtitleBackground() == 0, "Missing 47th line must keep default BOX (0)");
+    TEST_ASSERT(svc45.isWebUploadEnabled(), "Legacy settings default Web Upload to on");
     TEST_ASSERT(!svc45.getNightShiftSchedule().enabled, "Legacy settings must leave Night Shift off");
     TEST_ASSERT(svc45.getOledScreenSaverMinutes() == 0, "Legacy settings must leave the OLED screen saver disabled");
 
@@ -497,11 +498,13 @@ extern "C" void test_settings_night_shift(void) {
     TEST_ASSERT(brief.warmth(12 * 3600 - 1) == 0.0f, "Same-day schedule excludes earlier times");
     TEST_ASSERT(brief.warmth(12 * 3600 + 300) == 1.0f, "Short ramps meet in the middle");
     TEST_ASSERT(brief.warmth(12 * 3600 + 600) == 0.0f, "Same-day schedule ends on time");
+    settings.setWebUploadEnabled(false);
     settings.setNightShiftSchedule(overnight);
     settings.setNightShiftSchedule({true, 600, 600});
     TEST_ASSERT(settings.saveSettings(), "Night Shift save failed");
     evo::SettingsService reloaded;
     TEST_ASSERT(reloaded.loadSettings(), "Night Shift load failed");
+    TEST_ASSERT(!reloaded.isWebUploadEnabled(), "Disabled Web Upload did not round-trip");
     const auto saved = reloaded.getNightShiftSchedule();
     TEST_ASSERT(saved.enabled && saved.startMinute == overnight.startMinute && saved.stopMinute == overnight.stopMinute,
                 "Invalid edit must preserve the saved overnight schedule");

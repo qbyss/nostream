@@ -1496,7 +1496,17 @@ static int g_remote_empty[MAX_DISKS];
 
 static int helper_start(void)
 {
-    return evo_elfldr_send(evo_ntfs_helper_elf, evo_ntfs_helper_elf_len, 10000);
+    static pthread_mutex_t launch_mutex = PTHREAD_MUTEX_INITIALIZER;
+    static long long last_launch;
+    pthread_mutex_lock(&launch_mutex);
+    const long long now = evo_log_mono_ms();
+    int result = 0;
+    if (!last_launch || now - last_launch >= 3000) {
+        last_launch = now;
+        result = evo_elfldr_send(evo_ntfs_helper_elf, evo_ntfs_helper_elf_len, 10000);
+    }
+    pthread_mutex_unlock(&launch_mutex);
+    return result;
 }
 
 static int helper_list(char *out, size_t cap)
@@ -1511,12 +1521,20 @@ static int helper_list(char *out, size_t cap)
 int evo_mounted_storage_space(const char *path, uint64_t *total, uint64_t *available)
 {
     int s = loopback_connect(EVO_NTFS_HELPER_PORT);
+    if (s < 0 && helper_start() == 0) {
+        // Capacity is requested even when Browse and its USB scanner are idle.
+        const struct timespec delay = {0, 100000000};
+        for (int attempt = 0; attempt < 10 && s < 0; ++attempt) {
+            nanosleep(&delay, NULL);
+            s = loopback_connect(EVO_NTFS_HELPER_PORT);
+        }
+    }
     if (s < 0) {
-        evo_ntfs_refresh_async();
+        EVO_LOGW("storage", "Disk helper unavailable for capacity on %s", path);
         return -1;
     }
 
-    char request[32], reply[64];
+    char request[32], reply[64] = {0};
     const int n = snprintf(request, sizeof request, "SPACE %s\n", path);
     const int ok = n > 0 && (size_t)n < sizeof request &&
         sock_all(s, request, (size_t)n, 1) == 0 && recv_line(s, reply, sizeof reply) == 0;
@@ -1525,8 +1543,10 @@ int evo_mounted_storage_space(const char *path, uint64_t *total, uint64_t *avail
     unsigned long long capacity, free_bytes;
     char trailing;
     if (!ok || sscanf(reply, "OK %llu %llu%c", &capacity, &free_bytes, &trailing) != 2 ||
-        capacity == 0 || free_bytes > capacity)
+        capacity == 0 || free_bytes > capacity) {
+        EVO_LOGW("storage", "Capacity query failed for %s (reply: %.32s)", path, reply);
         return -1;
+    }
     *total = (uint64_t)capacity;
     *available = (uint64_t)free_bytes;
     return 0;

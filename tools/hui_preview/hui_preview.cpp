@@ -238,7 +238,7 @@ int main(int argc, char **argv)
 
     evo_rmlui_launch_params_t launch{};
     launch.app_name = "NOSTREAM";
-    launch.version = "VERSION 0.4.0";
+    launch.version = "VERSION 0.5.0";
     launch.clock = "21:47";
     launch.theme_name = "MIDNIGHT";
     launch.hero_eyebrow = "CONTINUE WATCHING";
@@ -292,6 +292,7 @@ int main(int argc, char **argv)
     evo_rmlui_browser_params_t bp{};
     bp.path = "USB Drive / Media / Movies";
     bp.title = "USB Drive";
+    bp.upload_status = "Web Upload  http://192.168.1.23:59857";
     bp.active_source = 0;
     bp.sidebar_index = 0;
     bp.source_count = 5;

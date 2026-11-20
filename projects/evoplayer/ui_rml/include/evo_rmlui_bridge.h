@@ -499,6 +499,8 @@ typedef struct {
     int         at_root;       /* hides the "back" hint */
     int         rail_focused;
 
+    const char* upload_status;
+
     /* Places / Sources sidebar */
     int         sidebar_focused;
     int         sidebar_index;
@@ -893,7 +895,7 @@ void evo_rmlui_render_settings(uint32_t* framebuffer, int width, int height);
 /* About & Support Screen API */
 typedef struct {
     const char* app_name;        /* "NoStream" */
-    const char* version;         /* "v0.4.0" */
+    const char* version;         /* "v0.5.0" */
     const char* build_tag;       /* "PS5 HOMEBREW" */
     const char* tagline;         /* "CINEMATIC MEDIA PLAYER FOR PLAYSTATION 5 HOMEBREW" */
     const char* themes_info;     /* "X AVAILABLE - DROP .THEME FILES ON USB0" */

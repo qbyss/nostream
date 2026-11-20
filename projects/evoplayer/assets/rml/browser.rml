@@ -43,6 +43,8 @@
             </div>
         </div>
 
+        <div id="browser-upload-status"></div>
+
         <!-- 2. Left Sidebar: Places / Sources / Filters -->
         <div id="browser-sidebar">
             <div class="sb-section-title">SOURCES</div>

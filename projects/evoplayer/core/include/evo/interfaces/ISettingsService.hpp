@@ -30,6 +30,8 @@ public:
     virtual bool isAutoSubtitlesEnabled() const = 0;
     virtual void setAutoSubtitlesEnabled(bool enabled) = 0;
 
+    virtual bool isWebUploadEnabled() const = 0;
+    virtual void setWebUploadEnabled(bool enabled) = 0;
     virtual bool isSortFoldersFirst() const = 0;
     virtual void setSortFoldersFirst(bool enabled) = 0;
 

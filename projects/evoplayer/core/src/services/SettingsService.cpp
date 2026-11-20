@@ -375,12 +375,15 @@ bool SettingsService::saveSettings() {
     std::fprintf(file, "%d\n%d\n%d\n", static_cast<int>(m_nightShift.enabled),
                  m_nightShift.startMinute, m_nightShift.stopMinute);
 
+    std::fprintf(file, "%d\n", m_webUploadEnabled ? 1 : 0);
+
     if (std::fclose(file) != 0)
         EVO_LOGE("settings", "writing %s failed (errno %d)", filePath, errno);
     return true;
 }
 
 bool SettingsService::loadSettings() {
+    m_webUploadEnabled = true;
     const char* filePath = evo_data_path("evo_player_settings.cfg");
     FILE* file = std::fopen(filePath, "r");
     if (!file) {
@@ -491,9 +494,9 @@ bool SettingsService::loadSettings() {
 
     int nightShiftEnabled = 0;
     NightShiftSchedule nightShift;
-    if (readCount == 48 && std::fscanf(file, "%d%d%d", &nightShiftEnabled,
-                                       &nightShift.startMinute, &nightShift.stopMinute) == 3 &&
-        (nightShiftEnabled == 0 || nightShiftEnabled == 1) && nightShift.valid()) {
+    const bool hasNightShift = readCount == 48 && std::fscanf(file, "%d%d%d", &nightShiftEnabled,
+        &nightShift.startMinute, &nightShift.stopMinute) == 3;
+    if (hasNightShift && (nightShiftEnabled == 0 || nightShiftEnabled == 1) && nightShift.valid()) {
         // Earlier builds allowed minutes. Snap those saved schedules to whole hours.
         nightShift.startMinute = nightShift.startMinute / 60 * 60;
         nightShift.stopMinute = nightShift.stopMinute / 60 * 60;
@@ -504,6 +507,9 @@ bool SettingsService::loadSettings() {
     } else {
         m_nightShift = {};
     }
+    int rawWebUpload = 1;
+    if (hasNightShift && std::fscanf(file, "%d", &rawWebUpload) == 1)
+        m_webUploadEnabled = rawWebUpload != 0;
     std::fclose(file);
 
     (void)rawProfile;

@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NoStream · Internal Storage</title>
+<style>
+@font-face{font-family:Inter;src:url(/assets/inter.woff2);font-display:swap}
+@font-face{font-family:Inter;font-weight:600;src:url(/assets/inter-semibold.woff2);font-display:swap}
+@font-face{font-family:Montserrat;font-weight:500;src:url(/assets/montserrat-medium.woff2);font-display:swap}
+:root{color-scheme:dark;--bg:#080d16;--bg-bottom:#03050a;--surface:#101a2c;--border:#5a7db444;--accent:#6fa5ff;--accent-alt:#00cdff;--text:#eef4ff;--text-muted:#a3b6d0;--danger:#ff5c5c}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:linear-gradient(var(--bg),var(--bg-bottom)) fixed;color:var(--text);font:16px/1.5 Inter,system-ui,sans-serif}
+main{max-width:1080px;margin:auto;padding:clamp(24px,5vw,64px) clamp(18px,4vw,44px)}
+header{display:flex;align-items:center;gap:16px;margin-bottom:32px}
+header img{width:46px;height:46px;object-fit:contain}
+h1,h2{font-family:Montserrat,Inter,sans-serif;font-weight:500;margin:0}
+h1{font-size:clamp(28px,5vw,44px);letter-spacing:-.04em}
+h2{font-size:21px}
+.brand{font-size:12px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:var(--accent)}
+.tools{display:grid;grid-template-columns:minmax(0,1fr) minmax(240px,320px);gap:16px}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:22px}
+.drop{border-style:dashed;border-width:2px;transition:border-color .15s,background .15s}
+body.dragging .drop{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 13%,var(--surface))}
+.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:14px}
+button{font:600 14px Inter,system-ui,sans-serif;color:#101620;background:#f3f6fc;border:1px solid transparent;border-radius:9px;padding:10px 15px;cursor:pointer}
+button.secondary{background:transparent;color:var(--text);border-color:var(--border)}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button:disabled{opacity:.5;cursor:default}
+progress{width:100%;height:7px;margin:16px 0 0;accent-color:var(--accent)}
+#speed{margin-top:4px;color:var(--text-muted);font-size:14px;font-variant-numeric:tabular-nums}
+#speed:empty{display:none}
+.space{display:flex;flex-direction:column;justify-content:center;gap:8px}
+#space{font-size:clamp(20px,3vw,28px);font-weight:600}
+#space-total,.muted{color:var(--text-muted);font-size:14px}
+.track{height:6px;border-radius:6px;background:var(--border);overflow:hidden}
+#used{height:100%;background:var(--accent);width:0}
+#status{overflow-wrap:anywhere;color:var(--text-muted);margin:10px 0 0}
+#status:empty{display:none}
+.library{margin-top:28px;padding:0;overflow:hidden}
+.library-heading{display:flex;align-items:center;justify-content:space-between;padding:17px 21px;border-bottom:1px solid var(--border)}
+#videos{list-style:none;margin:0;padding:0}
+.video{min-width:0;display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:5px 20px;padding:13px 21px;border-bottom:1px solid var(--border)}
+.video:last-child{border-bottom:0}
+.video .name{overflow-wrap:anywhere;font-weight:600}
+.video .folder{grid-column:1;color:var(--text-muted);font-size:13px;overflow-wrap:anywhere}
+.video .size{grid-row:1 / span 2;grid-column:2;align-self:center;color:var(--text-muted);font-variant-numeric:tabular-nums}
+.video .file-actions{grid-row:1 / span 2;grid-column:3;align-self:center;display:flex;gap:8px}
+.file-actions a,.file-actions button{font:600 13px Inter,system-ui,sans-serif;padding:7px 10px;border-radius:8px;background:transparent;border:1px solid var(--border);text-decoration:none;color:var(--text);text-align:center}
+.file-actions .delete{color:var(--danger)}
+.file-actions a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+#empty{margin:0;padding:20px;color:var(--text-muted)}
+[hidden]{display:none!important}
+@media(max-width:620px){.tools{grid-template-columns:1fr}.space{order:-1}.video{grid-template-columns:minmax(0,1fr) auto;gap:5px 10px}.video .file-actions{grid-row:3;grid-column:1 / -1;margin-top:5px}}
+</style>
+<main>
+  <header>
+    <img src="/assets/logo.png" alt="">
+    <div><div class="brand">NoStream</div><h1>Internal Storage</h1></div>
+  </header>
+  <section class="tools" aria-label="Upload and storage">
+    <div class="panel drop" id="drop-zone">
+      <h2>Drop videos here</h2>
+      <div class="actions">
+        <button id="choose-files">Choose videos</button>
+        <button id="choose-folder" class="secondary">Choose folder</button>
+        <button id="cancel" class="secondary" hidden>Cancel</button>
+      </div>
+      <input id="files" type="file" multiple hidden>
+      <input id="folder" type="file" webkitdirectory hidden>
+      <progress id="progress" max="100" value="0" hidden aria-label="Upload progress"></progress>
+      <div id="speed"></div>
+      <p id="status" role="status"></p>
+    </div>
+    <div class="panel space">
+      <h2>Available space</h2>
+      <div id="space" aria-live="polite">Checking…</div>
+      <div class="track" id="space-track" hidden><div id="used"></div></div>
+      <span id="space-total" class="muted"></span>
+    </div>
+  </section>
+  <section class="panel library" aria-labelledby="library-title">
+    <div class="library-heading"><h2 id="library-title">Videos</h2><span id="count" class="muted"></span></div>
+    <p id="delete-status" class="muted" role="status" hidden style="padding:0 21px"></p>
+    <p id="empty">Loading videos…</p>
+    <ul id="videos"></ul>
+  </section>
+</main>
+<script>
+const el = id => document.getElementById(id);
+let activeId = '', current = null, cancelled = false, busy = false, refreshing = false;
+const status = text => { el('status').textContent = text; };
+
+async function api(path, options = {}) {
+  const response = await fetch(path, options);
+  const result = await response.json();
+  if (!response.ok) throw new Error(result.error || 'The request failed.');
+  return result;
+}
+
+function formatBytes(bytes) {
+  const units = ['B', 'KiB', 'MiB', 'GiB', 'TiB'];
+  let unit = 0;
+  while (bytes >= 1024 && unit + 1 < units.length) {
+    bytes /= 1024;
+    unit++;
+  }
+  return bytes.toLocaleString(undefined, {maximumFractionDigits: unit >= 2 ? 1 : 0}) + ' ' + units[unit];
+}
+
+async function showSpace() {
+  try {
+    const {availableBytes, totalBytes} = await api('/api/space');
+    if (availableBytes === null || !totalBytes) throw new Error('Space unavailable');
+    el('space').textContent = formatBytes(availableBytes) + ' free';
+    el('space-total').textContent = 'of ' + formatBytes(totalBytes);
+    el('used').style.width = Math.max(0, Math.min(100, (1 - availableBytes / totalBytes) * 100)) + '%';
+    el('space-track').hidden = false;
+  } catch {
+    el('space').textContent = 'Waiting for disk information';
+    el('space-total').textContent = '';
+    el('space-track').hidden = true;
+  }
+}
+
+async function showVideos() {
+  try {
+    const {videos} = await api('/api/library');
+    const rows = document.createDocumentFragment();
+    for (const video of videos) {
+      const slash = video.path.lastIndexOf('/');
+      const row = document.createElement('li');
+      row.className = 'video';
+      for (const [style, value] of [['name', video.path.slice(slash + 1)],
+        ['folder', slash < 0 ? 'Internal Storage' : video.path.slice(0, slash)], ['size', formatBytes(video.bytes)]]) {
+        const cell = document.createElement('span');
+        cell.className = style;
+        cell.textContent = value;
+        row.append(cell);
+      }
+      const actions = document.createElement('div');
+      actions.className = 'file-actions';
+      const download = document.createElement('a');
+      download.href = '/api/download/' + encodeURIComponent(video.path);
+      download.download = video.path.slice(slash + 1);
+      download.textContent = 'Download';
+      download.onclick = event => { if (busy) event.preventDefault(); };
+      const remove = document.createElement('button');
+      remove.className = 'delete';
+      remove.textContent = 'Delete';
+      remove.onclick = () => deleteVideo(video.path, remove);
+      actions.append(download, remove);
+      row.append(actions);
+      rows.append(row);
+    }
+    el('videos').replaceChildren(rows);
+    el('empty').textContent = 'No videos yet';
+    el('empty').hidden = videos.length !== 0;
+    el('count').textContent = videos.length.toLocaleString();
+  } catch {
+    el('empty').textContent = 'Could not read Internal Storage.';
+    el('empty').hidden = false;
+  }
+}
+
+async function deleteVideo(path, button) {
+  if (busy || !window.confirm('Delete ' + path + ' from Internal Storage?')) return;
+  busy = true;
+  button.disabled = true;
+  const message = el('delete-status');
+  message.hidden = true;
+  try {
+    await api('/api/delete/' + encodeURIComponent(path), {method: 'POST', body: ''});
+    await Promise.all([showSpace(), showVideos()]);
+  } catch (error) {
+    message.textContent = error.message;
+    message.hidden = false;
+  } finally {
+    button.disabled = false;
+    busy = false;
+  }
+}
+
+async function refreshLibrary() {
+  if (refreshing) return;
+  refreshing = true;
+  try { await Promise.all([showSpace(), showVideos()]); }
+  finally { refreshing = false; }
+}
+
+async function showTheme() {
+  try {
+    const theme = await api('/api/theme');
+    for (const key of ['bg','bg-bottom','surface','border','accent','accent-alt','text','text-muted','danger']) {
+      if (/^#[0-9a-f]{8}$/i.test(theme[key])) document.documentElement.style.setProperty('--' + key, theme[key]);
+    }
+  } catch {}
+}
+
+function sendFile(id, index, file, progress) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    current = xhr;
+    xhr.open('PUT', '/api/upload/' + id + '/' + index);
+    xhr.upload.onprogress = event => progress(event.loaded);
+    xhr.onload = () => {
+      if (xhr.status === 200) resolve();
+      else {
+        let message = 'Could not save the upload.';
+        try { message = JSON.parse(xhr.responseText).error || message; } catch {}
+        reject(new Error(message));
+      }
+    };
+    xhr.onerror = () => reject(new Error('Connection interrupted. Check that NoStream is open.'));
+    xhr.onabort = () => reject(new Error('Upload canceled.'));
+    xhr.send(file);
+  }).finally(() => { current = null; });
+}
+
+async function upload(items, folder) {
+  const prepared = await api('/api/prepare', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({folder, files: items.map(file => ({
+      path: folder ? file.webkitRelativePath : file.name, size: file.size
+    }))})
+  });
+  activeId = prepared.id;
+  if (cancelled) throw new Error('Upload canceled.');
+  let sent = 0;
+  const samples = [{time: performance.now(), bytes: 0}];
+  const total = prepared.files.reduce((sum, index) => sum + items[index].size, 0);
+  for (const index of prepared.files) {
+    if (cancelled) throw new Error('Upload canceled.');
+    const file = items[index];
+    status('Uploading ' + file.name);
+    await sendFile(activeId, index, file, loaded => {
+      const bytes = sent + loaded;
+      el('progress').value = total ? Math.min(99, bytes / total * 100) : 0;
+      const now = performance.now();
+      samples.push({time: now, bytes});
+      while (samples.length > 2 && samples[1].time < now - 2500) samples.shift();
+      const {time, bytes: before} = samples[0];
+      if (now - time >= 200)
+        el('speed').textContent = formatBytes(Math.max(0, bytes - before) * 1000 / (now - time)) + '/s';
+    });
+    sent += file.size;
+  }
+  activeId = '';
+  return prepared.skipped;
+}
+
+async function selection(items, folder) {
+  if (!items.length || busy) return;
+  busy = true;
+  cancelled = false;
+  el('progress').hidden = false;
+  el('progress').value = 0;
+  el('cancel').hidden = false;
+  el('cancel').disabled = false;
+  el('choose-files').disabled = el('choose-folder').disabled = true;
+  let skipped = 0, completed = false;
+  try {
+    status('Preparing upload…');
+    for (const files of folder ? [items] : items.map(file => [file])) {
+      if (cancelled) throw new Error('Upload canceled.');
+      el('progress').value = 0;
+      el('speed').textContent = '';
+      skipped += await upload(files, folder);
+    }
+    completed = true;
+    el('progress').value = 100;
+    status('Saved to Internal Storage.' + (skipped ? ' Skipped ' + skipped + ' unrelated files.' : ''));
+  } catch (error) {
+    if (activeId) {
+      try { await api('/api/cancel/' + activeId, {method: 'POST', body: ''}); } catch {}
+    }
+    status(cancelled ? 'Upload canceled.' : error.message);
+  } finally {
+    activeId = '';
+    el('progress').hidden = !completed;
+    el('speed').textContent = '';
+    el('cancel').hidden = true;
+    el('choose-files').disabled = el('choose-folder').disabled = false;
+    busy = false;
+    await refreshLibrary();
+  }
+}
+el('choose-files').onclick = () => el('files').click();
+if ('webkitdirectory' in el('folder')) el('choose-folder').onclick = () => el('folder').click();
+else el('choose-folder').hidden = true;
+for (const id of ['files', 'folder']) {
+  el(id).onchange = () => {
+    const files = Array.from(el(id).files);
+    el(id).value = '';
+    selection(files, id === 'folder');
+  };
+}
+el('cancel').onclick = () => {
+  cancelled = true;
+  el('cancel').disabled = true;
+  if (current) current.abort();
+};
+
+
+let dragDepth = 0;
+const fileDrag = event => Array.from(event.dataTransfer.types).includes('Files');
+window.addEventListener('dragenter', event => {
+  if (!fileDrag(event)) return;
+  event.preventDefault();
+  dragDepth++;
+  if (!busy) document.body.classList.add('dragging');
+});
+window.addEventListener('dragover', event => {
+  if (!fileDrag(event)) return;
+  event.preventDefault();
+  event.dataTransfer.dropEffect = busy ? 'none' : 'copy';
+});
+window.addEventListener('dragleave', event => {
+  if (!fileDrag(event)) return;
+  dragDepth = Math.max(0, dragDepth - 1);
+  if (!dragDepth) document.body.classList.remove('dragging');
+});
+window.addEventListener('drop', event => {
+  if (!fileDrag(event)) return;
+  event.preventDefault();
+  dragDepth = 0;
+  document.body.classList.remove('dragging');
+  if (busy) return;
+  if (Array.from(event.dataTransfer.items || []).some(item => item.webkitGetAsEntry?.()?.isDirectory)) {
+    status('Use Choose folder to upload a folder.');
+    return;
+  }
+  selection(Array.from(event.dataTransfer.files), false);
+});
+
+showTheme();
+refreshLibrary();
+setInterval(() => { if (!busy) refreshLibrary(); }, 12000);
+</script>
+</html>

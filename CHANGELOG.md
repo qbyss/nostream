@@ -5,6 +5,12 @@ into the GitHub release notes, so keep the headings in the form `## 0.1.0`.
 
 ---
 
+## 0.5.0
+
+- **Web Upload** lets you upload videos and folders to Internal Storage from a browser on the same network. Drag and drop a video to upload it and see transfer speed and free space.
+- Download or delete videos from the web library. Deletion asks for confirmation.
+- Turn Web Upload on or off under **Settings → Interface & Storage**. The startup toast and Browse show the URL with the port assigned by the PS5.
+
 ## 0.4.0
 
 - The Browse sidebar shows how much space is used on each drive and how much is free.

@@ -224,6 +224,7 @@ CORE_SRCS := \
     core/src/services/NetworkStorageService.cpp \
     core/src/services/FileSystemBrowser.cpp \
     core/src/services/FileTransferService.cpp \
+    core/src/services/WebUploadService.cpp \
     core/src/services/CastService.cpp \
     core/src/services/PhoneRemote.cpp \
     core/src/services/PlaybackController.cpp \

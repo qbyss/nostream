@@ -189,6 +189,7 @@ void evo_rmlui_update_browser(const evo_rmlui_browser_params_t* p) {
     evo_hui_update_browser(p);
 #endif
     EvoBrowserState state;
+    state.upload_status = p->upload_status ? p->upload_status : "";
     state.path = p->path ? p->path : "";
     state.title = p->title ? p->title : "";
     state.at_root = (p->at_root != 0);

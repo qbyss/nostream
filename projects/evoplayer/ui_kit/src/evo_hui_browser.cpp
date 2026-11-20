@@ -57,6 +57,7 @@ void BrowserScreen::set(const evo_rmlui_browser_params_t &p)
     auto str = [](const char *s) { return std::string(s ? s : ""); };
     raw_ = p;
     path_ = str(p.path);
+    upload_status_ = str(p.upload_status);
     title_ = str(p.title);
     sources_.clear();
     for (int i = 0; i < p.source_count && i < EVO_RMLUI_BROWSER_SOURCES; ++i)
@@ -99,7 +100,7 @@ void BrowserScreen::set(const evo_rmlui_browser_params_t &p)
     tr_pct_ = str(p.transfer_percent_str);
     tr_progress_ = p.transfer_progress_pct;
     /* Strings in raw_ are dangling after this call: never read them. */
-    raw_.path = raw_.title = nullptr;
+    raw_.path = raw_.title = raw_.upload_status = nullptr;
 }
 
 void BrowserScreen::enter()
@@ -212,6 +213,8 @@ void BrowserScreen::draw(DrawList &list, const Context &ctx)
         const float in = tween::stagger(age_, 0, 0.05f, 0.45f);
         list.push_opacity(in);
         draw_page_title(list, ctx, title_.empty() ? "Files" : title_, path_, kLeft, 0.0f, 900.0f);
+        if (!upload_status_.empty())
+            ui::text(list, fonts.regular, upload_status_, kLeft, 217, 18, p.text_muted);
         char counter[48];
         if (raw_.total_count > 0 && raw_.cursor_index >= 0)
             std::snprintf(counter, sizeof(counter), "%d OF %d", raw_.cursor_index + 1, raw_.total_count);

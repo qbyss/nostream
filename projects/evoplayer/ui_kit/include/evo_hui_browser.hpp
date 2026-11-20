@@ -41,6 +41,7 @@ class BrowserScreen
     float chips_x(int index) const;
 
     evo_rmlui_browser_params_t raw_{}; /* ints only; strings live below */
+    std::string upload_status_;
     std::string path_, title_;
     std::vector<std::string> chips_;
     struct Source {

@@ -40,6 +40,7 @@ public:
     std::string usbMountLabel(const std::string& mount) const override;
 
     std::string getFullPath(size_t index) const override;
+    static FileCategory classifyName(const std::string& fileName, int entryType);
     FileCategory classifyFile(const std::string& fileName, int entryType) const override;
     const char* getFileCategoryLabel(FileCategory category) const override;
 

@@ -776,7 +776,7 @@ static void serve_report_txt(int fd, int last_run)
 static void serve_asset(int fd, const char *name)
 {
     unsigned size = 0;
-    const unsigned char *data = (strchr(name, '/') || strstr(name, "..")) ? NULL : evo_web_asset(name, &size);
+    const unsigned char *data = (strchr(name, '/') || strstr(name, "..") || !strcmp(name, "upload.html")) ? NULL : evo_web_asset(name, &size);
     if (!data) {
         send_str(fd, "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\nConnection: close\r\n\r\n");
         return;

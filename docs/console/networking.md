@@ -43,6 +43,7 @@ If you really need a listener in the container, publish the port in the commente
 | 3232 | `ps5-payload-klogsrv` | `klog.sh`, `cycle` |
 | 8080 | `ps5-payload-websrv` | `shot.sh`; read-only `/fs` |
 | 9780 (default) | NoStream's own log server | `/raw`, `/stats`, the phone input page, `nostream-dash.py`. User-settable (1024–65535) in Settings → PHONE & LOG PORT with n+1..n+9 fallback; dev tools accept `PS5_LOG_PORT` |
+| OS-assigned | NoStream Web Upload | Browse, upload, download, and delete videos in Internal Storage |
 | 9295 and discovery | Remote Play | [remote-play.md](remote-play.md) |
 
 All of these except NoStream's log server (port 9780 by default) need the jailbreak re-run after every console reboot.
