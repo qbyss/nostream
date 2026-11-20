@@ -3297,6 +3297,34 @@ int evo_agc_runtime_set_night_shift(float warmth)
     return g_agc_dev.applied_night_shift[1 - g_agc_dev.active_backbuffer] != g_agc_dev.night_shift_rgb;
 }
 
+static int draw_scanout_tint(uint32_t rgba, int blend)
+{
+    const int buffer = g_agc_dev.active_backbuffer;
+    evo_agc_transient_slice_t white;
+    if (evo_agc_transient_ring_alloc(&g_agc_dev.transient_ring, g_agc_dev.current_slot,
+                                     256, 256, &white) != EVO_AGC_TRANSIENT_OK)
+        return 0;
+    *(uint32_t *)white.cpu = 0xffffffffu;
+    evo_agc_set_layer_target(NULL);
+    evo_agc_runtime_set_clip_mask(0);
+    SceAgcRegister *viewport = alloc_transient_cx(12);
+    if (!viewport)
+        return 0;
+    evo_agc_writer_set_target(&g_agc_dev.current_cb, g_agc_dev.gpu_regs->color_targets[buffer], 16);
+    evo_agc_writer_set_viewport(&g_agc_dev.current_cb, viewport, 0.0f, 0.0f,
+                                (float)g_agc_dev.width, (float)g_agc_dev.height);
+    return draw_screen_quad(g_agc_dev.width, g_agc_dev.height, white.gpu_addr, 1, 1, 256,
+                            rgba, blend);
+}
+
+void evo_agc_runtime_dim_frame(uint8_t opacity)
+{
+    if (!g_agc_dev.frame_active || !opacity)
+        return;
+    if (draw_scanout_tint((uint32_t)opacity << 24, EVO_AGC_BLEND_PREMULTIPLIED))
+        evo_agc_runtime_note_ui_drawn();
+}
+
 void evo_agc_runtime_apply_night_shift(void)
 {
     const int buffer = g_agc_dev.active_backbuffer;
@@ -3304,21 +3332,7 @@ void evo_agc_runtime_apply_night_shift(void)
         !g_agc_dev.night_shift_rgb || g_agc_dev.applied_night_shift[buffer])
         return;
 
-    evo_agc_transient_slice_t white;
-    if (evo_agc_transient_ring_alloc(&g_agc_dev.transient_ring, g_agc_dev.current_slot,
-                                     256, 256, &white) != EVO_AGC_TRANSIENT_OK)
-        return;
-    *(uint32_t *)white.cpu = 0xffffffffu;
-    evo_agc_set_layer_target(NULL);
-    evo_agc_runtime_set_clip_mask(0);
-    SceAgcRegister *viewport = alloc_transient_cx(12);
-    if (!viewport)
-        return;
-    evo_agc_writer_set_target(&g_agc_dev.current_cb, g_agc_dev.gpu_regs->color_targets[buffer], 16);
-    evo_agc_writer_set_viewport(&g_agc_dev.current_cb, viewport, 0.0f, 0.0f,
-                                (float)g_agc_dev.width, (float)g_agc_dev.height);
-    if (draw_screen_quad(g_agc_dev.width, g_agc_dev.height, white.gpu_addr, 1, 1, 256,
-                         g_agc_dev.night_shift_rgb, EVO_AGC_BLEND_MULTIPLY)) {
+    if (draw_scanout_tint(g_agc_dev.night_shift_rgb, EVO_AGC_BLEND_MULTIPLY)) {
         g_agc_dev.applied_night_shift[buffer] = g_agc_dev.night_shift_rgb;
         static int playback_logged;
         if (g_agc_dev.is_player_mode && !playback_logged) {

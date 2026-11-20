@@ -928,9 +928,11 @@ PaceTrace g_pace;
 } // namespace
 
 int Application::run() {
+    constexpr long long kOledFadeMs = 600;
     PS5_PadData padData;
     uint32_t lastButtons = 0;
     long long oledLastActivityMs = evo_log_mono_ms();
+    long long oledFadeUntilMs = 0;
     long long oledNoticeUntilMs = 0;
     bool oledBlank = false;
     bool oledWakeInputHeld = false;
@@ -1565,16 +1567,22 @@ int Application::run() {
         const long long oledNow = evo_log_mono_ms();
         if (oledMinutes == 0 || displayInUse || userActivity) {
             oledLastActivityMs = oledNow;
+            oledFadeUntilMs = 0;
             oledNoticeUntilMs = 0;
         }
 
         const bool wasOledBlank = oledBlank;
         oledBlank = oledMinutes > 0 && oledNow - oledLastActivityMs >= oledMinutes * 60000LL;
-        if (oledBlank) {
-            if (!wasOledBlank) {
+        if (oledBlank && !wasOledBlank) {
+            oledFadeUntilMs = oledNow + kOledFadeMs;
+            g_pace.stop();
+        }
+        const bool oledFading = oledBlank && oledNow < oledFadeUntilMs;
+        if (oledBlank && !oledFading) {
+            if (oledFadeUntilMs != 0) {
+                oledFadeUntilMs = 0;
                 toast("Screen saving mode enabled", "Press any button to wake.");
                 oledNoticeUntilMs = oledNow + 2600;  // includes the toast's fade-out
-                g_pace.stop();
             }
             if (oledNoticeUntilMs != 0 || evo_agc_runtime_mode_switch_pending()) {
                 const bool showNotice = oledNow < oledNoticeUntilMs;
@@ -1612,7 +1620,7 @@ int Application::run() {
 
         bool hasAnim = evo::animation::AnimationManager::getInstance().hasActiveAnimations();
         int uiActive = (frame < 10) || isPlayer || isSurround || hasInput || hasAnim ||
-                       wasOledBlank || nightShiftChanged || evo_rmlui_needs_frame() || (jb_repaint > 0);
+                       oledFading || wasOledBlank || nightShiftChanged || evo_rmlui_needs_frame() || (jb_repaint > 0);
         if (jb_repaint > 0) jb_repaint--;
         evo_rmlui_set_active(uiActive);
 
@@ -1708,7 +1716,7 @@ int Application::run() {
 
             bool smoothing_active = evo_agc_motion_smoothing_is_active() && !is_paused && !is_scrubbing && !g_pp_pb.seek_discarding;
 
-            bool should_render = wasOledBlank || nightShiftChanged ||
+            bool should_render = oledFading || wasOledBlank || nightShiftChanged ||
                 (warmth > 0.0f && (evo_keyboard_is_open() || m_keyboardDrawn)) ||
                 (have && new_frame) || buffer_stale || overlay_active ||
                 is_paused || is_scrubbing || toast_visible || g_pp_pb.seek_discarding || (have && smoothing_active);
@@ -1939,6 +1947,11 @@ int Application::run() {
             }
             g_pace.mark(5);   /* draw: blit, UI, toast, keyboard */
             evo_agc_runtime_apply_night_shift();
+            if (oledFading) {
+                const float progress = 1.0f - static_cast<float>(oledFadeUntilMs - oledNow) / kOledFadeMs;
+                const float opacity = progress * progress * (3.0f - 2.0f * progress);
+                evo_agc_runtime_dim_frame(static_cast<uint8_t>(std::lround(255.0f * opacity)));
+            }
             const auto present_t0 = PaceTrace::clk::now();
             evo_agc_runtime_present();
             g_pace.mark(6);   /* present, incl. the flip wait */
