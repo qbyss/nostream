@@ -1606,6 +1606,8 @@ bool PlaybackController::startPlaybackSource(const PlaybackSource& source,
                              m_resumeBaseOffset, m_durationSeconds, audio_stream_index);
         recent_save();
     }
+    m_savedResumePosition = m_resumeBaseOffset;
+    m_lastResumeSaveAttemptMs = evo_log_mono_ms();
 
     player_paused = 0;
     video_decode_ready = (video_stream_index >= 0) ? 1 : 0;
@@ -1938,21 +1940,35 @@ void PlaybackController::applyViewMode() {
     pp_playback_set_output(&g_pp_pb, DisplayWidth, DisplayHeight, aspect);
 }
 
+double PlaybackController::resumablePosition(double finishWindow) const {
+    const double pos = getPositionSeconds();
+    if (!std::isfinite(pos) || pos <= 5.0 ||
+        (m_durationSeconds > 0.0 && pos >= m_durationSeconds - finishWindow))
+        return 0.0;
+    return pos;
+}
+
+void PlaybackController::checkpointResumePosition() {
+    constexpr long long intervalMs = 5000;
+    const auto state = getPlaybackState();
+    if ((state != PlaybackState::Playing && state != PlaybackState::Paused) ||
+        m_source.is_live || m_source.no_history || pb_prebuffer_hold ||
+        g_pp_pb.seek_discarding || evo_pb_decode_fatal())
+        return;
+    if (evo_log_mono_ms() - m_lastResumeSaveAttemptMs < intervalMs) return;
+
+    // The demuxer can reach EOF while seconds of queued video are still playing.
+    const double pos = resumablePosition(evo_pb_is_eof() ? 1.0 : 0.0);
+    if (std::fabs(pos - m_savedResumePosition) >= 0.5)
+        persistRecentPosition(pos);
+}
+
 void PlaybackController::saveResumePosition() {
-    if (m_currentFilePath.empty()) return;
+    if (m_currentFilePath.empty() || m_source.is_live || m_source.no_history) return;
 
-    double pos = getPositionSeconds();
-
-    /*
-     * A live stream has no position worth keeping. Writing one would make the
-     * next launch of that channel seek to a point the stream does not have,
-     * which on an HLS endpoint is a failed open rather than a wrong position.
-     */
-    if (m_source.is_live || m_source.no_history) return;
-
-    if (pos < 5.0 || (m_durationSeconds > 0.0 && pos >= m_durationSeconds - 10.0)) {
-        pos = 0.0; // Clear near start or finish
-    }
+    const double pos = (isScrubbing() || g_pp_pb.seek_discarding)
+        ? m_savedResumePosition : resumablePosition(10.0);
+    persistRecentPosition(pos);
 
     char persistKey[512];
     evo_url_sanitize(m_currentFilePath.c_str(), persistKey, sizeof(persistKey));
@@ -1962,16 +1978,9 @@ void PlaybackController::saveResumePosition() {
         std::fprintf(fp, "%s\n%.2f\n%d\n", persistKey, pos, audio_stream_index);
         std::fclose(fp);
     }
+}
 
-    /*
-     * The resume file above is only read by the browser. Home, Recent and
-     * Favorites all start playback from recent_files[i].last_pos instead, and
-     * the only writer of that field is startPlayback(), which stores the offset
-     * playback *began* at. Without this second half the stored position never
-     * advances past the point a file was last opened from, so every launch
-     * replays from the same frozen timestamp. (Pre-refactor this was
-     * recent_update_current_position(); it has no caller any more.)
-     */
+void PlaybackController::persistRecentPosition(double pos) {
     std::string title, category;
     if (!m_source.title.empty()) {
         /* The provider's own title. Deriving one from the URL is what put a
@@ -1980,19 +1989,20 @@ void PlaybackController::saveResumePosition() {
     } else if (auto metaService = Application::getInstance().getMediaMetadataService()) {
         metaService->cleanMediaTitle(m_currentFilePath, title, category);
     }
-    recent_add_or_update(persistKey, title.c_str(),
+    recent_add_or_update(m_currentFilePath.c_str(), title.c_str(),
                          pos, m_durationSeconds, audio_stream_index);
-    recent_save();
+    m_lastResumeSaveAttemptMs = evo_log_mono_ms();
+    if (recent_save()) m_savedResumePosition = pos;
 }
 
 double PlaybackController::loadResumePosition(const std::string& filePath) const {
     if (filePath.empty()) return 0.0;
 
+    if (const auto* entry = recent_find(filePath.c_str())) return entry->last_pos;
+
     char cleanFile[512];
     evo_url_sanitize(filePath.c_str(), cleanFile, sizeof(cleanFile));
 
-    char persistKey[512];
-    evo_url_sanitize(m_currentFilePath.c_str(), persistKey, sizeof(persistKey));
     const char* resumeFile = evo_data_path("ps5_media_resume.txt");
     FILE* fp = std::fopen(resumeFile, "r");
     if (!fp) return 0.0;

@@ -166,23 +166,34 @@ void recent_update_current_position(void)
     recent_save();
 }
 
-void recent_save(void)
+int recent_save(void)
 {
-    FILE *fp = fopen(RECENT_FILE_DB, "w");
-    if (!fp) return;
+    /* Keep the last complete checkpoint if the process exits during a write. */
+    char pending[512];
+    snprintf(pending, sizeof pending, "%s", evo_data_path("evo_recent.txt.tmp"));
+    FILE *fp = fopen(pending, "w");
+    if (!fp) return 0;
 
+    int written = 1;
     for (int i = 0; i < recent_file_count; i++) {
-        fprintf(fp, "%s\t%s\t%.3f\t%.3f\t%lld\t%d\t%s\n",
-                recent_files[i].path,
-                recent_files[i].title,
-                recent_files[i].last_pos,
-                recent_files[i].duration,
-                recent_files[i].last_played,
-                recent_files[i].audio_stream,
-                recent_files[i].volume_id);
+        if (fprintf(fp, "%s\t%s\t%.3f\t%.3f\t%lld\t%d\t%s\n",
+                    recent_files[i].path,
+                    recent_files[i].title,
+                    recent_files[i].last_pos,
+                    recent_files[i].duration,
+                    recent_files[i].last_played,
+                    recent_files[i].audio_stream,
+                    recent_files[i].volume_id) < 0) {
+            written = 0;
+            break;
+        }
     }
 
-    fclose(fp);
+    if (fclose(fp) == 0 && written && rename(pending, RECENT_FILE_DB) == 0)
+        return 1;
+
+    remove(pending);
+    return 0;
 }
 
 void recent_load(void)
@@ -318,26 +329,26 @@ int recent_prune_missing(void)
     return gone;
 }
 
-double recent_lookup(const char *path)
+const RecentFileEntry *recent_find(const char *path)
 {
-    if (!path || !path[0]) return 0.0;
+    if (!path || !path[0]) return NULL;
     char clean_path[512];
     evo_url_sanitize(path, clean_path, sizeof(clean_path));
     for (int i = 0; i < recent_file_count; i++) {
         if (recent_matches(&recent_files[i], clean_path))
-            return recent_files[i].last_pos;
+            return &recent_files[i];
     }
-    return 0.0;
+    return NULL;
+}
+
+double recent_lookup(const char *path)
+{
+    const RecentFileEntry *entry = recent_find(path);
+    return entry ? entry->last_pos : 0.0;
 }
 
 int recent_lookup_audio(const char *path)
 {
-    if (!path || !path[0]) return -1;
-    char clean_path[512];
-    evo_url_sanitize(path, clean_path, sizeof(clean_path));
-    for (int i = 0; i < recent_file_count; i++) {
-        if (recent_matches(&recent_files[i], clean_path))
-            return recent_files[i].audio_stream;
-    }
-    return -1;
+    const RecentFileEntry *entry = recent_find(path);
+    return entry ? entry->audio_stream : -1;
 }

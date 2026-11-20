@@ -71,6 +71,7 @@ public:
     void setViewMode(ViewMode mode) override;
 
     void saveResumePosition() override;
+    void checkpointResumePosition();
     double loadResumePosition(const std::string& filePath) const override;
     int loadResumeAudioStream(const std::string& filePath) const override;
 
@@ -92,6 +93,8 @@ private:
     void requestSeek(double targetSeconds, bool restorePaused);
     double clampScrubTarget(double target) const;
     void resetScrubHold();
+    double resumablePosition(double finishWindow) const;
+    void persistRecentPosition(double position);
 
     StateMachine<PlaybackState, PlaybackEvent> m_playbackFsm;
 
@@ -102,10 +105,10 @@ private:
     /* The stream-io context for the open format, so reconnect/timeout live in
      * one place for local and network alike (evo_stream_io.c). */
     ::evo_stream_io_ctx *m_streamIo = nullptr;
-    /* Wall-clock of the last report_progress, so a provider gets an update
-     * roughly every ten seconds rather than on every resume save. */
     double m_durationSeconds = 0.0;
     double m_resumeBaseOffset = 0.0;
+    long long m_lastResumeSaveAttemptMs = 0;
+    double m_savedResumePosition = 0.0;
     bool m_musicMode = false;
     std::vector<uint32_t> m_coverPixels;   /* audio-only file's embedded cover */
     int m_coverW = 0, m_coverH = 0;

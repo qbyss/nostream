@@ -1442,6 +1442,7 @@ int Application::run() {
         if (m_castService) {
             m_castService->update(frameDeltaMs);
         }
+        m_playbackController->checkpointResumePosition();
         g_pace.mark(2);   /* update */
 
         // 3. Determine if graphics needs to render/present

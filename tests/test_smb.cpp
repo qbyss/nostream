@@ -548,6 +548,19 @@ extern "C" void test_smb_recent_and_favorites(void) {
 
     recent_load();
     TEST_ASSERT(recent_lookup_audio("smb://10.0.0.5:445/Media/MultiTrack.mkv") == 3, "audio stream must persist across save and load");
+    TEST_ASSERT(recent_lookup("smb://10.0.0.5:445/Media/MultiTrack.mkv") == 350.0,
+                "updated playback position must persist across save and load");
+
+    // Simulate an interrupted checkpoint before the pending file was renamed.
+    const std::string pending = evo_data_path("evo_recent.txt.tmp");
+    FILE *interrupted = fopen(pending.c_str(), "w");
+    TEST_ASSERT(interrupted != nullptr, "open pending checkpoint");
+    fputs("incomplete checkpoint", interrupted);
+    fclose(interrupted);
+    recent_load();
+    TEST_ASSERT(recent_lookup("smb://10.0.0.5:445/Media/MultiTrack.mkv") == 350.0,
+                "interrupted checkpoint must leave the last saved position readable");
+    TEST_ASSERT(recent_save() == 1, "a new checkpoint must replace an interrupted one");
 
     rfp = fopen(RECENT_FILE_DB, "r");
     memset(rbuf, 0, sizeof(rbuf));

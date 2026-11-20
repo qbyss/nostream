@@ -56,8 +56,9 @@ void   recent_add_or_update(const char *path, const char *title,
                              int audio_stream);
 #endif
 void   recent_update_current_position(void);
-void   recent_save(void);
+int    recent_save(void); /* returns 1 if the database was replaced */
 void   recent_load(void);
+const RecentFileEntry *recent_find(const char *path);
 double recent_lookup(const char *path);   /* returns last_pos or 0.0 */
 int    recent_lookup_audio(const char *path); /* returns audio_stream or -1 */
 
